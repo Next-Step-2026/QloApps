@@ -15,8 +15,17 @@ config.codekit
 nbproject
 bower_components
 composer.lock
+Padrao_projeto.pdf
+
+# Search service C++ artifacts and vendor dependencies
+search-service-cpp/include/json.hpp
+search-service-cpp/search_service
+search-service-cpp/test_search
+search-service-cpp/*.o
+search-service-cpp/src/*.o
 
 # Cache, temp and personal files
+RFC-008-busca-entidades-acionaveis.md
 
 /cache/**
 !/cache/cacert.pem
@@ -126,6 +135,8 @@ img/**
 !/upload/.htaccess
 !/upload/index.php
 
+/admin[0-9a-zA-Z_-]*/
+!/admin/
 /admin/backups/*
 !/admin/backups/.htaccess
 !/admin/backups/index.php
