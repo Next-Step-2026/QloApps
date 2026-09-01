@@ -1,0 +1,25 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# Kotlin & IDEs (IntelliJ IDEA, Android Studio)
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+.kotlin/
+
+# Eclipse & Visual Studio Code
+.project
+.classpath
+.settings/
+.vscode/
+
+# Sistema Operacional & Logs
+.DS_Store
+Thumbs.db
+*.log
+local.properties
