@@ -6,27 +6,15 @@
 .project
 .settings
 .idea
-.vscode/
-*.swp
-*.swo
-*~
 .svn
 .DS_Store
-Thumbs.db
-desktop.ini
-.directory
 .sass-cache
 config.codekit
 *.sublime-project
 *.sublime-workspace
 nbproject
 bower_components
-node_modules/
 composer.lock
-.env
-.env.*
-.phpunit.result.cache
-.phpunit.cache/
 
 # Cache, temp and personal files
 
@@ -268,18 +256,3 @@ admin/themes/default/css/screen.css
 
 **sitemap.xml
 robots.txt
-
-# Ignore randomized admin directories while keeping core /admin tracked
-/admin[a-zA-Z0-9]*/
-!/admin/
-
-# Ignore dynamically uploaded/sample images in modules while preserving index files
-/modules/*/views/img/*/*.jpg
-/modules/*/views/img/*/*.png
-/modules/*/views/img/*/*.jpeg
-/modules/*/views/img/*/*.gif
-!/modules/*/views/img/**/index.php
-
-# Additional auto-generated module metadata and class index
-/modules/**/config.xml
-/cache/class_index.php
