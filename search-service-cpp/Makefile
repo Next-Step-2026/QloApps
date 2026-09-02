@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -Iinclude
+CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -Iinclude -pthread
 
 JSON_HPP = include/json.hpp
 HTTPLIB_H = include/httplib.h
