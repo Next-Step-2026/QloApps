@@ -15,7 +15,6 @@ config.codekit
 nbproject
 bower_components
 composer.lock
-Padrao_projeto.pdf
 
 # Search service C++ artifacts and vendor dependencies
 search-service-cpp/include/json.hpp
@@ -25,9 +24,7 @@ search-service-cpp/test_search
 search-service-cpp/*.o
 search-service-cpp/src/*.o
 
-# Cache, temp and personal files
-RFC-008-busca-entidades-acionaveis.md
-
+# Cache and temp files
 /cache/**
 !/cache/cacert.pem
 !/cache/index.php
