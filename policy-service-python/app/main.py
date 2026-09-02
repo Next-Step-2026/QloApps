@@ -8,6 +8,8 @@ from fastapi import FastAPI, HTTPException, Header, status
 from fastapi.responses import JSONResponse
 from app.schemas import PolicyEvaluationRequest, PolicyEvaluationResponse
 from app.engine import evaluate_policy
+import json
+from datetime import datetime, timezone
 
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -63,17 +65,20 @@ def evaluate(
         raise PolicyValidationException(detail=str(exc))
 
     duration_ms = (time.perf_counter() - start_time) * 1000
+                                                        
+    log_data = {                                                                                                           
+        "timestamp": datetime.now(timezone.utc).isoformat(),                                                               
+        "level": "INFO",                                                                                                   
+        "correlation_id": correlation_id,                                                                                  
+        "event": "POLICY_EVALUATED",                                                                                       
+        "policy": req.policy.value,                                                                                        
+        "decision": decision.value,                                                                                        
+        "reason_code": reason_code,                                                                                        
+        "duration_ms": round(duration_ms, 2)                                                                               
+    }                   
 
-    # Log estruturado
-    logger.info(
-        '{"event": "POLICY_EVALUATED", "policy": "%s", "decision": "%s", "reason_code": "%s", "duration_ms": %.2f, "correlation_id": "%s"}',
-        req.policy.value,
-        decision.value,
-        reason_code,
-        duration_ms,
-        correlation_id
-    )
-
+    logger.info(json.dumps(log_data))                                                                                      
+  
     return PolicyEvaluationResponse(
         correlation_id=correlation_id,
         policy=req.policy.value,
@@ -81,7 +86,7 @@ def evaluate(
         reason_code=reason_code,
         explanation=explanation
     )
-
+    
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8105)
