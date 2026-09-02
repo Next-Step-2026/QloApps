@@ -2,6 +2,7 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -Iinclude
 
 JSON_HPP = include/json.hpp
+HTTPLIB_H = include/httplib.h
 
 SRCS = $(wildcard src/*.cpp)
 TARGET = search_service
@@ -13,13 +14,24 @@ TEST_TARGET = test_search
 
 all: build
 
-deps: $(JSON_HPP)
+deps: $(JSON_HPP) $(HTTPLIB_H)
 
 $(JSON_HPP):
 	@mkdir -p include
 	@if [ ! -f $(JSON_HPP) ]; then \
 		echo "Downloading nlohmann/json.hpp..."; \
-		curl -sLo $(JSON_HPP) https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp || wget -qO $(JSON_HPP) https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp; \
+		curl -fsSLo $(JSON_HPP) https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp \
+		|| wget -qO $(JSON_HPP) https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp \
+		|| { echo "erro ao baixar json.hpp"; rm -f $(JSON_HPP); exit 1; }; \
+	fi
+
+$(HTTPLIB_H):
+	@mkdir -p include
+	@if [ ! -f $(HTTPLIB_H) ]; then \
+		echo "Downloading cpp-httplib/httplib.h..."; \
+		curl -fsSLo $(HTTPLIB_H) https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.15.3/httplib.h \
+		|| wget -qO $(HTTPLIB_H) https://raw.githubusercontent.com/yhirose/cpp-httplib/v0.15.3/httplib.h \
+		|| { echo "erro ao baixar httplib.h"; rm -f $(HTTPLIB_H); exit 1; }; \
 	fi
 
 build: deps $(TARGET)

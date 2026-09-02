@@ -19,6 +19,7 @@ Padrao_projeto.pdf
 
 # Search service C++ artifacts and vendor dependencies
 search-service-cpp/include/json.hpp
+search-service-cpp/include/httplib.h
 search-service-cpp/search_service
 search-service-cpp/test_search
 search-service-cpp/*.o
