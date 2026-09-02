@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from app.schemas import PolicyEvaluationRequest, PolicyEvaluationResponse
 from app.engine import evaluate_policy
 
+
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("policy-engine")
 
@@ -18,18 +19,34 @@ app = FastAPI(
     version="1.0.0"
 )
 
+class PolicyValidationException(Exception):                                                                                
+    def __init__(self, detail: str):                                                                                       
+        self.detail = detail
+
+@app.exception_handler(PolicyValidationException)                                                                          
+async def policy_validation_exception_handler(request: Request, exc: PolicyValidationException):                           
+        return JSONResponse(                                                                                                   
+            status_code=status.HTTP_400_BAD_REQUEST,                                                                           
+            content={                                                                                                          
+                "type": "https://hotel.local/errors/invalid-policy-facts",                                                     
+                "title": "Fatos de Política Inválidos",                                                                        
+                "status": 400,                                                                                                 
+                "detail": exc.detail,                                                                                          
+                "instance": request.url.path,                                                                                  
+            }
+        )
 
 @app.get("/healthz")
 def health_check():
     """Healthcheck endpoint"""
     return {"status": "UP"}
 
-
 @app.post(
     "/v1/policy-evaluations",
     response_model=PolicyEvaluationResponse,
     status_code=status.HTTP_200_OK
 )
+
 def evaluate(
     req: PolicyEvaluationRequest,
     x_correlation_id: Optional[str] = Header(default=None)
@@ -43,10 +60,7 @@ def evaluate(
     try:
         decision, reason_code, explanation = evaluate_policy(req.policy, req.facts)
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Fatos de Política Inválidos: {str(exc)}"
-        )
+        raise PolicyValidationException(detail=str(exc))
 
     duration_ms = (time.perf_counter() - start_time) * 1000
 
@@ -67,7 +81,6 @@ def evaluate(
         reason_code=reason_code,
         explanation=explanation
     )
-
 
 if __name__ == "__main__":
     import uvicorn
