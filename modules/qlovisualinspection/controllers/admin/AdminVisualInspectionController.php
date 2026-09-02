@@ -145,7 +145,7 @@ class AdminVisualInspectionController extends ModuleAdminController
                 }
             }
         } catch (Exception $e) {
-            // Log or ignore if table is empty in testing sandbox
+            echo $e;
         }
 
         if (empty($rooms)) {

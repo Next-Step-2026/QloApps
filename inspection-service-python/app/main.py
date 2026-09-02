@@ -114,10 +114,11 @@ async def create_visual_inspection(
         }
 
     except Exception as e:
+        print({str(e)})
         return rfc7807_error_response(
             status_code=500,
             title="Erro Interno no Processamento",
-            detail=f"Ocorreu um erro interno ao analisar a imagem: {str(e)}",
+            detail=f"Ocorreu um erro interno ao analisar a imagem. Entre em contato com o suporte",
         )
 
 
