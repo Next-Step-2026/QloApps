@@ -16,8 +16,15 @@ nbproject
 bower_components
 composer.lock
 
-# Cache, temp and personal files
+# Search service C++ artifacts and vendor dependencies
+search-service-cpp/include/json.hpp
+search-service-cpp/include/httplib.h
+search-service-cpp/search_service
+search-service-cpp/test_search
+search-service-cpp/*.o
+search-service-cpp/src/*.o
 
+# Cache and temp files
 /cache/**
 !/cache/cacert.pem
 !/cache/index.php
@@ -126,6 +133,8 @@ img/**
 !/upload/.htaccess
 !/upload/index.php
 
+/admin[0-9a-zA-Z_-]*/
+!/admin/
 /admin/backups/*
 !/admin/backups/.htaccess
 !/admin/backups/index.php
