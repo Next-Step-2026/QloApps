@@ -36,12 +36,13 @@ composer.lock
 !/cache/sandbox/
 !/cache/sandbox/index.php
 !/cache/smarty/
-
-!/cache/smarty/cache/
-!/cache/smarty/cache/index.php
-!/cache/smarty/compile/
-!/cache/smarty/compile/index.php
 !/cache/smarty/index.php
+
+/cache/smarty/cache/*
+!/cache/smarty/cache/index.php
+
+/cache/smarty/compile/*
+!/cache/smarty/compile/index.php
 
 !/cache/tcpdf/
 !/cache/tcpdf/index.php
@@ -125,6 +126,9 @@ img/**
 /upload/*
 !/upload/.htaccess
 !/upload/index.php
+
+# Generated/renamed admin folders
+/admin[0-9a-zA-Z_-]*/
 
 /admin/backups/*
 !/admin/backups/.htaccess
