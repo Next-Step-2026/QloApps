@@ -39,4 +39,5 @@ def evaluate_policy(policy: PolicyType, facts: Dict[str, Any]) -> Tuple[PolicyDe
     elif policy == PolicyType.OVERBOOKING_LIMIT:
         return evaluate_overbooking_limit(facts)
     else:
+        # Código defensivo: garante erro explícito caso novos membros sejam adicionados ao PolicyType 
         raise ValueError(f"Política desconhecida: {policy}")
