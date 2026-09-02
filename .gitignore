@@ -256,3 +256,10 @@ admin/themes/default/css/screen.css
 
 **sitemap.xml
 robots.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+policy-service-python/venv/
