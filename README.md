@@ -32,7 +32,7 @@
 
 
 ### Introduction
-
+joao
 QloApps is one kind of a true open-source hotel reservation system and a booking engine. The system is dedicated to channeling the power of the open-source community to serve the hospitality industry.
 
 From small independent hotels to big hotel chains, QloApps is a one-stop solution for all your hotel business needs.
