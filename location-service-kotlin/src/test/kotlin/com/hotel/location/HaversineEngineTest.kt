@@ -1,6 +1,11 @@
 package com.hotel.location
 
-import com.hotel.location.model.LocationEventRequest
+import com.hotel.location.exception.InvalidCoordinatesException
+import com.hotel.location.exception.InvalidGeofenceRadiusException
+import com.hotel.location.model.Coordinates
+import com.hotel.location.model.GeofenceState
+import com.hotel.location.model.GeofenceTransition
+import com.hotel.location.model.LocationEvent
 import com.hotel.location.service.HaversineEngine
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -57,40 +62,91 @@ class HaversineEngineTest {
     }
 
     @Test
+    fun `deve lancar excecao ao instanciar coordenadas fora dos limites`() {
+        assertThrows(InvalidCoordinatesException::class.java) {
+            Coordinates(95.0, 0.0)
+        }
+        assertThrows(InvalidCoordinatesException::class.java) {
+            Coordinates(-90.1, 0.0)
+        }
+        assertThrows(InvalidCoordinatesException::class.java) {
+            Coordinates(0.0, 185.0)
+        }
+        assertThrows(InvalidCoordinatesException::class.java) {
+            Coordinates(Double.NaN, 0.0)
+        }
+    }
+
+    @Test
+    fun `deve lancar excecao quando raio for menor ou igual a zero`() {
+        assertThrows(InvalidGeofenceRadiusException::class.java) {
+            LocationEvent(
+                hotelId = "htl-01",
+                hotelLocation = Coordinates(-8.052240, -34.885650),
+                guestLocation = Coordinates(-8.053100, -34.886100),
+                geofenceRadiusMeters = 0.0,
+                previousState = GeofenceState.OUTSIDE
+            )
+        }
+        assertThrows(InvalidGeofenceRadiusException::class.java) {
+            LocationEvent(
+                hotelId = "htl-01",
+                hotelLocation = Coordinates(-8.052240, -34.885650),
+                guestLocation = Coordinates(-8.053100, -34.886100),
+                geofenceRadiusMeters = -50.0,
+                previousState = GeofenceState.OUTSIDE
+            )
+        }
+    }
+
+    @Test
     fun `deve acionar alerta com transicao ENTERED quando entrar no raio`() {
-        val req = LocationEventRequest(
-            hotel_id = "htl-01",
-            hotel_lat = -8.052240,
-            hotel_lng = -34.885650,
-            guest_lat = -8.053100,
-            guest_lng = -34.886100,
-            geofence_radius_m = 200.0,
-            previous_state = "outside"
+        val event = LocationEvent(
+            hotelId = "htl-01",
+            hotelLocation = Coordinates(-8.052240, -34.885650),
+            guestLocation = Coordinates(-8.053100, -34.886100),
+            geofenceRadiusMeters = 200.0,
+            previousState = GeofenceState.OUTSIDE
         )
 
-        val result = HaversineEngine.processLocationEvent(req, "test-corr-01")
+        val result = HaversineEngine.evaluate(event, "test-corr-01")
 
-        assertEquals("inside", result.current_state)
-        assertEquals("ENTERED", result.transition)
-        assertTrue(result.alert_triggered)
+        assertEquals(GeofenceState.INSIDE, result.currentState)
+        assertEquals(GeofenceTransition.ENTERED, result.transition)
+        assertTrue(result.alertTriggered)
     }
 
     @Test
     fun `deve retornar NO_CHANGE e sem alerta quando hospede estiver distante`() {
-        val req = LocationEventRequest(
-            hotel_id = "htl-01",
-            hotel_lat = -8.052240,
-            hotel_lng = -34.885650,
-            guest_lat = -8.065000,
-            guest_lng = -34.890000,
-            geofence_radius_m = 200.0,
-            previous_state = "outside"
+        val event = LocationEvent(
+            hotelId = "htl-01",
+            hotelLocation = Coordinates(-8.052240, -34.885650),
+            guestLocation = Coordinates(-8.065000, -34.890000),
+            geofenceRadiusMeters = 200.0,
+            previousState = GeofenceState.OUTSIDE
         )
 
-        val result = HaversineEngine.processLocationEvent(req, "test-corr-02")
+        val result = HaversineEngine.evaluate(event, "test-corr-02")
 
-        assertEquals("outside", result.current_state)
-        assertEquals("NO_CHANGE", result.transition)
-        assertFalse(result.alert_triggered)
+        assertEquals(GeofenceState.OUTSIDE, result.currentState)
+        assertEquals(GeofenceTransition.NO_CHANGE, result.transition)
+        assertFalse(result.alertTriggered)
+    }
+
+    @Test
+    fun `deve registrar transicao EXITED quando sair do raio`() {
+        val event = LocationEvent(
+            hotelId = "htl-01",
+            hotelLocation = Coordinates(-8.052240, -34.885650),
+            guestLocation = Coordinates(-8.065000, -34.890000),
+            geofenceRadiusMeters = 200.0,
+            previousState = GeofenceState.INSIDE
+        )
+
+        val result = HaversineEngine.evaluate(event, "test-corr-03")
+
+        assertEquals(GeofenceState.OUTSIDE, result.currentState)
+        assertEquals(GeofenceTransition.EXITED, result.transition)
+        assertFalse(result.alertTriggered)
     }
 }
