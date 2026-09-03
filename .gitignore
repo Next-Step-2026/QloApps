@@ -3,7 +3,6 @@
 # ==========================================
 .DS_Store
 Thumbs.db
-*.log
 *.tmp
 local.properties
 
@@ -14,7 +13,6 @@ local.properties
 *.iws
 out/
 .kotlin/
-
 
 # Eclipse & VS Code
 .project
@@ -36,12 +34,33 @@ composer.lock
 # ==========================================
 # 2. Gradle & Kotlin Service Artifacts
 # ==========================================
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+
+# Package Files (ignora JARs exceto o Gradle Wrapper em qualquer subpasta)
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# Gradle Caches & Build Dirs
 .gradle/
 **/.gradle/
 build/
 **/build/
-!gradle/wrapper/gradle-wrapper.jar
-!gradle/wrapper/gradle-wrapper.properties
+
+# Preservar o Gradle Wrapper em qualquer profundidade
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.properties
 
 # ==========================================
 # 3. QloApps Core - Cache & Temp Files
@@ -184,7 +203,7 @@ img/**
 /modules/*/config.xml
 /modules/*/translations/*
 
-# Exceção explícita para o módulo da feature
+# Exceção explícita para o módulo da feature (Semana 2)
 !modules/qlocontacthealth/config.xml
 !modules/qlocontacthealth/**
 
