@@ -45,7 +45,7 @@ data class LocationEvent(
     val previousState: GeofenceState
 ) {
     init {
-        if (hotelId.isBlank()) {
+        if (hotelId.isNullOrBlank()) {
             throw InvalidPayloadException("hotel_id não pode ser vazio ou conter apenas espaços.")
         }
         if (!geofenceRadiusMeters.isFinite() || geofenceRadiusMeters <= 0.0) {

@@ -102,7 +102,9 @@ class ApplicationIntegrationTest {
                     "hotel_lat": -8.052240,
                     "hotel_lng": -34.885650,
                     "guest_lat": 95.0,
-                    "guest_lng": -34.886100
+                    "guest_lng": -34.886100,
+                    "geofence_radius_m": 200.0,
+                    "previous_state": "outside"
                 }
                 """.trimIndent()
             )
@@ -131,7 +133,8 @@ class ApplicationIntegrationTest {
                     "hotel_lng": -34.885650,
                     "guest_lat": -8.053100,
                     "guest_lng": -34.886100,
-                    "geofence_radius_m": -10.0
+                    "geofence_radius_m": -10.0,
+                    "previous_state": "outside"
                 }
                 """.trimIndent()
             )
@@ -160,6 +163,7 @@ class ApplicationIntegrationTest {
                     "hotel_lng": -34.885650,
                     "guest_lat": -8.053100,
                     "guest_lng": -34.886100,
+                    "geofence_radius_m": 200.0,
                     "previous_state": "invalido"
                 }
                 """.trimIndent()

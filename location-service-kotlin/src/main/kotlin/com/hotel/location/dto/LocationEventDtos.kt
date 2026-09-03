@@ -14,11 +14,11 @@ data class LocationEventRequestDto(
     val hotel_lng: Double? = null,
     val guest_lat: Double? = null,
     val guest_lng: Double? = null,
-    val geofence_radius_m: Double? = 200.0,
-    val previous_state: String? = "outside"
+    val geofence_radius_m: Double? = null, 
+    val previous_state: String? = null 
 ) {
     fun toDomain(): LocationEvent {
-        if (hotel_id == null || hotel_id.isBlank()) {
+        if (hotel_id.isNullOrBlank()) {
             throw InvalidPayloadException("O campo 'hotel_id' é obrigatório e não pode ser vazio.")
         }
         val hotelLat = hotel_lat ?: throw InvalidPayloadException("O campo 'hotel_lat' é obrigatório.")
@@ -26,15 +26,18 @@ data class LocationEventRequestDto(
         val guestLat = guest_lat ?: throw InvalidPayloadException("O campo 'guest_lat' é obrigatório.")
         val guestLng = guest_lng ?: throw InvalidPayloadException("O campo 'guest_lng' é obrigatório.")
 
-        val radius = geofence_radius_m ?: 200.0
-        val rawState = previous_state ?: "outside"
+        val radius = geofence_radius_m ?: throw InvalidPayloadException("O campo 'geofence_radius_m' é obrigatório.")
+            
+        if (previous_state.isNullOrBlank()) {
+            throw InvalidPayloadException("O campo 'previous_state' é obrigatório.")
+        }
 
         return LocationEvent(
             hotelId = hotel_id.trim(),
             hotelLocation = Coordinates(hotelLat, hotelLng),
             guestLocation = Coordinates(guestLat, guestLng),
             geofenceRadiusMeters = radius,
-            previousState = GeofenceState.fromString(rawState)
+            previousState = GeofenceState.fromString(previous_state)
         )
     }
 }
