@@ -14,6 +14,10 @@ class ApplicationIntegrationTest {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    companion object {
+        private const val VALID_CORRELATION_ID = "a1b2c3d4-e5f6-4a8b-9c0d-1e2f3a4b5c6d"
+    }
+
     @Test
     fun `deve responder 200 OK no healthcheck`() = testApplication {
         application {
@@ -32,7 +36,7 @@ class ApplicationIntegrationTest {
 
         val response = client.post("/v1/location-events") {
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            header("X-Correlation-ID", "corr-test-123")
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
             setBody(
                 """
                 {
@@ -50,7 +54,7 @@ class ApplicationIntegrationTest {
 
         assertEquals(HttpStatusCode.OK, response.status)
         val body = json.decodeFromString<LocationEventResponseDto>(response.bodyAsText())
-        assertEquals("corr-test-123", body.correlation_id)
+        assertEquals(VALID_CORRELATION_ID, body.correlation_id)
         assertEquals("htl-recife-01", body.hotel_id)
         assertEquals("inside", body.current_state)
         assertEquals("ENTERED", body.transition)
@@ -94,7 +98,7 @@ class ApplicationIntegrationTest {
 
         val response = client.post("/v1/location-events") {
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            header("X-Correlation-ID", "corr-test-coords")
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
             setBody(
                 """
                 {
@@ -124,7 +128,7 @@ class ApplicationIntegrationTest {
 
         val response = client.post("/v1/location-events") {
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            header("X-Correlation-ID", "corr-test-radius")
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
             setBody(
                 """
                 {
@@ -154,7 +158,7 @@ class ApplicationIntegrationTest {
 
         val response = client.post("/v1/location-events") {
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            header("X-Correlation-ID", "corr-test-state")
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
             setBody(
                 """
                 {
@@ -184,7 +188,7 @@ class ApplicationIntegrationTest {
 
         val response = client.post("/v1/location-events") {
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            header("X-Correlation-ID", "corr-test-malformed")
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
             setBody("{ payload_invalido: ")
         }
 
@@ -192,5 +196,82 @@ class ApplicationIntegrationTest {
         val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
         assertEquals("urn:problem-type:malformed-json", error.type)
         assertEquals(400, error.status)
+    }
+
+    @Test
+    fun `deve responder 400 Bad Request quando header Content-Type estiver ausente`() = testApplication {
+        application {
+            module()
+        }
+
+        val response = client.post("/v1/location-events") {
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
+            setBody(
+                object : io.ktor.http.content.OutgoingContent.ByteArrayContent() {
+                    override val contentType: ContentType? = null
+                    override val contentLength: Long = 0L
+                    override fun bytes(): ByteArray = ByteArray(0)
+                }
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+        assertEquals("urn:problem-type:missing-header", error.type)
+        assertEquals("Missing Required Header", error.title)
+        assertEquals(400, error.status)
+        assertTrue(error.detail.contains("Content-Type"))
+    }
+
+    @Test
+    fun `deve responder 400 Bad Request quando Content-Type for diferente de application-json`() = testApplication {
+        application {
+            module()
+        }
+
+        val response = client.post("/v1/location-events") {
+            header(HttpHeaders.ContentType, ContentType.Text.Plain.toString())
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
+            setBody("texto simples")
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+        assertEquals("urn:problem-type:invalid-content-type", error.type)
+        assertEquals("Invalid Content-Type", error.title)
+        assertEquals(400, error.status)
+        assertTrue(error.detail.contains("text/plain"))
+    }
+
+    @Test
+    fun `deve responder 400 Bad Request quando header X-Correlation-ID tiver UUID invalido`() = testApplication {
+        application {
+            module()
+        }
+
+        val response = client.post("/v1/location-events") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("X-Correlation-ID", "uuid-invalido-12345")
+            setBody(
+                """
+                {
+                    "hotel_id": "htl-recife-01",
+                    "hotel_lat": -8.052240,
+                    "hotel_lng": -34.885650,
+                    "guest_lat": -8.053100,
+                    "guest_lng": -34.886100,
+                    "geofence_radius_m": 200.0,
+                    "previous_state": "outside"
+                }
+                """.trimIndent()
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+        assertEquals("urn:problem-type:invalid-header", error.type)
+        assertEquals("Invalid Header", error.title)
+        assertEquals(400, error.status)
+        assertTrue(error.detail.contains("UUID"))
     }
 }

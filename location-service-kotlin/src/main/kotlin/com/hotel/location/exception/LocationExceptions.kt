@@ -12,6 +12,18 @@ class MissingHeaderException(headerName: String) : LocationValidationException(
     message = "O header obrigatório '$headerName' não foi fornecido."
 )
 
+class InvalidHeaderException(headerName: String, detail: String) : LocationValidationException(
+    typeUri = "urn:problem-type:invalid-header",
+    title = "Invalid Header",
+    message = "O header '$headerName' é inválido: $detail"
+)
+
+class InvalidContentTypeException(contentType: String) : LocationValidationException(
+    typeUri = "urn:problem-type:invalid-content-type",
+    title = "Invalid Content-Type",
+    message = "O Content-Type deve ser 'application/json' (recebido: '$contentType')."
+)
+
 class InvalidCoordinatesException(detail: String) : LocationValidationException(
     typeUri = "urn:problem-type:invalid-coordinates",
     title = "Invalid Coordinates",
