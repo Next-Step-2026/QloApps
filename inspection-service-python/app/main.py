@@ -114,7 +114,22 @@ async def create_visual_inspection(
         }
 
     except Exception as e:
-        print({str(e)})
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        log_record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": "ERROR",
+            "correlation_id": correlation_id,
+            "event": "IMAGE_INSPECTION_FAILED",
+            "room_id": room_id,
+            "inspection_id": inspection_id,
+            "error_type": e.__class__.__name__,
+            "error_message": str(e),
+            "duration_ms": duration_ms,
+        }
+        
+        # exc_info=True captures the traceback
+        logger.error(json.dumps(log_record), exc_info=True)
+
         return rfc7807_error_response(
             status_code=500,
             title="Erro Interno no Processamento",
