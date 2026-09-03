@@ -7,6 +7,7 @@ import com.hotel.location.dto.toDto
 import com.hotel.location.exception.InvalidContentTypeException
 import com.hotel.location.exception.InvalidHeaderException
 import com.hotel.location.exception.LocationValidationException
+import com.hotel.location.exception.MissingContentTypeException
 import com.hotel.location.exception.MissingHeaderException
 import com.hotel.location.service.HaversineEngine
 import io.ktor.http.*
@@ -43,11 +44,11 @@ fun Application.module() {
     install(StatusPages) {
         exception<LocationValidationException> { call, cause ->
             call.respond(
-                HttpStatusCode.BadRequest,
+                cause.statusCode,
                 ProblemDetailsResponse(
                     type = cause.typeUri,
                     title = cause.title,
-                    status = HttpStatusCode.BadRequest.value,
+                    status = cause.statusCode.value,
                     detail = cause.message,
                     instance = call.request.path()
                 )
@@ -118,7 +119,7 @@ fun Application.module() {
         post("/v1/location-events") {
             val rawContentType = call.request.headers[HttpHeaders.ContentType]
             if (rawContentType.isNullOrBlank()) {
-                throw MissingHeaderException("Content-Type")
+                throw MissingContentTypeException()
             }
             val parsedContentType = runCatching { ContentType.parse(rawContentType) }.getOrNull()
             if (parsedContentType == null || parsedContentType.withoutParameters() != ContentType.Application.Json) {

@@ -1,9 +1,12 @@
 package com.hotel.location.exception
 
+import io.ktor.http.HttpStatusCode
+
 abstract class LocationValidationException(
     val typeUri: String,
     val title: String,
-    override val message: String
+    override val message: String,
+    val statusCode: HttpStatusCode = HttpStatusCode.BadRequest
 ) : RuntimeException(message)
 
 class MissingHeaderException(headerName: String) : LocationValidationException(
@@ -18,10 +21,18 @@ class InvalidHeaderException(headerName: String, detail: String) : LocationValid
     message = "O header '$headerName' é inválido: $detail"
 )
 
+class MissingContentTypeException : LocationValidationException(
+    typeUri = "urn:problem-type:unsupported-media-type",
+    title = "Unsupported Media Type",
+    message = "O header 'Content-Type' é obrigatório e deve ser 'application/json'.",
+    statusCode = HttpStatusCode.UnsupportedMediaType
+)
+
 class InvalidContentTypeException(contentType: String) : LocationValidationException(
-    typeUri = "urn:problem-type:invalid-content-type",
-    title = "Invalid Content-Type",
-    message = "O Content-Type deve ser 'application/json' (recebido: '$contentType')."
+    typeUri = "urn:problem-type:unsupported-media-type",
+    title = "Unsupported Media Type",
+    message = "O Content-Type deve ser 'application/json' (recebido: '$contentType').",
+    statusCode = HttpStatusCode.UnsupportedMediaType
 )
 
 class InvalidCoordinatesException(detail: String) : LocationValidationException(

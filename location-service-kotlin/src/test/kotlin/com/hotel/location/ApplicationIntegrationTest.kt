@@ -199,7 +199,7 @@ class ApplicationIntegrationTest {
     }
 
     @Test
-    fun `deve responder 400 Bad Request quando header Content-Type estiver ausente`() = testApplication {
+    fun `deve responder 415 Unsupported Media Type quando header Content-Type estiver ausente`() = testApplication {
         application {
             module()
         }
@@ -215,16 +215,16 @@ class ApplicationIntegrationTest {
             )
         }
 
-        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertEquals(HttpStatusCode.UnsupportedMediaType, response.status)
         val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
-        assertEquals("urn:problem-type:missing-header", error.type)
-        assertEquals("Missing Required Header", error.title)
-        assertEquals(400, error.status)
+        assertEquals("urn:problem-type:unsupported-media-type", error.type)
+        assertEquals("Unsupported Media Type", error.title)
+        assertEquals(415, error.status)
         assertTrue(error.detail.contains("Content-Type"))
     }
 
     @Test
-    fun `deve responder 400 Bad Request quando Content-Type for diferente de application-json`() = testApplication {
+    fun `deve responder 415 Unsupported Media Type quando Content-Type for diferente de application-json`() = testApplication {
         application {
             module()
         }
@@ -235,11 +235,11 @@ class ApplicationIntegrationTest {
             setBody("texto simples")
         }
 
-        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertEquals(HttpStatusCode.UnsupportedMediaType, response.status)
         val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
-        assertEquals("urn:problem-type:invalid-content-type", error.type)
-        assertEquals("Invalid Content-Type", error.title)
-        assertEquals(400, error.status)
+        assertEquals("urn:problem-type:unsupported-media-type", error.type)
+        assertEquals("Unsupported Media Type", error.title)
+        assertEquals(415, error.status)
         assertTrue(error.detail.contains("text/plain"))
     }
 
