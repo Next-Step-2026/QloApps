@@ -145,7 +145,7 @@ class AdminVisualInspectionController extends ModuleAdminController
                 }
             }
         } catch (Exception $e) {
-            echo $e;
+            PrestaShopLogger::addLog($e->getMessage(), 3);
         }
 
         if (empty($rooms)) {
