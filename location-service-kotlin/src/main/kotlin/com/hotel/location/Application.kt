@@ -9,6 +9,7 @@ import com.hotel.location.exception.InvalidHeaderException
 import com.hotel.location.exception.LocationValidationException
 import com.hotel.location.exception.MissingContentTypeException
 import com.hotel.location.exception.MissingHeaderException
+import com.hotel.location.exception.ServiceUnavailableException
 import com.hotel.location.service.HaversineEngine
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -31,6 +32,12 @@ fun main() {
 private val UUID_REGEX = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 fun isValidUuid(value: String): Boolean = UUID_REGEX.matches(value.trim())
+
+var isServiceAvailable: Boolean = true
+
+fun resetServiceState() {
+    isServiceAvailable = true
+}
 
 fun Application.module() {
     install(ContentNegotiation) {
@@ -91,6 +98,19 @@ fun Application.module() {
             )
         }
 
+        exception<ServiceUnavailableException> { call, cause ->
+            call.respond(
+                HttpStatusCode.ServiceUnavailable,
+                ProblemDetailsResponse(
+                    type = cause.typeUri,
+                    title = cause.title,
+                    status = HttpStatusCode.ServiceUnavailable.value,
+                    detail = cause.message,
+                    instance = call.request.path()
+                )
+            )
+        }
+
         exception<Throwable> { call, cause ->
             call.respond(
                 HttpStatusCode.InternalServerError,
@@ -107,16 +127,31 @@ fun Application.module() {
 
     routing {
         get("/healthz") {
-            call.respond(
-                HttpStatusCode.OK,
-                HealthResponse(
-                    status = "UP",
-                    service = "location-service-kotlin",
-                    port = 8104
+            if (!isServiceAvailable) {
+                call.respond(
+                    HttpStatusCode.ServiceUnavailable,
+                    HealthResponse(
+                        status = "DOWN",
+                        service = "location-service-kotlin",
+                        port = 8104
+                    )
                 )
-            )
+            } else {
+                call.respond(
+                    HttpStatusCode.OK,
+                    HealthResponse(
+                        status = "UP",
+                        service = "location-service-kotlin",
+                        port = 8104
+                    )
+                )
+            }
         }
         post("/v1/location-events") {
+            if (!isServiceAvailable || call.request.headers["X-Mock-Service-Unavailable"]?.equals("true", ignoreCase = true) == true) {
+                throw ServiceUnavailableException()
+            }
+
             val rawContentType = call.request.headers[HttpHeaders.ContentType]
             if (rawContentType.isNullOrBlank()) {
                 throw MissingContentTypeException()

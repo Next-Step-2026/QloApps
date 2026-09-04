@@ -58,3 +58,12 @@ class InvalidPayloadException(detail: String) : LocationValidationException(
     title = "Invalid Payload",
     message = detail
 )
+
+class ServiceUnavailableException(
+    detail: String = "O serviço de cálculo de geofencing está temporariamente indisponível."
+) : LocationValidationException(
+    typeUri = "urn:problem-type:service-unavailable",
+    title = "Service Unavailable",
+    message = detail,
+    statusCode = HttpStatusCode.ServiceUnavailable
+)

@@ -1,5 +1,6 @@
 package com.hotel.location
 
+import com.hotel.location.dto.HealthResponse
 import com.hotel.location.dto.LocationEventResponseDto
 import com.hotel.location.dto.ProblemDetailsResponse
 import io.ktor.client.request.*
@@ -7,6 +8,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import kotlinx.serialization.json.Json
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -273,5 +275,95 @@ class ApplicationIntegrationTest {
         assertEquals("Invalid Header", error.title)
         assertEquals(400, error.status)
         assertTrue(error.detail.contains("UUID"))
+    }
+
+    @AfterEach
+    fun tearDown() {
+        resetServiceState()
+    }
+
+    @Test
+    fun `deve responder 503 Service Unavailable com RFC 7807 quando servico estiver indisponivel via flag`() = testApplication {
+        application {
+            module()
+        }
+
+        isServiceAvailable = false
+
+        val response = client.post("/v1/location-events") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
+            setBody(
+                """
+                {
+                    "hotel_id": "htl-recife-01",
+                    "hotel_lat": -8.052240,
+                    "hotel_lng": -34.885650,
+                    "guest_lat": -8.053100,
+                    "guest_lng": -34.886100,
+                    "geofence_radius_m": 200.0,
+                    "previous_state": "outside"
+                }
+                """.trimIndent()
+            )
+        }
+
+        assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
+        val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+        assertEquals("urn:problem-type:service-unavailable", error.type)
+        assertEquals("Service Unavailable", error.title)
+        assertEquals(503, error.status)
+        assertEquals("/v1/location-events", error.instance)
+        assertTrue(error.detail.contains("indisponível", ignoreCase = true))
+    }
+
+    @Test
+    fun `deve responder 503 Service Unavailable com RFC 7807 quando header X-Mock-Service-Unavailable estiver presente`() = testApplication {
+        application {
+            module()
+        }
+
+        val response = client.post("/v1/location-events") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
+            header("X-Mock-Service-Unavailable", "true")
+            setBody(
+                """
+                {
+                    "hotel_id": "htl-recife-01",
+                    "hotel_lat": -8.052240,
+                    "hotel_lng": -34.885650,
+                    "guest_lat": -8.053100,
+                    "guest_lng": -34.886100,
+                    "geofence_radius_m": 200.0,
+                    "previous_state": "outside"
+                }
+                """.trimIndent()
+            )
+        }
+
+        assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
+        val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+        assertEquals("urn:problem-type:service-unavailable", error.type)
+        assertEquals("Service Unavailable", error.title)
+        assertEquals(503, error.status)
+        assertEquals("/v1/location-events", error.instance)
+        assertTrue(error.detail.contains("indisponível", ignoreCase = true))
+    }
+
+    @Test
+    fun `deve responder 503 Service Unavailable no healthcheck quando servico estiver indisponivel`() = testApplication {
+        application {
+            module()
+        }
+
+        isServiceAvailable = false
+
+        val response = client.get("/healthz")
+        assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
+        val body = json.decodeFromString<HealthResponse>(response.bodyAsText())
+        assertEquals("DOWN", body.status)
+        assertEquals("location-service-kotlin", body.service)
+        assertEquals(8104, body.port)
     }
 }
