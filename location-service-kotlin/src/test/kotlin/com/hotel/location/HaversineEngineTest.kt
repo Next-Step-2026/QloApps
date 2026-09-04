@@ -149,4 +149,91 @@ class HaversineEngineTest {
         assertEquals(GeofenceTransition.EXITED, result.transition)
         assertFalse(result.alertTriggered)
     }
+
+    @Test
+    fun `deve retornar NO_CHANGE e sem alerta quando hospede permanecer dentro do raio (inside para inside)`() {
+        val event = LocationEvent(
+            hotelId = "htl-01",
+            hotelLocation = Coordinates(-8.052240, -34.885650),
+            guestLocation = Coordinates(-8.053100, -34.886100),
+            geofenceRadiusMeters = 200.0,
+            previousState = GeofenceState.INSIDE
+        )
+
+        val result = HaversineEngine.evaluate(event, "test-corr-inside-inside")
+
+        assertEquals(GeofenceState.INSIDE, result.currentState)
+        assertEquals(GeofenceTransition.NO_CHANGE, result.transition)
+        assertFalse(result.alertTriggered)
+        assertEquals("Posição atualizada sem alerta.", result.message)
+    }
+
+    @Test
+    fun `deve retornar NO_CHANGE e sem alerta quando coordenadas forem identicas e previous_state for inside`() {
+        val hotelCoords = Coordinates(-8.052240, -34.885650)
+        val event = LocationEvent(
+            hotelId = "htl-01",
+            hotelLocation = hotelCoords,
+            guestLocation = hotelCoords,
+            geofenceRadiusMeters = 200.0,
+            previousState = GeofenceState.INSIDE
+        )
+
+        val result = HaversineEngine.evaluate(event, "test-corr-exact-inside")
+
+        assertEquals(0.0, result.distanceMeters)
+        assertEquals(GeofenceState.INSIDE, result.currentState)
+        assertEquals(GeofenceTransition.NO_CHANGE, result.transition)
+        assertFalse(result.alertTriggered)
+    }
+
+    @Test
+    fun `deve disparar alerta ENTERED quando coordenadas forem identicas e previous_state for outside`() {
+        val hotelCoords = Coordinates(-8.052240, -34.885650)
+        val event = LocationEvent(
+            hotelId = "htl-01",
+            hotelLocation = hotelCoords,
+            guestLocation = hotelCoords,
+            geofenceRadiusMeters = 200.0,
+            previousState = GeofenceState.OUTSIDE
+        )
+
+        val result = HaversineEngine.evaluate(event, "test-corr-exact-outside")
+
+        assertEquals(0.0, result.distanceMeters)
+        assertEquals(GeofenceState.INSIDE, result.currentState)
+        assertEquals(GeofenceTransition.ENTERED, result.transition)
+        assertTrue(result.alertTriggered)
+    }
+
+    @Test
+    fun `deve considerar inside quando distancia for exatamente igual ao raio configurado`() {
+        val hotelCoords = Coordinates(-8.052240, -34.885650)
+        val guestCoords = Coordinates(-8.053100, -34.886100)
+        val calculatedDistance = HaversineEngine.calculateDistanceMeters(hotelCoords, guestCoords)
+
+        val eventInside = LocationEvent(
+            hotelId = "htl-01",
+            hotelLocation = hotelCoords,
+            guestLocation = guestCoords,
+            geofenceRadiusMeters = calculatedDistance,
+            previousState = GeofenceState.INSIDE
+        )
+        val resultInside = HaversineEngine.evaluate(eventInside, "test-corr-exact-radius-inside")
+        assertEquals(GeofenceState.INSIDE, resultInside.currentState)
+        assertEquals(GeofenceTransition.NO_CHANGE, resultInside.transition)
+        assertFalse(resultInside.alertTriggered)
+
+        val eventOutside = LocationEvent(
+            hotelId = "htl-01",
+            hotelLocation = hotelCoords,
+            guestLocation = guestCoords,
+            geofenceRadiusMeters = calculatedDistance,
+            previousState = GeofenceState.OUTSIDE
+        )
+        val resultOutside = HaversineEngine.evaluate(eventOutside, "test-corr-exact-radius-outside")
+        assertEquals(GeofenceState.INSIDE, resultOutside.currentState)
+        assertEquals(GeofenceTransition.ENTERED, resultOutside.transition)
+        assertTrue(resultOutside.alertTriggered)
+    }
 }

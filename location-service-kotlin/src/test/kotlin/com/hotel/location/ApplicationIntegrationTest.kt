@@ -64,6 +64,74 @@ class ApplicationIntegrationTest {
     }
 
     @Test
+    fun `deve responder 200 OK com NO_CHANGE e sem alerta quando hospede permanecer dentro do raio (inside para inside)`() = testApplication {
+        application {
+            module()
+        }
+
+        val response = client.post("/v1/location-events") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
+            setBody(
+                """
+                {
+                    "hotel_id": "htl-recife-01",
+                    "hotel_lat": -8.052240,
+                    "hotel_lng": -34.885650,
+                    "guest_lat": -8.053100,
+                    "guest_lng": -34.886100,
+                    "geofence_radius_m": 200.0,
+                    "previous_state": "inside"
+                }
+                """.trimIndent()
+            )
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val body = json.decodeFromString<LocationEventResponseDto>(response.bodyAsText())
+        assertEquals(VALID_CORRELATION_ID, body.correlation_id)
+        assertEquals("htl-recife-01", body.hotel_id)
+        assertEquals("inside", body.current_state)
+        assertEquals("NO_CHANGE", body.transition)
+        assertFalse(body.alert_triggered)
+        assertEquals("Posição atualizada sem alerta.", body.message)
+    }
+
+    @Test
+    fun `deve responder 200 OK com EXITED e sem alerta quando hospede sair do raio (inside para outside)`() = testApplication {
+        application {
+            module()
+        }
+
+        val response = client.post("/v1/location-events") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
+            setBody(
+                """
+                {
+                    "hotel_id": "htl-recife-01",
+                    "hotel_lat": -8.052240,
+                    "hotel_lng": -34.885650,
+                    "guest_lat": -8.065000,
+                    "guest_lng": -34.890000,
+                    "geofence_radius_m": 200.0,
+                    "previous_state": "inside"
+                }
+                """.trimIndent()
+            )
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val body = json.decodeFromString<LocationEventResponseDto>(response.bodyAsText())
+        assertEquals(VALID_CORRELATION_ID, body.correlation_id)
+        assertEquals("htl-recife-01", body.hotel_id)
+        assertEquals("outside", body.current_state)
+        assertEquals("EXITED", body.transition)
+        assertFalse(body.alert_triggered)
+        assertEquals("Posição atualizada sem alerta.", body.message)
+    }
+
+    @Test
     fun `deve responder 400 Bad Request com RFC 7807 quando header X-Correlation-ID estiver ausente`() = testApplication {
         application {
             module()
