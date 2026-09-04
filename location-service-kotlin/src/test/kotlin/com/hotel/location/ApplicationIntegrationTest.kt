@@ -183,6 +183,132 @@ class ApplicationIntegrationTest {
     }
 
     @Test
+    fun `deve responder 400 Bad Request quando geofence_radius_m for ausente`() = testApplication {
+        application {
+            module()
+        }
+
+        val response = client.post("/v1/location-events") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
+            setBody(
+                """
+                {
+                    "hotel_id": "htl-recife-01",
+                    "hotel_lat": -8.052240,
+                    "hotel_lng": -34.885650,
+                    "guest_lat": -8.053100,
+                    "guest_lng": -34.886100,
+                    "previous_state": "outside"
+                }
+                """.trimIndent()
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+        assertEquals("urn:problem-type:invalid-payload", error.type)
+        assertEquals("Invalid Payload", error.title)
+        assertEquals(400, error.status)
+        assertTrue(error.detail.contains("geofence_radius_m"))
+    }
+
+    @Test
+    fun `deve responder 400 Bad Request quando geofence_radius_m for nulo`() = testApplication {
+        application {
+            module()
+        }
+
+        val response = client.post("/v1/location-events") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
+            setBody(
+                """
+                {
+                    "hotel_id": "htl-recife-01",
+                    "hotel_lat": -8.052240,
+                    "hotel_lng": -34.885650,
+                    "guest_lat": -8.053100,
+                    "guest_lng": -34.886100,
+                    "geofence_radius_m": null,
+                    "previous_state": "outside"
+                }
+                """.trimIndent()
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+        assertEquals("urn:problem-type:invalid-payload", error.type)
+        assertEquals("Invalid Payload", error.title)
+        assertEquals(400, error.status)
+        assertTrue(error.detail.contains("geofence_radius_m"))
+    }
+
+    @Test
+    fun `deve responder 400 Bad Request quando previous_state for ausente`() = testApplication {
+        application {
+            module()
+        }
+
+        val response = client.post("/v1/location-events") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
+            setBody(
+                """
+                {
+                    "hotel_id": "htl-recife-01",
+                    "hotel_lat": -8.052240,
+                    "hotel_lng": -34.885650,
+                    "guest_lat": -8.053100,
+                    "guest_lng": -34.886100,
+                    "geofence_radius_m": 200.0
+                }
+                """.trimIndent()
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+        assertEquals("urn:problem-type:invalid-payload", error.type)
+        assertEquals("Invalid Payload", error.title)
+        assertEquals(400, error.status)
+        assertTrue(error.detail.contains("previous_state"))
+    }
+
+    @Test
+    fun `deve responder 400 Bad Request quando previous_state for nulo`() = testApplication {
+        application {
+            module()
+        }
+
+        val response = client.post("/v1/location-events") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header("X-Correlation-ID", VALID_CORRELATION_ID)
+            setBody(
+                """
+                {
+                    "hotel_id": "htl-recife-01",
+                    "hotel_lat": -8.052240,
+                    "hotel_lng": -34.885650,
+                    "guest_lat": -8.053100,
+                    "guest_lng": -34.886100,
+                    "geofence_radius_m": 200.0,
+                    "previous_state": null
+                }
+                """.trimIndent()
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+        assertEquals("urn:problem-type:invalid-payload", error.type)
+        assertEquals("Invalid Payload", error.title)
+        assertEquals(400, error.status)
+        assertTrue(error.detail.contains("previous_state"))
+    }
+
+    @Test
     fun `deve responder 400 Bad Request para json malformado`() = testApplication {
         application {
             module()
