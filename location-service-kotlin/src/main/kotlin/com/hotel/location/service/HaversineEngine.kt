@@ -43,8 +43,13 @@ object HaversineEngine {
         }
 
         val alertTriggered = (transition == GeofenceTransition.ENTERED)
+        val radiusLabel = if (event.geofenceRadiusMeters % 1.0 == 0.0) {
+            "${event.geofenceRadiusMeters.toInt()}m"
+        } else {
+            "${event.geofenceRadiusMeters}m"
+        }
         val message = if (alertTriggered) {
-            "Hóspede entrou no raio de proximidade do hotel."
+            "Hóspede entrou no raio de $radiusLabel da propriedade."
         } else {
             "Posição atualizada sem alerta."
         }

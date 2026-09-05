@@ -154,6 +154,7 @@ class HaversineEngineTest {
         assertEquals(GeofenceState.INSIDE, result.currentState)
         assertEquals(GeofenceTransition.ENTERED, result.transition)
         assertTrue(result.alertTriggered)
+        assertEquals("Hóspede entrou no raio de 200m da propriedade.", result.message)
     }
 
     @Test
@@ -244,6 +245,35 @@ class HaversineEngineTest {
         assertEquals(GeofenceState.INSIDE, result.currentState)
         assertEquals(GeofenceTransition.ENTERED, result.transition)
         assertTrue(result.alertTriggered)
+        assertEquals("Hóspede entrou no raio de 200m da propriedade.", result.message)
+    }
+
+    @Test
+    fun `deve parametrizar dinamicamente o raio na mensagem quando acionar alerta ENTERED`() {
+        val hotelCoords = Coordinates(-8.052240, -34.885650)
+        val guestCoords = Coordinates(-8.053100, -34.886100)
+
+        val event500 = LocationEvent(
+            hotelId = "htl-01",
+            hotelLocation = hotelCoords,
+            guestLocation = guestCoords,
+            geofenceRadiusMeters = 500.0,
+            previousState = GeofenceState.OUTSIDE
+        )
+        val result500 = HaversineEngine.evaluate(event500, "test-corr-500m")
+        assertTrue(result500.alertTriggered)
+        assertEquals("Hóspede entrou no raio de 500m da propriedade.", result500.message)
+
+        val eventDecimal = LocationEvent(
+            hotelId = "htl-01",
+            hotelLocation = hotelCoords,
+            guestLocation = guestCoords,
+            geofenceRadiusMeters = 150.5,
+            previousState = GeofenceState.OUTSIDE
+        )
+        val resultDecimal = HaversineEngine.evaluate(eventDecimal, "test-corr-150-5m")
+        assertTrue(resultDecimal.alertTriggered)
+        assertEquals("Hóspede entrou no raio de 150.5m da propriedade.", resultDecimal.message)
     }
 
     @Test

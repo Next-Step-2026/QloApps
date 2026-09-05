@@ -61,6 +61,7 @@ class ApplicationIntegrationTest {
         assertEquals("inside", body.current_state)
         assertEquals("ENTERED", body.transition)
         assertTrue(body.alert_triggered)
+        assertEquals("Hóspede entrou no raio de 200m da propriedade.", body.message)
     }
 
     @Test
