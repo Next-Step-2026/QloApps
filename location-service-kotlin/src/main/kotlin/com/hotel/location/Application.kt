@@ -206,9 +206,21 @@ fun Application.module() {
                 throw InvalidHeaderException("X-Correlation-ID", "O valor '$correlationId' não é um UUID v4 válido.")
             }
 
+            val startTimeNano = System.nanoTime()
             val requestDto = call.receive<LocationEventRequestDto>()
             val domainEvent = requestDto.toDomain()
             val result = HaversineEngine.evaluate(domainEvent, correlationId)
+            val durationMs = (System.nanoTime() - startTimeNano) / 1_000_000.0
+
+            logger.info(
+                "GEOFENCE_EVALUATED: correlation_id='{}', hotel_id='{}', distance_meters={}, transition='{}', alert_triggered={}, duration_ms={}",
+                correlationId,
+                result.hotelId,
+                result.distanceMeters,
+                result.transition,
+                result.alertTriggered,
+                "%.2f".format(java.util.Locale.US, durationMs)
+            )
 
             call.respond(HttpStatusCode.OK, result.toDto())
         }
