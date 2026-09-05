@@ -4,6 +4,7 @@ import com.hotel.location.dto.HealthResponse
 import com.hotel.location.dto.LocationEventRequestDto
 import com.hotel.location.dto.ProblemDetailsResponse
 import com.hotel.location.dto.toDto
+import com.hotel.location.dto.toLog
 import com.hotel.location.exception.InvalidContentTypeException
 import com.hotel.location.exception.InvalidHeaderException
 import com.hotel.location.exception.LocationValidationException
@@ -23,6 +24,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 
@@ -212,15 +214,8 @@ fun Application.module() {
             val result = HaversineEngine.evaluate(domainEvent, correlationId)
             val durationMs = (System.nanoTime() - startTimeNano) / 1_000_000.0
 
-            logger.info(
-                "GEOFENCE_EVALUATED: correlation_id='{}', hotel_id='{}', distance_meters={}, transition='{}', alert_triggered={}, duration_ms={}",
-                correlationId,
-                result.hotelId,
-                result.distanceMeters,
-                result.transition,
-                result.alertTriggered,
-                "%.2f".format(java.util.Locale.US, durationMs)
-            )
+            val logEvent = result.toLog(durationMs)
+            logger.info(Json.encodeToString(logEvent))
 
             call.respond(HttpStatusCode.OK, result.toDto())
         }

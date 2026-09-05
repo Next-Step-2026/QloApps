@@ -80,3 +80,33 @@ fun GeofenceEvaluationResult.toDto(): LocationEventResponseDto {
         message = message
     )
 }
+
+@Serializable
+data class GeofenceEvaluatedLog(
+    val timestamp: String,
+    val level: String,
+    val correlation_id: String,
+    val event: String,
+    val hotel_id: String,
+    val distance_meters: Double,
+    val transition: String,
+    val duration_ms: Double
+)
+
+fun GeofenceEvaluationResult.toLog(
+    durationMs: Double,
+    timestamp: String = java.time.Instant.now().toString()
+): GeofenceEvaluatedLog {
+    val roundedDuration = "%.2f".format(java.util.Locale.US, durationMs).toDouble()
+    return GeofenceEvaluatedLog(
+        timestamp = timestamp,
+        level = "INFO",
+        correlation_id = correlationId,
+        event = "GEOFENCE_EVALUATED",
+        hotel_id = hotelId,
+        distance_meters = distanceMeters,
+        transition = transition.name,
+        duration_ms = roundedDuration
+    )
+}
+

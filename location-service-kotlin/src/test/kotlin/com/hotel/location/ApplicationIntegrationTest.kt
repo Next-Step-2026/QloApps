@@ -1,5 +1,8 @@
 package com.hotel.location
 
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import com.hotel.location.dto.HealthResponse
 import com.hotel.location.dto.LocationEventResponseDto
 import com.hotel.location.dto.ProblemDetailsResponse
@@ -8,9 +11,13 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 
 class ApplicationIntegrationTest {
 
@@ -560,5 +567,59 @@ class ApplicationIntegrationTest {
         assertEquals("DOWN", body.status)
         assertEquals("location-service-kotlin", body.service)
         assertEquals(8104, body.port)
+    }
+
+    @Test
+    fun `deve registrar log estruturado JSON para evento GEOFENCE_EVALUATED`() = testApplication {
+        application {
+            module()
+        }
+
+        val logbackLogger = LoggerFactory.getLogger("com.hotel.location.Application") as Logger
+        val listAppender = ListAppender<ILoggingEvent>()
+        listAppender.start()
+        logbackLogger.addAppender(listAppender)
+
+        try {
+            val response = client.post("/v1/location-events") {
+                header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                header("X-Correlation-ID", VALID_CORRELATION_ID)
+                setBody(
+                    """
+                    {
+                        "hotel_id": "htl-recife-01",
+                        "hotel_lat": -8.052240,
+                        "hotel_lng": -34.885650,
+                        "guest_lat": -8.053100,
+                        "guest_lng": -34.886100,
+                        "geofence_radius_m": 200.0,
+                        "previous_state": "outside"
+                    }
+                    """.trimIndent()
+                )
+            }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+
+            val logEvent = listAppender.list.firstOrNull { it.formattedMessage.contains("GEOFENCE_EVALUATED") }
+            assertNotNull(logEvent, "Deveria ter registrado log com evento GEOFENCE_EVALUATED")
+
+            val jsonLog = json.parseToJsonElement(logEvent!!.formattedMessage).jsonObject
+            assertEquals("INFO", jsonLog["level"]?.jsonPrimitive?.content)
+            assertEquals(VALID_CORRELATION_ID, jsonLog["correlation_id"]?.jsonPrimitive?.content)
+            assertEquals("GEOFENCE_EVALUATED", jsonLog["event"]?.jsonPrimitive?.content)
+            assertEquals("htl-recife-01", jsonLog["hotel_id"]?.jsonPrimitive?.content)
+            assertEquals(107.7, jsonLog["distance_meters"]?.jsonPrimitive?.double)
+            assertEquals("ENTERED", jsonLog["transition"]?.jsonPrimitive?.content)
+            assertNotNull(jsonLog["duration_ms"]?.jsonPrimitive?.double)
+            assertNotNull(jsonLog["timestamp"]?.jsonPrimitive?.content)
+
+            assertFalse(jsonLog.containsKey("hotel_lat"))
+            assertFalse(jsonLog.containsKey("hotel_lng"))
+            assertFalse(jsonLog.containsKey("guest_lat"))
+            assertFalse(jsonLog.containsKey("guest_lng"))
+        } finally {
+            logbackLogger.detachAppender(listAppender)
+        }
     }
 }
