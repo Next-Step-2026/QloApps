@@ -3,7 +3,7 @@ package com.hotel.location.model
 import com.hotel.location.exception.InvalidCoordinatesException
 import com.hotel.location.exception.InvalidGeofenceRadiusException
 import com.hotel.location.exception.InvalidGeofenceStateException
-import com.hotel.location.exception.InvalidPayloadException
+import com.hotel.location.exception.MissingFieldException
 
 enum class GeofenceState {
     INSIDE,
@@ -29,10 +29,10 @@ data class Coordinates(
 ) {
     init {
         if (!latitude.isFinite() || latitude < -90.0 || latitude > 90.0) {
-            throw InvalidCoordinatesException("Latitude deve ser finita e estar entre -90.0 e 90.0 (recebido: $latitude).")
+            throw InvalidCoordinatesException("Latitude deve ser finita e estar entre -90.0 e 90.0 (recebido: $latitude).", field = "latitude")
         }
         if (!longitude.isFinite() || longitude < -180.0 || longitude > 180.0) {
-            throw InvalidCoordinatesException("Longitude deve ser finita e estar entre -180.0 e 180.0 (recebido: $longitude).")
+            throw InvalidCoordinatesException("Longitude deve ser finita e estar entre -180.0 e 180.0 (recebido: $longitude).", field = "longitude")
         }
     }
 }
@@ -46,7 +46,7 @@ data class LocationEvent(
 ) {
     init {
         if (hotelId.isNullOrBlank()) {
-            throw InvalidPayloadException("hotel_id não pode ser vazio ou conter apenas espaços.")
+            throw MissingFieldException("hotel_id")
         }
         if (!geofenceRadiusMeters.isFinite() || geofenceRadiusMeters <= 0.0) {
             throw InvalidGeofenceRadiusException(geofenceRadiusMeters)

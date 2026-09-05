@@ -1,6 +1,6 @@
 package com.hotel.location.dto
 
-import com.hotel.location.exception.InvalidPayloadException
+import com.hotel.location.exception.MissingFieldException
 import com.hotel.location.model.Coordinates
 import com.hotel.location.model.GeofenceEvaluationResult
 import com.hotel.location.model.GeofenceState
@@ -19,17 +19,17 @@ data class LocationEventRequestDto(
 ) {
     fun toDomain(): LocationEvent {
         if (hotel_id.isNullOrBlank()) {
-            throw InvalidPayloadException("O campo 'hotel_id' é obrigatório e não pode ser vazio.")
+            throw MissingFieldException("hotel_id")
         }
-        val hotelLat = hotel_lat ?: throw InvalidPayloadException("O campo 'hotel_lat' é obrigatório.")
-        val hotelLng = hotel_lng ?: throw InvalidPayloadException("O campo 'hotel_lng' é obrigatório.")
-        val guestLat = guest_lat ?: throw InvalidPayloadException("O campo 'guest_lat' é obrigatório.")
-        val guestLng = guest_lng ?: throw InvalidPayloadException("O campo 'guest_lng' é obrigatório.")
+        val hotelLat = hotel_lat ?: throw MissingFieldException("hotel_lat")
+        val hotelLng = hotel_lng ?: throw MissingFieldException("hotel_lng")
+        val guestLat = guest_lat ?: throw MissingFieldException("guest_lat")
+        val guestLng = guest_lng ?: throw MissingFieldException("guest_lng")
 
-        val radius = geofence_radius_m ?: throw InvalidPayloadException("O campo 'geofence_radius_m' é obrigatório.")
+        val radius = geofence_radius_m ?: throw MissingFieldException("geofence_radius_m")
             
         if (previous_state.isNullOrBlank()) {
-            throw InvalidPayloadException("O campo 'previous_state' é obrigatório.")
+            throw MissingFieldException("previous_state")
         }
 
         return LocationEvent(

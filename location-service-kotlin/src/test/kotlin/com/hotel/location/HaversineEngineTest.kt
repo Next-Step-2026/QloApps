@@ -2,6 +2,7 @@ package com.hotel.location
 
 import com.hotel.location.exception.InvalidCoordinatesException
 import com.hotel.location.exception.InvalidGeofenceRadiusException
+import com.hotel.location.exception.MissingFieldException
 import com.hotel.location.model.Coordinates
 import com.hotel.location.model.GeofenceState
 import com.hotel.location.model.GeofenceTransition
@@ -97,6 +98,45 @@ class HaversineEngineTest {
                 previousState = GeofenceState.OUTSIDE
             )
         }
+    }
+
+    @Test
+    fun `deve lancar MissingFieldException quando hotelId for vazio ou conter apenas espacos no modelo`() {
+        val exEmpty = assertThrows(MissingFieldException::class.java) {
+            LocationEvent(
+                hotelId = "",
+                hotelLocation = Coordinates(-8.052240, -34.885650),
+                guestLocation = Coordinates(-8.053100, -34.886100),
+                geofenceRadiusMeters = 200.0,
+                previousState = GeofenceState.OUTSIDE
+            )
+        }
+        assertEquals("hotel_id", exEmpty.field)
+        assertEquals("O campo 'hotel_id' é obrigatório.", exEmpty.message)
+
+        val exBlank = assertThrows(MissingFieldException::class.java) {
+            LocationEvent(
+                hotelId = "   ",
+                hotelLocation = Coordinates(-8.052240, -34.885650),
+                guestLocation = Coordinates(-8.053100, -34.886100),
+                geofenceRadiusMeters = 200.0,
+                previousState = GeofenceState.OUTSIDE
+            )
+        }
+        assertEquals("hotel_id", exBlank.field)
+    }
+
+    @Test
+    fun `deve informar field correto ao falhar validacao de latitude ou longitude`() {
+        val exLat = assertThrows(InvalidCoordinatesException::class.java) {
+            Coordinates(95.0, 0.0)
+        }
+        assertEquals("latitude", exLat.field)
+
+        val exLng = assertThrows(InvalidCoordinatesException::class.java) {
+            Coordinates(0.0, 185.0)
+        }
+        assertEquals("longitude", exLng.field)
     }
 
     @Test
