@@ -28,11 +28,30 @@ data class Coordinates(
     val longitude: Double
 ) {
     init {
-        if (!latitude.isFinite() || latitude < -90.0 || latitude > 90.0) {
-            throw InvalidCoordinatesException("Latitude deve ser finita e estar entre -90.0 e 90.0 (recebido: $latitude).", field = "latitude")
+        validateLatitude(latitude)
+        validateLongitude(longitude)
+    }
+
+    companion object {
+        private val VALID_LATITUDE_RANGE = -90.0..90.0
+        private val VALID_LONGITUDE_RANGE = -180.0..180.0
+
+        private fun validateLatitude(lat: Double) {
+            if (!lat.isFinite() || lat !in VALID_LATITUDE_RANGE) {
+                throw InvalidCoordinatesException(
+                    "Latitude deve ser finita e estar entre -90.0 e 90.0 (recebido: $lat).",
+                    field = "latitude"
+                )
+            }
         }
-        if (!longitude.isFinite() || longitude < -180.0 || longitude > 180.0) {
-            throw InvalidCoordinatesException("Longitude deve ser finita e estar entre -180.0 e 180.0 (recebido: $longitude).", field = "longitude")
+
+        private fun validateLongitude(lng: Double) {
+            if (!lng.isFinite() || lng !in VALID_LONGITUDE_RANGE) {
+                throw InvalidCoordinatesException(
+                    "Longitude deve ser finita e estar entre -180.0 e 180.0 (recebido: $lng).",
+                    field = "longitude"
+                )
+            }
         }
     }
 }
