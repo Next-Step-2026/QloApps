@@ -24,10 +24,13 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import org.slf4j.LoggerFactory
 
 fun main() {
     embeddedServer(Netty, port = 8104, host = "127.0.0.1", module = Application::module).start(wait = true)
 }
+
+private val logger = LoggerFactory.getLogger("com.hotel.location.Application")
 
 private val UUID_REGEX = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
@@ -37,6 +40,15 @@ var isServiceAvailable: Boolean = true
 
 fun resetServiceState() {
     isServiceAvailable = true
+}
+
+private fun extractFieldFromSerializationMessage(message: String?): String? {
+    if (message == null) return null
+    val fieldMatch = Regex("Field '([^']+)'").find(message)
+    if (fieldMatch != null) return fieldMatch.groupValues[1]
+    val pathMatch = Regex("path: \\$\\.([a-zA-Z0-9_]+)").find(message)
+    if (pathMatch != null) return pathMatch.groupValues[1]
+    return null
 }
 
 fun Application.module() {
@@ -50,6 +62,8 @@ fun Application.module() {
 
     install(StatusPages) {
         exception<LocationValidationException> { call, cause ->
+            val correlationId = call.request.headers["X-Correlation-ID"] ?: "none"
+            logger.warn("Falha de validação [correlation_id='{}', rota='{}']: campo='{}', mensagem='{}'", correlationId, call.request.path(), cause.field, cause.message)
             call.respond(
                 cause.statusCode,
                 ProblemDetailsResponse(
@@ -63,19 +77,29 @@ fun Application.module() {
         }
 
         exception<SerializationException> { call, cause ->
+            val correlationId = call.request.headers["X-Correlation-ID"] ?: "none"
+            logger.warn("Erro de desserialização JSON [correlation_id='{}', rota='{}']: {}", correlationId, call.request.path(), cause.message, cause)
+            val field = extractFieldFromSerializationMessage(cause.message)
+            val detail = if (field != null) {
+                "O campo '$field' contém dados inválidos ou incompatíveis."
+            } else {
+                "O payload enviado é um JSON malformado ou incompatível."
+            }
             call.respond(
                 HttpStatusCode.BadRequest,
                 ProblemDetailsResponse(
                     type = "urn:problem-type:malformed-json",
                     title = "Malformed JSON Request",
                     status = HttpStatusCode.BadRequest.value,
-                    detail = cause.message?.replace("\"", "'") ?: "O payload enviado é um JSON malformado ou incompatível.",
+                    detail = detail,
                     instance = call.request.path()
                 )
             )
         }
 
         exception<BadRequestException> { call, cause ->
+            val correlationId = call.request.headers["X-Correlation-ID"] ?: "none"
+            logger.warn("Requisição inválida [correlation_id='{}', rota='{}']: {}", correlationId, call.request.path(), cause.message, cause)
             val isSerialization = cause.cause is SerializationException ||
                 cause.cause?.cause is SerializationException ||
                 cause.message?.contains("convert", ignoreCase = true) == true ||
@@ -86,19 +110,30 @@ fun Application.module() {
             val typeUri = if (isSerialization) "urn:problem-type:malformed-json" else "urn:problem-type:bad-request"
             val title = if (isSerialization) "Malformed JSON Request" else "Bad Request"
 
+            val field = extractFieldFromSerializationMessage(cause.cause?.message ?: cause.message)
+            val detail = if (field != null) {
+                "O campo '$field' contém dados inválidos."
+            } else if (isSerialization) {
+                "O payload enviado é um JSON malformado ou incompatível."
+            } else {
+                "Requisição inválida."
+            }
+
             call.respond(
                 HttpStatusCode.BadRequest,
                 ProblemDetailsResponse(
                     type = typeUri,
                     title = title,
                     status = HttpStatusCode.BadRequest.value,
-                    detail = cause.message?.replace("\"", "'") ?: "Requisição inválida.",
+                    detail = detail,
                     instance = call.request.path()
                 )
             )
         }
 
         exception<ServiceUnavailableException> { call, cause ->
+            val correlationId = call.request.headers["X-Correlation-ID"] ?: "none"
+            logger.error("Serviço de localização indisponível [correlation_id='{}', rota='{}']: {}", correlationId, call.request.path(), cause.message)
             call.respond(
                 HttpStatusCode.ServiceUnavailable,
                 ProblemDetailsResponse(
@@ -112,13 +147,15 @@ fun Application.module() {
         }
 
         exception<Throwable> { call, cause ->
+            val correlationId = call.request.headers["X-Correlation-ID"] ?: "none"
+            logger.error("Erro interno inesperado no servidor [correlation_id='{}', rota='{}']: {}", correlationId, call.request.path(), cause.message, cause)
             call.respond(
                 HttpStatusCode.InternalServerError,
                 ProblemDetailsResponse(
                     type = "urn:problem-type:internal-server-error",
                     title = "Internal Server Error",
                     status = HttpStatusCode.InternalServerError.value,
-                    detail = cause.message?.replace("\"", "'") ?: "Erro interno inesperado no servidor.",
+                    detail = "Erro interno inesperado no servidor.",
                     instance = call.request.path()
                 )
             )
