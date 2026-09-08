@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ContactEvaluationRequest(
-    @SerialName("cusomer_id") val customerId: String,
+    @SerialName("customer_id") val customerId: String,
     val email: String,
     val phone: String,
     @SerialName("last_verified_at") val lastVerifiedAt: String? = null,
