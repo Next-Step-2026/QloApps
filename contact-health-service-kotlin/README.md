@@ -164,9 +164,9 @@ Realiza a validação completa de formato, defasagem e consentimento de um conta
 
 **Requisição:**
 ```bash
-curl -i -X POST http://127.0.0.1:8103/v1/contact-evaluations \
+curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
   -H "Content-Type: application/json" \
-  -H "X-Correlation-ID: req-fresh-001" \
+  -H "X-Correlation-ID: req-fresh-01" \
   -d '{
     "customer_id": "cust-001",
     "email": "marina.costa@tech.com",
@@ -174,7 +174,7 @@ curl -i -X POST http://127.0.0.1:8103/v1/contact-evaluations \
     "last_verified_at": "2026-08-15T10:00:00Z",
     "consent_expires_at": "2027-01-01T00:00:00Z",
     "reference_date": "2026-08-27"
-  }' | jq
+  }' | jq .
 ```
 
 **Resposta esperada (HTTP 200 OK):**
