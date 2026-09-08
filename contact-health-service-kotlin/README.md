@@ -211,7 +211,7 @@ curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
 
 **Requisição:**
 ```bash
-curl -i -X POST http://127.0.0.1:8103/v1/contact-evaluations \
+curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
   -H "Content-Type: application/json" \
   -H "X-Correlation-ID: req-stale-002" \
   -d '{
@@ -221,7 +221,7 @@ curl -i -X POST http://127.0.0.1:8103/v1/contact-evaluations \
     "last_verified_at": "2026-01-10T10:00:00Z",
     "consent_expires_at": "2026-12-31T00:00:00Z",
     "reference_date": "2026-08-27"
-  }'
+  }' | jq .
 ```
 
 **Resposta esperada (HTTP 200 OK):**
@@ -262,7 +262,7 @@ curl -i -X POST http://127.0.0.1:8103/v1/contact-evaluations \
 
 **Requisição:**
 ```bash
-curl -i -X POST http://127.0.0.1:8103/v1/contact-evaluations \
+curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
   -H "Content-Type: application/json" \
   -H "X-Correlation-ID: req-consent-003" \
   -d '{
@@ -272,7 +272,7 @@ curl -i -X POST http://127.0.0.1:8103/v1/contact-evaluations \
     "last_verified_at": "2026-08-20T10:00:00Z",
     "consent_expires_at": "2026-06-01T00:00:00Z",
     "reference_date": "2026-08-27"
-  }'
+  }' | jq .
 ```
 
 **Resposta esperada (HTTP 200 OK):**
