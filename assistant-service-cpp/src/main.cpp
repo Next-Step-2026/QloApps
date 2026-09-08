@@ -47,6 +47,17 @@ int main() {
                 response["confidence"] = 0.90;
                 response["slots"] = {{"policy_category", "cancellation"}};
                 response["explanation"] = "Identificada duvida sobre regras de cancelamento.";
+            } else if (query.find("reserva") != std::string::npos || query.find("RES-") != std::string::npos) {
+                response["intent"] = "RESERVATION_LOOKUP";
+                response["confidence"] = 0.92;
+                std::smatch match;
+                std::regex codeRegex("RES-[0-9A-Za-z]+");
+                std::string resCode = "RES-9941";
+                if (std::regex_search(query, match, codeRegex)) {
+                    resCode = match.str();
+                }
+                response["slots"] = {{"reservation_code", resCode}};
+                response["explanation"] = "Identificada consulta de status de reserva com localizador.";
             } else {
                 response["intent"] = "UNKNOWN";
                 response["confidence"] = 0.40;
