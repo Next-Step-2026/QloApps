@@ -174,7 +174,7 @@ curl -i -X POST http://127.0.0.1:8103/v1/contact-evaluations \
     "last_verified_at": "2026-08-15T10:00:00Z",
     "consent_expires_at": "2027-01-01T00:00:00Z",
     "reference_date": "2026-08-27"
-  }'
+  }' | jq
 ```
 
 **Resposta esperada (HTTP 200 OK):**
