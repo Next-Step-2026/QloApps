@@ -1,42 +1,45 @@
-// src/main/kotlin/com/hotel/contacthealth/HygieneEvaluator.kt
-package com.hotel.contacthealth
+package com.hotel.contacthealth.service
+
+import com.hotel.contacthealth.domain.calculation.ScoreCalculator
+import com.hotel.contacthealth.domain.calculation.StalenessCalculator
+import com.hotel.contacthealth.domain.validation.ConsentValidator
+import com.hotel.contacthealth.domain.validation.FormatValidators
+import com.hotel.contacthealth.model.ContactEvaluationRequest
+import com.hotel.contacthealth.model.ContactEvaluationResponse
+import com.hotel.contacthealth.model.FactorEvaluation
+import com.hotel.contacthealth.model.FactorStatus
+import com.hotel.contacthealth.model.FactorType
+import com.hotel.contacthealth.model.RecommendedAction
 
 class HygieneEvaluator {
 
     fun evaluate(request: ContactEvaluationRequest, correlationId: String): ContactEvaluationResponse {
-        val refDate = StalenessCalculator.parseDate(request.referenceDate)
-            ?: throw IllegalArgumentException("Campo 'reference_date' inválido.")
+        request.validate()
 
+        val refDate = StalenessCalculator.parseDate(request.referenceDate, "reference_date")
+            ?: throw IllegalArgumentException("Field 'reference_date' is required.")
 
         val staleness = StalenessCalculator.calculate(request.lastVerifiedAt, refDate)
-
-
         val consent = ConsentValidator.validate(request.consentExpiresAt, refDate)
-
 
         val emailFactor = buildEmailFactor(request.email, staleness)
         val phoneFactor = buildPhoneFactor(request.phone, staleness)
 
-
-        val emailStatus = FactorStatus.valueOf(emailFactor.status)
-        val phoneStatus = FactorStatus.valueOf(phoneFactor.status)
-        val finalScore = ScoreCalculator.calculate(emailStatus, phoneStatus, consent.isValid)
-
+        val finalScore = ScoreCalculator.calculate(emailFactor.status, phoneFactor.status, consent.isValid)
 
         val overallStatus = when {
-            !consent.isValid -> FactorStatus.CONSENT_EXPIRED.name
-            emailStatus == FactorStatus.INVALID_FORMAT || phoneStatus == FactorStatus.INVALID_FORMAT -> FactorStatus.INVALID_FORMAT.name
-            emailStatus == FactorStatus.STALE || phoneStatus == FactorStatus.STALE -> FactorStatus.STALE.name
-            emailStatus == FactorStatus.AGING || phoneStatus == FactorStatus.AGING -> FactorStatus.AGING.name
-            else -> FactorStatus.FRESH.name
+            !consent.isValid -> FactorStatus.CONSENT_EXPIRED
+            emailFactor.status == FactorStatus.INVALID_FORMAT || phoneFactor.status == FactorStatus.INVALID_FORMAT -> FactorStatus.INVALID_FORMAT
+            emailFactor.status == FactorStatus.STALE || phoneFactor.status == FactorStatus.STALE -> FactorStatus.STALE
+            emailFactor.status == FactorStatus.AGING || phoneFactor.status == FactorStatus.AGING -> FactorStatus.AGING
+            else -> FactorStatus.FRESH
         }
 
-        val action = if (overallStatus != FactorStatus.FRESH.name) {
-            RecommendedAction.TRIGGER_BACKGROUND_RECONFIRMATION.name
+        val action = if (overallStatus != FactorStatus.FRESH) {
+            RecommendedAction.TRIGGER_BACKGROUND_RECONFIRMATION
         } else {
-            RecommendedAction.NONE.name
+            RecommendedAction.NONE
         }
-
 
         return ContactEvaluationResponse(
             correlationId = correlationId,
@@ -57,9 +60,9 @@ class HygieneEvaluator {
         staleness.issue?.let { if (isValid) issues.add(it) }
 
         return FactorEvaluation(
-            type = FactorType.EMAIL.name,
+            type = FactorType.EMAIL,
             valueMasked = FormatValidators.maskEmail(email),
-            status = status.name,
+            status = status,
             daysSinceVerification = staleness.daysSince,
             issues = issues
         )
@@ -73,9 +76,9 @@ class HygieneEvaluator {
         staleness.issue?.let { if (isValid) issues.add(it) }
 
         return FactorEvaluation(
-            type = FactorType.PHONE.name,
+            type = FactorType.PHONE,
             valueMasked = FormatValidators.maskPhone(phone),
-            status = status.name,
+            status = status,
             daysSinceVerification = staleness.daysSince,
             issues = issues
         )

@@ -1,28 +1,30 @@
-package com.hotel.contacthealth
+package com.hotel.contacthealth.domain.calculation
 
+import com.hotel.contacthealth.model.FactorStatus
 
-object ScoreCalculator{
+object ScoreCalculator {
     fun calculate(
         emailStatus: FactorStatus,
         phoneStatus: FactorStatus,
         consentValid: Boolean
-    ): Int{
+    ): Int {
         var score = 100
 
-        when(emailStatus){
+        when (emailStatus) {
             FactorStatus.INVALID_FORMAT -> score -= 40
             FactorStatus.STALE -> score -= 30
             FactorStatus.AGING -> score -= 15
             else -> {}
         }
 
-        when(phoneStatus){
+        when (phoneStatus) {
             FactorStatus.INVALID_FORMAT -> score -= 30
             FactorStatus.STALE -> score -= 30
             FactorStatus.AGING -> score -= 15
             else -> {}
         }
-        if(!consentValid){
+
+        if (!consentValid) {
             score = score.coerceAtMost(40)
         }
 
