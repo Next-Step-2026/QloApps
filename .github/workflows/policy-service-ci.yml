@@ -37,32 +37,32 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: [29/39] Secrets Scanning (Gitleaks)
+      - name: "[29/39] Secrets Scanning (Gitleaks)"
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: [3/39] Compilação e Verificação de Sintaxe
+      - name: "[3/39] Compilação e Verificação de Sintaxe"
         run: |
           python -m py_compile app/*.py tests/*.py
 
-      - name: [2, 4, 5, 9, 13/39] Ruff (AST, Formatter, Linter, Complexidade C90)
+      - name: "[2, 4, 5, 9, 13/39] Ruff (AST, Formatter, Linter, Complexidade C90)"
         run: |
           uvx ruff check app/ tests/
           uvx ruff format --check app/ tests/
 
-      - name: [6/39] Type Checker (Pyright)
+      - name: "[6/39] Type Checker (Pyright)"
         run: |
           uv pip install --system -r requirements.txt
           npx pyright app/
 
-      - name: [15, 16, 19/39] Testes Unitários, Integração e Cobertura
+      - name: "[15, 16, 19/39] Testes Unitários, Integração e Cobertura"
         run: |
           uv pip install --system pytest pytest-cov
           PYTHONPATH=. pytest --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
 
-      - name: [37/39] Sumário de Cobertura no GitHub Actions
+      - name: "[37/39] Sumário de Cobertura no GitHub Actions"
         run: |
           echo "### 📊 Relatório de Cobertura de Código" >> $GITHUB_STEP_SUMMARY
           echo "Suíte concluída com sucesso com >90% de cobertura." >> $GITHUB_STEP_SUMMARY
@@ -78,7 +78,12 @@ jobs:
       - name: Checkout do Repositório
         uses: actions/checkout@v4
 
-      - name: [7, 8/39] SAST e Taint Analysis (Semgrep)
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: "[7, 8/39] SAST e Taint Analysis (Semgrep)"
         uses: returntocorp/semgrep-action@v1
         with:
           config: >-
@@ -86,7 +91,7 @@ jobs:
             p/fastapi
         continue-on-error: true
 
-      - name: [27, 28, 30/39] SCA, SBOM e IaC (Trivy)
+      - name: "[27, 28, 30/39] SCA, SBOM e IaC (Trivy)"
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
@@ -95,13 +100,13 @@ jobs:
           severity: 'HIGH,CRITICAL'
         continue-on-error: true
 
-      - name: [31, 38/39] Build e Healthcheck do Container
+      - name: "[31, 38/39] Build e Healthcheck do Container"
         run: |
           docker compose up -d --build
           sleep 5
           curl -f http://127.0.0.1:8105/healthz || exit 1
 
-      - name: [18/39] Testes de Contrato OpenAPI (Schemathesis)
+      - name: "[18/39] Testes de Contrato OpenAPI (Schemathesis)"
         run: |
           pip install schemathesis
           st run http://127.0.0.1:8105/openapi.json --checks all --request-timeout=5
@@ -132,6 +137,6 @@ jobs:
         run: |
           uv pip install --system -r requirements.txt hypothesis z3-solver pytest
 
-      - name: [14, 22/39] Executar Verificação Formal (Z3) e Testes Baseados em Propriedades (Hypothesis)
+      - name: "[14, 22/39] Executar Verificação Formal (Z3) e Testes Baseados em Propriedades (Hypothesis)"
         run: |
           PYTHONPATH=. pytest tests/test_formal_and_properties.py -v
