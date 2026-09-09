@@ -263,3 +263,8 @@ __pycache__/
 *$py.class
 .pytest_cache/
 policy-service-python/venv/
+# Coverage
+.coverage
+coverage. 
+  xml
+htmlcov/

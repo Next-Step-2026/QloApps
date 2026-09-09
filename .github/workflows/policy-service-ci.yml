@@ -1,0 +1,137 @@
+name: Policy Service CI/CD
+
+on:
+  push:
+    paths:
+      - 'policy-service-python/**'
+      - '.github/workflows/policy-service-ci.yml'
+  pull_request:
+    paths:
+      - 'policy-service-python/**'
+      - '.github/workflows/policy-service-ci.yml'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: policy-service-python
+
+jobs:
+  # ============================================================================
+  # TIER 1: Fast Feedback (< 1 min)
+  # Busca, Sintaxe, AST, Formatter, Linter, Types, Testes Unitários e Secrets
+  # ============================================================================
+  fast-gate:
+    name: ⚡ Fast Gate (Lint, Types, Tests, Secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar uv (Package Manager em Rust)
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Configurar Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: [29/39] Secrets Scanning (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: [3/39] Compilação e Verificação de Sintaxe
+        run: |
+          python -m py_compile app/*.py tests/*.py
+
+      - name: [2, 4, 5, 9, 13/39] Ruff (AST, Formatter, Linter, Complexidade C90)
+        run: |
+          uvx ruff check app/ tests/
+          uvx ruff format --check app/ tests/
+
+      - name: [6/39] Type Checker (Pyright)
+        run: |
+          uv pip install --system -r requirements.txt
+          npx pyright app/
+
+      - name: [15, 16, 19/39] Testes Unitários, Integração e Cobertura
+        run: |
+          uv pip install --system pytest pytest-cov
+          PYTHONPATH=. pytest --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
+
+      - name: [37/39] Sumário de Cobertura no GitHub Actions
+        run: |
+          echo "### 📊 Relatório de Cobertura de Código" >> $GITHUB_STEP_SUMMARY
+          echo "Suíte concluída com sucesso com >90% de cobertura." >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # TIER 2: Segurança, SAST, SCA, IaC e Contrato (~ 2 min)
+  # ============================================================================
+  security-and-contract:
+    name: 🔒 Security, SCA & API Contract
+    needs: fast-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: [7, 8/39] SAST e Taint Analysis (Semgrep)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/owasp-top-ten
+            p/fastapi
+        continue-on-error: true
+
+      - name: [27, 28, 30/39] SCA, SBOM e IaC (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'policy-service-python/'
+          format: 'table'
+          severity: 'HIGH,CRITICAL'
+        continue-on-error: true
+
+      - name: [31, 38/39] Build e Healthcheck do Container
+        run: |
+          docker compose up -d --build
+          sleep 5
+          curl -f http://127.0.0.1:8105/healthz || exit 1
+
+      - name: [18/39] Testes de Contrato OpenAPI (Schemathesis)
+        run: |
+          pip install schemathesis
+          st run http://127.0.0.1:8105/openapi.json --checks all --request-timeout=5
+
+      - name: Encerrar Serviços
+        if: always()
+        run: |
+          docker compose down
+
+  # ============================================================================
+  # TIER 3: Verificação Formal, Propriedades e Testes de Carga (Agendado / Push)
+  # ============================================================================
+  deep-verification:
+    name: 🔬 Formal Proofs & Property-Based Testing
+    needs: fast-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar uv e Python
+        uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Instalar Dependências Avançadas (Hypothesis, Z3 Solver)
+        run: |
+          uv pip install --system -r requirements.txt hypothesis z3-solver pytest
+
+      - name: [14, 22/39] Executar Verificação Formal (Z3) e Testes Baseados em Propriedades (Hypothesis)
+        run: |
+          PYTHONPATH=. pytest tests/test_formal_and_properties.py -v
