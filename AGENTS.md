@@ -14,16 +14,66 @@ This document provides guidance for AI coding agents contributing to the QloApps
 - **Database:** MySQL 5.7, 8.0+; MariaDB 10.5, 10.6, 10.11, 11.0, 11.2, 11.4
 - **Architecture:** MVC with hook-based module system
 - **License:** OSL-3.0 (core), AFL-3.0 (modules)
-- **Required PHP Extensions:** PDO_MySQL, cURL, OpenSSL, SOAP, GD, SimpleXML, DOM, Zip, Phar
+- **Required PHP Extensions:** PDO_MySQL, cURL, OpenSSL, SOAP, GD, SimpleXML, DOM, Zip, Phar, Intl, Opcache
 
 ## Environment Setup
 
-Install dependencies:
+### 1. Docker Compose Setup (Recommended)
+
+The project includes a containerized development stack with PHP 8.2 (Apache) and MariaDB 10.11:
+
+```bash
+# Build and start services
+docker compose up -d
+
+# Stop services
+docker compose down
+```
+
+**Service Details & Credentials:**
+- **Web Server (`qlo-app`):** Port `8080` (mapped to container port `80`)
+- **Database Server (`qlo-db`):** Port `3306`
+  - Host: `qlo-db` (from containers) or `127.0.0.1:3306` (from host)
+  - Database: `qloapps`
+  - User: `qloapps`
+  - Password: `qlopassword`
+  - Table Prefix: `qlo_`
+
+### 2. File & Directory Permissions
+
+The web server in Docker runs as user `www-data` (UID 33). The following directories require recursive read/write permissions for the application and installer to function properly:
+
+```bash
+chmod 755 . ..
+chmod -R a+rwX cache config download img log mails modules themes translations upload
+```
+
+### 3. Remote Development & Port Forwarding
+
+When developing on a remote host (e.g., Cloudtop / remote SSH workstation), traffic to port `8080` must be forwarded:
+- **Chrome Remote Desktop (Recommended on Cloudtop):** Connect via `remotedesktop.google.com/access` and open `http://localhost:8080` directly in the workstation's Chrome.
+- **Chrome Secure Shell (nassh):** In connection profile settings, set **SSH Arguments** to `-L 8080:127.0.0.1:8080`.
+- **VS Code / Cursor Remote - SSH:** In the **Ports** panel, click **Forward a Port** and enter `8080`.
+- **SSH CLI:** `ssh -L 8080:127.0.0.1:8080 -L 3306:127.0.0.1:3306 <user>@<host>`
+
+### 4. Canonical Domain & Redirect Loops
+
+PrestaShop/QloApps enforces canonical URL checking. If accessing via a port-forwarded URL (e.g., `localhost:8080`), update database records to prevent 301/302 redirect loops:
+
+```sql
+UPDATE qlo_shop_url SET domain = 'localhost:8080', domain_ssl = 'localhost:8080', physical_uri = '/' WHERE id_shop_url = 1;
+UPDATE qlo_configuration SET value = 'localhost:8080' WHERE name IN ('PS_SHOP_DOMAIN', 'PS_SHOP_DOMAIN_SSL');
+UPDATE qlo_configuration SET value = '0' WHERE name = 'PS_CANONICAL_REDIRECT';
+```
+
+### 5. Dependency Installation & Cache Management
+
+Install PHP dependencies:
 ```bash
 composer install
 ```
 
-Clear caches:
+Clear caches (run whenever modifying templates, overrides, or domain settings):
 ```bash
 rm -rf cache/smarty/compile/* cache/smarty/cache/*
 rm -f cache/class_index.php
@@ -190,6 +240,14 @@ Testing infrastructure is being configured. Check tests/ directory for available
 After making changes:
 - Clear caches if modifying templates or overrides
 - Add PHPDoc to new methods
+
+## Repository & Development Hygiene
+
+To keep the development repository clean and prevent committing local installation or generated assets:
+- **Do not commit `config/settings.inc.php`:** Contains local environment secrets, database credentials, and cookie encryption keys.
+- **Do not commit generated admin folders:** PrestaShop/QloApps renames `admin/` to a random directory (e.g., `admin847azx/`) post-installation. Add any custom generated `admin*/` to `.git/info/exclude` rather than modifying `.gitignore`.
+- **Do not commit generated images or uploads:** Keep local test images in `img/`, uploads in `upload/`, and temporary cache files untracked.
+- **Post-installation cleanup:** Do not delete or rename the `install/` folder. Instead, use the marker file `touch install/.installed`. QloApps will recognize this marker, automatically deactivate the installer endpoint (redirecting to `/`), and allow Back Office login without marking the 2,840 installer files as deleted in Git.
 
 ## Safety Rules
 
