@@ -96,7 +96,7 @@ class AdminLoginControllerCore extends AdminController
             $this->context->smarty->assign('warningSslMessage', $warningSslMessage);
         }
 
-        if (file_exists(_PS_ADMIN_DIR_.'/../install')) {
+        if (file_exists(_PS_ADMIN_DIR_.'/../install') && !file_exists(_PS_ADMIN_DIR_.'/../install/.installed')) {
             $this->context->smarty->assign('wrong_install_name', true);
         }
 

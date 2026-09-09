@@ -24,6 +24,11 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
+if (file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR.'.installed')) {
+    header('Location: ../');
+    exit;
+}
+
 require_once(dirname(__FILE__).DIRECTORY_SEPARATOR.'init.php');
 
 try {
