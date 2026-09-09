@@ -400,4 +400,158 @@ class ApplicationIntegrationTest {
         }
     }
 
+    @Nested
+    @DisplayName("Cenários de Observabilidade e Logs Estruturados")
+    inner class ObservabilityScenarios {
+
+        @Test
+        fun `deve registrar log estruturado JSON para evento GEOFENCE_EVALUATED`() = testApplication {
+            application { module() }
+
+            val logbackLogger = LoggerFactory.getLogger("com.hotel.location.Application") as Logger
+            val listAppender = ListAppender<ILoggingEvent>()
+            listAppender.start()
+            logbackLogger.addAppender(listAppender)
+
+            try {
+                val response = client.post("/v1/location-events") {
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    header("X-Correlation-ID", VALID_CORRELATION_ID)
+                    setBody(createLocationPayloadJson())
+                }
+
+                assertEquals(HttpStatusCode.OK, response.status)
+
+                val logEvent = listAppender.list.firstOrNull { it.formattedMessage.contains("GEOFENCE_EVALUATED") }
+                assertNotNull(logEvent, "Deveria ter registrado log com evento GEOFENCE_EVALUATED")
+
+                val jsonLog = json.parseToJsonElement(logEvent!!.formattedMessage).jsonObject
+                assertEquals("INFO", jsonLog["level"]?.jsonPrimitive?.content)
+                assertEquals(VALID_CORRELATION_ID, jsonLog["correlation_id"]?.jsonPrimitive?.content)
+                assertEquals("GEOFENCE_EVALUATED", jsonLog["event"]?.jsonPrimitive?.content)
+                assertEquals("htl-recife-01", jsonLog["hotel_id"]?.jsonPrimitive?.content)
+                assertEquals(107.7, jsonLog["distance_meters"]?.jsonPrimitive?.double)
+                assertEquals("ENTERED", jsonLog["transition"]?.jsonPrimitive?.content)
+                assertNotNull(jsonLog["duration_ms"]?.jsonPrimitive?.double)
+                assertNotNull(jsonLog["timestamp"]?.jsonPrimitive?.content)
+
+                assertFalse(jsonLog.containsKey("hotel_lat"))
+                assertFalse(jsonLog.containsKey("hotel_lng"))
+                assertFalse(jsonLog.containsKey("guest_lat"))
+                assertFalse(jsonLog.containsKey("guest_lng"))
+            } finally {
+                logbackLogger.detachAppender(listAppender)
+            }
+        }
+
+        @Test
+        fun `deve registrar log estruturado JSON com evento GEOFENCE_VALIDATION_FAILED quando houver erro de validacao de coordenadas`() = testApplication {
+            application { module() }
+
+            val logbackLogger = LoggerFactory.getLogger("com.hotel.location.Application") as Logger
+            val listAppender = ListAppender<ILoggingEvent>()
+            listAppender.start()
+            logbackLogger.addAppender(listAppender)
+
+            try {
+                val response = client.post("/v1/location-events") {
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    header("X-Correlation-ID", VALID_CORRELATION_ID)
+                    setBody(createLocationPayloadJson(guestLat = 999.0))
+                }
+
+                assertEquals(HttpStatusCode.BadRequest, response.status)
+
+                val logEvent = listAppender.list.firstOrNull { it.formattedMessage.contains("GEOFENCE_VALIDATION_FAILED") }
+                assertNotNull(logEvent, "Deveria ter registrado log estruturado com evento GEOFENCE_VALIDATION_FAILED")
+
+                val jsonLog = json.parseToJsonElement(logEvent!!.formattedMessage).jsonObject
+                assertEquals("WARN", jsonLog["level"]?.jsonPrimitive?.content)
+                assertEquals(VALID_CORRELATION_ID, jsonLog["correlation_id"]?.jsonPrimitive?.content)
+                assertEquals("GEOFENCE_VALIDATION_FAILED", jsonLog["event"]?.jsonPrimitive?.content)
+                assertEquals("urn:problem-type:invalid-coordinates", jsonLog["error_type"]?.jsonPrimitive?.content)
+                assertEquals("INVALID_COORDINATES", jsonLog["code"]?.jsonPrimitive?.content)
+                assertEquals(400, jsonLog["status_code"]?.jsonPrimitive?.int)
+                assertEquals("/v1/location-events", jsonLog["path"]?.jsonPrimitive?.content)
+                assertNotNull(jsonLog["timestamp"]?.jsonPrimitive?.content)
+                assertNotNull(jsonLog["message"]?.jsonPrimitive?.content)
+
+                assertFalse(jsonLog.containsKey("hotel_lat"))
+                assertFalse(jsonLog.containsKey("hotel_lng"))
+                assertFalse(jsonLog.containsKey("guest_lat"))
+                assertFalse(jsonLog.containsKey("guest_lng"))
+            } finally {
+                logbackLogger.detachAppender(listAppender)
+            }
+        }
+
+        @Test
+        fun `deve registrar log estruturado JSON com evento GEOFENCE_SERVICE_UNAVAILABLE quando servico estiver simulado indisponivel`() = testApplication {
+            application { module() }
+
+            val logbackLogger = LoggerFactory.getLogger("com.hotel.location.Application") as Logger
+            val listAppender = ListAppender<ILoggingEvent>()
+            listAppender.start()
+            logbackLogger.addAppender(listAppender)
+
+            try {
+                val response = client.post("/v1/location-events") {
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    header("X-Correlation-ID", VALID_CORRELATION_ID)
+                    header("X-Mock-Service-Unavailable", "true")
+                    setBody(createLocationPayloadJson())
+                }
+
+                assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
+
+                val logEvent = listAppender.list.firstOrNull { it.formattedMessage.contains("GEOFENCE_SERVICE_UNAVAILABLE") }
+                assertNotNull(logEvent, "Deveria ter registrado log estruturado com evento GEOFENCE_SERVICE_UNAVAILABLE")
+
+                val jsonLog = json.parseToJsonElement(logEvent!!.formattedMessage).jsonObject
+                assertEquals("ERROR", jsonLog["level"]?.jsonPrimitive?.content)
+                assertEquals(VALID_CORRELATION_ID, jsonLog["correlation_id"]?.jsonPrimitive?.content)
+                assertEquals("GEOFENCE_SERVICE_UNAVAILABLE", jsonLog["event"]?.jsonPrimitive?.content)
+                assertEquals("urn:problem-type:service-unavailable", jsonLog["error_type"]?.jsonPrimitive?.content)
+                assertEquals("SERVICE_UNAVAILABLE", jsonLog["code"]?.jsonPrimitive?.content)
+                assertEquals(503, jsonLog["status_code"]?.jsonPrimitive?.int)
+                assertEquals("/v1/location-events", jsonLog["path"]?.jsonPrimitive?.content)
+                assertNotNull(jsonLog["timestamp"]?.jsonPrimitive?.content)
+            } finally {
+                logbackLogger.detachAppender(listAppender)
+            }
+        }
+
+        @Test
+        fun `deve registrar log estruturado JSON com evento MALFORMED_JSON_ERROR quando payload for malformado`() = testApplication {
+            application { module() }
+
+            val logbackLogger = LoggerFactory.getLogger("com.hotel.location.Application") as Logger
+            val listAppender = ListAppender<ILoggingEvent>()
+            listAppender.start()
+            logbackLogger.addAppender(listAppender)
+
+            try {
+                val response = client.post("/v1/location-events") {
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    header("X-Correlation-ID", VALID_CORRELATION_ID)
+                    setBody("{ malformed json }")
+                }
+
+                assertEquals(HttpStatusCode.BadRequest, response.status)
+
+                val logEvent = listAppender.list.firstOrNull { it.formattedMessage.contains("MALFORMED_JSON_ERROR") }
+                assertNotNull(logEvent, "Deveria ter registrado log estruturado com evento MALFORMED_JSON_ERROR")
+
+                val jsonLog = json.parseToJsonElement(logEvent!!.formattedMessage).jsonObject
+                assertEquals("WARN", jsonLog["level"]?.jsonPrimitive?.content)
+                assertEquals(VALID_CORRELATION_ID, jsonLog["correlation_id"]?.jsonPrimitive?.content)
+                assertEquals("MALFORMED_JSON_ERROR", jsonLog["event"]?.jsonPrimitive?.content)
+                assertEquals("urn:problem-type:malformed-json", jsonLog["error_type"]?.jsonPrimitive?.content)
+                assertEquals("MALFORMED_JSON", jsonLog["code"]?.jsonPrimitive?.content)
+                assertEquals(400, jsonLog["status_code"]?.jsonPrimitive?.int)
+            } finally {
+                logbackLogger.detachAppender(listAppender)
+            }
+        }
+    }
 }
