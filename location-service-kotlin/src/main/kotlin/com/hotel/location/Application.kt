@@ -17,7 +17,10 @@ import kotlinx.serialization.json.Json
 
 fun main() {
     println(">>> Iniciando Servidor Ktor de Geofencing em http://127.0.0.1:8104 ...")
-    embeddedServer(Netty, port = 8104, host = "127.0.0.1") {
+    embeddedServer(Netty, port = 8104, host = "127.0.0.1", module = Application::module).start(wait = true)
+}
+
+fun Application.module() {
         install(ContentNegotiation) {
             json(Json {
                 prettyPrint = true
@@ -65,5 +68,4 @@ fun main() {
                 }
             }
         }
-    }.start(wait = true)
 }
