@@ -18,26 +18,32 @@ contact-health-service-kotlin/
 │   │       └── com/
 │   │           └── hotel/
 │   │               └── contacthealth/
-│   │                   ├── Application.kt          # Ponto de entrada, rotas Ktor e tratamento de erros (StatusPages)
-│   │                   ├── ContactModels.kt        # DTOs de Request, Response, Enums e modelos de avaliação
-│   │                   ├── ConsentValidator.kt     # Validador de expiração de consentimento regulatório (LGPD)
-│   │                   ├── FormatValidators.kt     # Validações de formato (E-mail, E.164) e mascaramento de PII
-│   │                   ├── HygieneEvaluator.kt     # Orquestrador da lógica de avaliação de higiene cadastral
-│   │                   ├── ScoreCalculator.kt      # Algoritmo de cálculo de pontuação (0-100) e penalidades
-│   │                   └── StalenessCalculator.kt  # Cálculo de defasagem temporal (dias desde a última verificação)
+│   │                   ├── Application.kt                   # Ponto de entrada, rotas Ktor e tratamento de erros (StatusPages)
+│   │                   ├── model/
+│   │                   │   ├── ContactModels.kt             # DTOs de Request, Response e ErrorResponse
+│   │                   │   └── FactorEnums.kt               # Enums de domínio (FactorType, FactorStatus, RecommendedAction)
+│   │                   ├── domain/
+│   │                   │   ├── validation/
+│   │                   │   │   ├── FormatValidators.kt      # Validações de formato (RFC 5322, E.164) e mascaramento de PII
+│   │                   │   │   └── ConsentValidator.kt      # Validador de expiração de consentimento regulatório (LGPD)
+│   │                   │   └── calculation/
+│   │                   │       ├── StalenessCalculator.kt   # Cálculo de defasagem temporal (ISO-8601 completo)
+│   │                   │       └── ScoreCalculator.kt       # Algoritmo de cálculo de pontuação (0-100) e penalidades
+│   │                   └── service/
+│   │                       └── HygieneEvaluator.kt          # Orquestrador da lógica de avaliação de higiene cadastral
 │   └── test/
 │       └── kotlin/
 │           └── com/
 │               └── hotel/
 │                   └── contacthealth/
-│                       ├── Application.kt          # Testes de integração do endpoint /healthz (Ktor Test Host)
-│                       └── HygieneEvaluatorTest.kt # Testes unitários com fixtures para cenários de higiene e LGPD
-├── build.gradle.kts                                # Configuração do Gradle, plugins e dependências
-├── gradle.properties                               # Propriedades de JVM e cache do Gradle
-├── gradlew                                         # Executável do Gradle Wrapper (Linux/macOS)
-├── gradlew.bat                                     # Executável do Gradle Wrapper (Windows)
-├── settings.gradle.kts                             # Configuração do projeto Gradle
-└── README.md                                       # Esta documentação
+│                       ├── Application.kt                   # Testes de integração dos endpoints /healthz e /v1/contact-evaluations
+│                       └── HygieneEvaluatorTest.kt          # Testes unitários com fixtures para cenários de higiene e LGPD
+├── build.gradle.kts                                         # Configuração do Gradle, plugins e dependências
+├── gradle.properties                                        # Propriedades de JVM e cache do Gradle
+├── gradlew                                                  # Executável do Gradle Wrapper (Linux/macOS)
+├── gradlew.bat                                              # Executável do Gradle Wrapper (Windows)
+├── settings.gradle.kts                                      # Configuração do projeto Gradle
+└── README.md                                                # Esta documentação
 ```
 
 ---
@@ -189,14 +195,14 @@ curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
       "type": "EMAIL",
       "value_masked": "m***a@tech.com",
       "status": "FRESH",
-      "days_since_verificaton": 12,
+      "days_since_verification": 12,
       "issues": []
     },
     {
       "type": "PHONE",
       "value_masked": "+5511*****4567",
       "status": "FRESH",
-      "days_since_verificaton": 12,
+      "days_since_verification": 12,
       "issues": []
     }
   ],
@@ -236,7 +242,7 @@ curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
       "type": "EMAIL",
       "value_masked": "j***o@provedor.com.br",
       "status": "STALE",
-      "days_since_verificaton": 229,
+      "days_since_verification": 229,
       "issues": [
         "STALENESS_EXCEEDED_90_DAYS"
       ]
@@ -245,7 +251,7 @@ curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
       "type": "PHONE",
       "value_masked": "+5521*****7777",
       "status": "STALE",
-      "days_since_verificaton": 229,
+      "days_since_verification": 229,
       "issues": [
         "STALENESS_EXCEEDED_90_DAYS"
       ]
@@ -287,14 +293,14 @@ curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
       "type": "EMAIL",
       "value_masked": "p***a@empresa.com",
       "status": "FRESH",
-      "days_since_verificaton": 7,
+      "days_since_verification": 7,
       "issues": []
     },
     {
       "type": "PHONE",
       "value_masked": "+5531*****6666",
       "status": "FRESH",
-      "days_since_verificaton": 7,
+      "days_since_verification": 7,
       "issues": []
     }
   ],
@@ -312,7 +318,7 @@ Quando o payload JSON estiver malformado ou campos obrigatórios/datas forem inv
 ```json
 {
   "error": "INVALID_PAYLOAD",
-  "message": "Campo 'reference_date' inválido."
+  "message": "Invalid 'reference_date' field."
 }
 ```
 
