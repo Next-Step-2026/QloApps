@@ -64,38 +64,4 @@ object HaversineEngine {
             message = message
         )
     }
-
-    fun areCoordinatesValid(req: com.hotel.location.model.LocationEventRequest): Boolean {
-        return isValidLatitude(req.hotel_lat) &&
-               isValidLatitude(req.guest_lat) &&
-               isValidLongitude(req.hotel_lng) &&
-               isValidLongitude(req.guest_lng)
-    }
-
-    fun processLocationEvent(req: com.hotel.location.model.LocationEventRequest, correlationId: String): com.hotel.location.model.LocationEventResponse {
-        val radius = if (req.geofence_radius_m <= 0.0) 200.0 else req.geofence_radius_m
-        val distance = calculateDistanceMeters(req.hotel_lat, req.hotel_lng, req.guest_lat, req.guest_lng)
-        val roundedDistance = (distance * 10.0).roundToInt() / 10.0
-        val currentState = if (distance <= radius) "inside" else "outside"
-        val transition = when {
-            req.previous_state == "outside" && currentState == "inside" -> "ENTERED"
-            req.previous_state == "inside" && currentState == "outside" -> "EXITED"
-            else -> "NO_CHANGE"
-        }
-        val alertTriggered = (transition == "ENTERED")
-        val message = if (alertTriggered) {
-            "Hóspede entrou no raio de proximidade do hotel."
-        } else {
-            "Posição atualizada sem alerta."
-        }
-        return com.hotel.location.model.LocationEventResponse(
-            correlation_id = correlationId,
-            hotel_id = req.hotel_id,
-            distance_meters = roundedDistance,
-            current_state = currentState,
-            transition = transition,
-            alert_triggered = alertTriggered,
-            message = message
-        )
-    }
 }
