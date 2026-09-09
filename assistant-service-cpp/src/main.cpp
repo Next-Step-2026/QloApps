@@ -18,7 +18,7 @@ int main() {
             auto body = json::parse(req.body);
             if (!body.contains("query") || !body.contains("reference_date")) {
                 res.status = 400;
-                res.set_content("{\"error\":\"INVALID_PAYLOAD\",\"detail\":\"Campos query e reference_date obrigatorios.\"}", "application/json");
+                res.set_content("{\"error\":\"INVALID_PAYLOAD\",\"detail\":\"query and reference_date fields are required.\"}", "application/json");
                 return;
             }
 
@@ -74,7 +74,7 @@ int main() {
         }
     });
 
-    std::cout << "[QLO-FEAT-001] Servico C++ escutando em http://127.0.0.1:8101" << std::endl;
+    std::cout << "[QLO-FEAT-001] Assistant C++ service listening on http://127.0.0.1:8101" << std::endl;
     svr.listen("127.0.0.1", 8101);
     return 0;
 }
