@@ -11,11 +11,26 @@ assistant-service-cpp/
 ├── README.md
 ├── .gitignore
 ├── include/
-│   ├── httplib.h       # cpp-httplib (v0.18.3, header-only)
-│   └── json.hpp        # nlohmann/json (v3.11.3, header-only)
+│   ├── httplib.h           # cpp-httplib (v0.18.3, header-only)
+│   ├── json.hpp            # nlohmann/json (v3.11.3, header-only)
+│   ├── text_normalizer.hpp # Normalizador UTF-8 de texto e remoção de acentuação
+│   ├── date_resolver.hpp   # Resolvedor e aritmético de datas relativas (YYYY-MM-DD)
+│   └── engine.hpp          # Motor de classificação semântica, extração de slots e RFC 7807
 ├── src/
-│   └── main.cpp        # Ponto de entrada do serviço HTTP
-└── tests/              # Testes unitários (a serem expandidos)
+│   └── main.cpp            # Servidor HTTP e despacho de rotas
+└── tests/
+    └── test_api.sh         # Suíte de testes automatizados de integração da API
+```
+
+## Execução dos Testes Automatizados
+
+Para executar a bateria de testes automatizados da API:
+```bash
+make test
+```
+Ou diretamente:
+```bash
+bash tests/test_api.sh
 ```
 
 ## Compilação e Execução
