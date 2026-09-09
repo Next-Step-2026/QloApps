@@ -1,16 +1,20 @@
-// src/main/kotlin/com/hotel/contacthealth/Application.kt
 package com.hotel.contacthealth
 
+import com.hotel.contacthealth.model.ContactEvaluationRequest
+import com.hotel.contacthealth.model.ErrorResponse
+import com.hotel.contacthealth.service.HygieneEvaluator
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -24,6 +28,7 @@ fun Application.module() {
         json(Json {
             ignoreUnknownKeys = true
             isLenient = true
+            encodeDefaults = true
         })
     }
 
@@ -31,13 +36,25 @@ fun Application.module() {
         exception<IllegalArgumentException> { call, cause ->
             call.respond(
                 HttpStatusCode.BadRequest,
-                ErrorResponse(error = "INVALID_PAYLOAD", message = cause.message ?: "Parâmetros inválidos.")
+                ErrorResponse(error = "INVALID_PAYLOAD", message = cause.message ?: "Invalid parameters.")
             )
         }
-        exception<Throwable> { call, cause ->
+        exception<SerializationException> { call, cause ->
             call.respond(
                 HttpStatusCode.BadRequest,
-                ErrorResponse(error = "INVALID_PAYLOAD", message = cause.message ?: "JSON malformado ou campos ausentes.")
+                ErrorResponse(error = "INVALID_PAYLOAD", message = "Malformed JSON or incompatible types: ${cause.message}")
+            )
+        }
+        exception<BadRequestException> { call, cause ->
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(error = "INVALID_PAYLOAD", message = cause.message ?: "Malformed request.")
+            )
+        }
+        exception<Throwable> { call, _ ->
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                ErrorResponse(error = "INTERNAL_SERVER_ERROR", message = "Internal server error.")
             )
         }
     }
@@ -50,7 +67,18 @@ fun Application.module() {
         }
 
         post("/v1/contact-evaluations") {
-            val correlationId = call.request.headers["X-Correlation-ID"] ?: UUID.randomUUID().toString()
+            val contentType = call.request.contentType()
+            if (!contentType.match(ContentType.Application.Json)) {
+                call.respond(
+                    HttpStatusCode.UnsupportedMediaType,
+                    ErrorResponse("UNSUPPORTED_MEDIA_TYPE", "Content-Type must be application/json.")
+                )
+                return@post
+            }
+
+            val correlationId = call.request.headers["X-Correlation-ID"]?.takeIf { it.isNotBlank() }
+                ?: UUID.randomUUID().toString()
+
             val request = call.receive<ContactEvaluationRequest>()
             val response = evaluator.evaluate(request, correlationId)
             call.respond(HttpStatusCode.OK, response)
