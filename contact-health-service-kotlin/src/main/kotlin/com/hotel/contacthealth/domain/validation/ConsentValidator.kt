@@ -11,10 +11,10 @@ object ConsentValidator {
 
     fun validate(consentExpiresAt: String?, refDate: LocalDate): ConsentResult {
         if (consentExpiresAt.isNullOrBlank()) {
-            return ConsentResult(isValid = true, isExpired = false)
+            return ConsentResult(isValid = false, isExpired = true)
         }
         val expiresDate = StalenessCalculator.parseDate(consentExpiresAt, "consent_expires_at")
-            ?: return ConsentResult(isValid = true, isExpired = false)
+            ?: return ConsentResult(isValid = false, isExpired = true)
 
         val expired = expiresDate.isBefore(refDate)
 

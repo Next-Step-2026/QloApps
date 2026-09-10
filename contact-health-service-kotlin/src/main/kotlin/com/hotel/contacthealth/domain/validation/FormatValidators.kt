@@ -5,10 +5,7 @@ object FormatValidators {
     private val E164_PHONE_REGEX = Regex("^\\+[1-9]\\d{7,14}$")
 
     fun isValidEmail(email: String): Boolean {
-        if (email.contains(" ") || email.contains("\n") || email.contains("\r")) {
-            return false
-        }
-        return EMAIL_REGEX.matches(email)
+        return email.isNotBlank() && !email.any(Char::isWhitespace) && EMAIL_REGEX.matches(email)
     }
 
     fun normalizePhone(phone: String): String {

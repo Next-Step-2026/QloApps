@@ -76,11 +76,17 @@ fun Application.module() {
                 return@post
             }
 
-            val correlationId = call.request.headers["X-Correlation-ID"]?.takeIf { it.isNotBlank() }
-                ?: UUID.randomUUID().toString()
+            val correlationId = call.request.headers["X-Correlation-ID"]
+            if (correlationId.isNullOrBlank()) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse("INVALID_PAYLOAD", "Header 'X-Correlation-ID' is required and cannot be blank.")
+                )
+                return@post
+            }
 
             val request = call.receive<ContactEvaluationRequest>()
-            val response = evaluator.evaluate(request, correlationId)
+            val response = evaluator.evaluate(request, correlationId.trim())
             call.respond(HttpStatusCode.OK, response)
         }
     }
