@@ -314,7 +314,7 @@ class AdminVisualInspectionController extends ModuleAdminController
                     if (!empty($row['hotel_name'])) {
                         $fullTitleParts[] = '[' . $row['hotel_name'] . ']';
                     }
-                    $row['full_room_title'] = implode(' — ', $fullTitleParts);
+                    $row['full_room_title'] = implode(' - ', $fullTitleParts);
 
                     $inspections[] = $row;
                 }
