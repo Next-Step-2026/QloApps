@@ -101,8 +101,8 @@ Calculado com base na diferença em dias entre a `reference_date` e o `last_veri
   - *Mascaramento*: Mascara dígitos intermediários preservando os 4 últimos dígitos (ex: `+5511*****4567`).
 
 ### 3. Consentimento Regulatório (LGPD)
-- Se a data `consent_expires_at` for anterior à `reference_date`, o consentimento é marcado como expirado (`consent_valid = false`).
-- Quando expirado:
+- Se a data `consent_expires_at` for anterior à `reference_date` ou for **ausente/nula/em branco**, o consentimento é explicitamente considerado inválido/expirado (`consent_valid = false`).
+- Quando expirado ou ausente:
   - O `overall_status` é classificado como `CONSENT_EXPIRED`.
   - O `hygiene_score` é limitado a um teto máximo de **40 pontos**.
 
@@ -150,7 +150,7 @@ Realiza a validação completa de formato, defasagem e consentimento de um conta
 
 #### Headers:
 - `Content-Type: application/json`
-- `X-Correlation-ID: <string>` *(opcional, se não enviado um UUID será gerado automaticamente)*
+- `X-Correlation-ID: <string>` *(obrigatório; rejeita com HTTP 400 se ausente ou em branco)*
 
 #### Parâmetros do Payload (JSON):
 | Campo | Tipo | Obrigatório | Descrição |
@@ -159,7 +159,7 @@ Realiza a validação completa de formato, defasagem e consentimento de um conta
 | `email` | String | Sim | Endereço de e-mail do cliente |
 | `phone` | String | Sim | Número de telefone com código de país no padrão E.164 |
 | `last_verified_at` | String (ISO-8601/Date) | Não | Data/hora da última verificação do contato |
-| `consent_expires_at` | String (ISO-8601/Date) | Não | Data/hora de expiração do consentimento de contato (LGPD) |
+| `consent_expires_at` | String (ISO-8601/Date) | Não | Data/hora de expiração do consentimento (LGPD); se ausente ou nulo, é tratado como expirado |
 | `reference_date` | String (YYYY-MM-DD) | Sim | Data base de referência para cálculo da defasagem e consentimento |
 
 ---
