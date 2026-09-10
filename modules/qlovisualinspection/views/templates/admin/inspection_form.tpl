@@ -126,9 +126,11 @@
                             </span>
                         </div>
                         <div class="panel-body text-center" style="background: #fafafa;">
-                            {if isset($itemData.preview) && $itemData.preview}
+                            {if isset($itemData.preview_image) && $itemData.preview_image}
                                 <div style="margin-bottom: 10px;">
-                                    <img src="{$itemData.preview}" alt="{$itemData.title|escape:'html':'UTF-8'}" style="max-width: 100%; height: auto; max-height: 180px; border-radius: 4px; border: 1px solid #ddd;" />
+                                    <a href="{$moduleImgUri}{$itemData.preview_image|escape:'html':'UTF-8'}" target="_blank" title="{l s='View full resolution' mod='qlovisualinspection'}">
+                                        <img src="{$moduleImgUri}{$itemData.preview_image|escape:'html':'UTF-8'}" alt="{$itemData.title|escape:'html':'UTF-8'}" loading="lazy" style="max-width: 100%; height: auto; max-height: 180px; border-radius: 4px; border: 1px solid #ddd; object-fit: cover;" />
+                                    </a>
                                 </div>
                             {/if}
 

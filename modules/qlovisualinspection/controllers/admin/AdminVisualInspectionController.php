@@ -63,7 +63,7 @@ class AdminVisualInspectionController extends ModuleAdminController
                 $fieldName = $itemConfig['field'];
                 $itemResult = null;
                 $itemError = null;
-                $previewBase64 = null;
+                $savedImagePath = null;
 
                 if (!isset($_FILES[$fieldName]) || $_FILES[$fieldName]['error'] !== UPLOAD_ERR_OK) {
                     $itemError = $this->l('Photo not provided for this item.');
@@ -85,11 +85,6 @@ class AdminVisualInspectionController extends ModuleAdminController
                             $hasAnyError = true;
                             $overallAssessment = 'EVIDENCE_REQUIRES_RETAKE';
                         } else {
-                            $fileData = @file_get_contents($tmpFilePath);
-                            if ($fileData) {
-                                $previewBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($fileData);
-                            }
-
                             $subInspectionId = 'INSP-' . date('YmdHis') . '-' . preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$selectedRoomId) . '-' . $itemKey;
                             $correlationId = Tools::passwdGen(16, 'ALPHANUMERIC');
 
@@ -142,11 +137,11 @@ class AdminVisualInspectionController extends ModuleAdminController
                 }
 
                 $itemsResults[$itemKey] = [
-                    'title'   => $itemConfig['title'],
-                    'icon'    => $itemConfig['icon'],
-                    'preview' => $previewBase64,
-                    'result'  => $itemResult,
-                    'error'   => $itemError,
+                    'title'         => $itemConfig['title'],
+                    'icon'          => $itemConfig['icon'],
+                    'preview_image' => $savedImagePath,
+                    'result'        => $itemResult,
+                    'error'         => $itemError,
                 ];
             }
 
