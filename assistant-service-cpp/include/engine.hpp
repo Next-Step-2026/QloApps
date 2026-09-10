@@ -32,7 +32,8 @@ public:
             )};
         }
 
-        if (!parsed.contains("query") || !parsed["query"].is_string() || parsed["query"].get<std::string>().empty()) {
+        // 1. Validate 'query' presence and type
+        if (!parsed.contains("query")) {
             return {400, buildProblemDetails(
                 "https://hotel.local/errors/invalid-payload",
                 "Invalid Request Payload",
@@ -43,7 +44,49 @@ public:
             )};
         }
 
-        if (!parsed.contains("reference_date") || !parsed["reference_date"].is_string()) {
+        if (!parsed["query"].is_string()) {
+            return {400, buildProblemDetails(
+                "https://hotel.local/errors/invalid-payload",
+                "Invalid Request Payload",
+                400,
+                "Field 'query' must be a valid non-null string.",
+                "INVALID_QUERY_TYPE",
+                "query"
+            )};
+        }
+
+        std::string rawQuery = parsed["query"].get<std::string>();
+
+        // 2. Validate 'query' minLength: 1 (reject empty and whitespace-only)
+        bool isOnlyWhitespace = std::all_of(rawQuery.begin(), rawQuery.end(), [](unsigned char c) {
+            return std::isspace(c);
+        });
+
+        if (rawQuery.empty() || isOnlyWhitespace) {
+            return {400, buildProblemDetails(
+                "https://hotel.local/errors/invalid-payload",
+                "Invalid Request Payload",
+                400,
+                "Field 'query' must not be empty or solely whitespace (minLength: 1).",
+                "EMPTY_QUERY",
+                "query"
+            )};
+        }
+
+        // 3. Validate 'query' maxLength: 256
+        if (rawQuery.size() > 256) {
+            return {400, buildProblemDetails(
+                "https://hotel.local/errors/invalid-payload",
+                "Invalid Request Payload",
+                400,
+                "Field 'query' exceeds maximum length of 256 characters (maxLength: 256).",
+                "QUERY_TOO_LONG",
+                "query"
+            )};
+        }
+
+        // 4. Validate 'reference_date' presence and type
+        if (!parsed.contains("reference_date")) {
             return {400, buildProblemDetails(
                 "https://hotel.local/errors/invalid-payload",
                 "Invalid Request Payload",
@@ -54,7 +97,17 @@ public:
             )};
         }
 
-        std::string rawQuery = parsed["query"].get<std::string>();
+        if (!parsed["reference_date"].is_string()) {
+            return {400, buildProblemDetails(
+                "https://hotel.local/errors/invalid-payload",
+                "Invalid Request Payload",
+                400,
+                "Field 'reference_date' must be a string matching format YYYY-MM-DD.",
+                "INVALID_REFERENCE_DATE",
+                "reference_date"
+            )};
+        }
+
         std::string refDate = parsed["reference_date"].get<std::string>();
 
         int y, m, d;

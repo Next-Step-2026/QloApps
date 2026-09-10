@@ -211,4 +211,110 @@ else
     exit 1
 fi
 
-echo "=== [SUCCESS] All 11 API tests passed successfully! ==="
+# Test 12: POST /v1/assist/interpret query exceeding 256 chars (expects 400 QUERY_TOO_LONG)
+echo -n "[TEST] 12. Validating query exceeding 256 chars (RFC 7807 400) ... "
+LONG_QUERY=$(python3 -c 'print("tem quarto " + "a" * 250)')
+RES_LONG=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/v1/assist/interpret" \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"$LONG_QUERY\", \"reference_date\": \"2026-08-27\"}")
+BODY_LONG=$(echo "$RES_LONG" | head -n -1)
+STATUS_LONG=$(echo "$RES_LONG" | tail -n 1)
+
+if [ "$STATUS_LONG" -eq 400 ] && echo "$BODY_LONG" | grep -q "QUERY_TOO_LONG"; then
+    echo "OK (HTTP 400 - QUERY_TOO_LONG)"
+else
+    echo "FAILED (HTTP $STATUS_LONG: $BODY_LONG)"
+    exit 1
+fi
+
+# Test 13: POST /v1/assist/interpret query with null (expects 400 INVALID_QUERY_TYPE)
+echo -n "[TEST] 13. Validating query with null value (RFC 7807 400) ... "
+RES_NULL=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/v1/assist/interpret" \
+    -H "Content-Type: application/json" \
+    -d '{"query": null, "reference_date": "2026-08-27"}')
+BODY_NULL=$(echo "$RES_NULL" | head -n -1)
+STATUS_NULL=$(echo "$RES_NULL" | tail -n 1)
+
+if [ "$STATUS_NULL" -eq 400 ] && echo "$BODY_NULL" | grep -q "INVALID_QUERY_TYPE"; then
+    echo "OK (HTTP 400 - INVALID_QUERY_TYPE)"
+else
+    echo "FAILED (HTTP $STATUS_NULL: $BODY_NULL)"
+    exit 1
+fi
+
+# Test 14: POST /v1/assist/interpret query with empty string and whitespace-only (expects 400 EMPTY_QUERY)
+echo -n "[TEST] 14. Validating query with empty/whitespace-only string ... "
+RES_EMPTY=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/v1/assist/interpret" \
+    -H "Content-Type: application/json" \
+    -d '{"query": "   ", "reference_date": "2026-08-27"}')
+BODY_EMPTY=$(echo "$RES_EMPTY" | head -n -1)
+STATUS_EMPTY=$(echo "$RES_EMPTY" | tail -n 1)
+
+if [ "$STATUS_EMPTY" -eq 400 ] && echo "$BODY_EMPTY" | grep -q "EMPTY_QUERY"; then
+    echo "OK (HTTP 400 - EMPTY_QUERY)"
+else
+    echo "FAILED (HTTP $STATUS_EMPTY: $BODY_EMPTY)"
+    exit 1
+fi
+
+# Test 15: POST /v1/assist/interpret missing query field completely (expects 400 MISSING_QUERY)
+echo -n "[TEST] 15. Validating missing query field ... "
+RES_NOQUERY=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/v1/assist/interpret" \
+    -H "Content-Type: application/json" \
+    -d '{"reference_date": "2026-08-27"}')
+BODY_NOQUERY=$(echo "$RES_NOQUERY" | head -n -1)
+STATUS_NOQUERY=$(echo "$RES_NOQUERY" | tail -n 1)
+
+if [ "$STATUS_NOQUERY" -eq 400 ] && echo "$BODY_NOQUERY" | grep -q "MISSING_QUERY"; then
+    echo "OK (HTTP 400 - MISSING_QUERY)"
+else
+    echo "FAILED (HTTP $STATUS_NOQUERY: $BODY_NOQUERY)"
+    exit 1
+fi
+
+# Test 16: Boundary test: query with exactly 256 characters (expects 200)
+echo -n "[TEST] 16. Validating boundary query with exactly 256 characters ... "
+EXACT_256_QUERY=$(python3 -c 'prefix = "tem quarto suite "; print(prefix + "x" * (256 - len(prefix)))')
+RES_EXACT=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/v1/assist/interpret" \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"$EXACT_256_QUERY\", \"reference_date\": \"2026-08-27\"}")
+BODY_EXACT=$(echo "$RES_EXACT" | head -n -1)
+STATUS_EXACT=$(echo "$RES_EXACT" | tail -n 1)
+
+if [ "$STATUS_EXACT" -eq 200 ] && echo "$BODY_EXACT" | grep -q "AVAILABILITY_QUERY"; then
+    echo "OK (HTTP 200 - boundary 256 chars)"
+else
+    echo "FAILED (HTTP $STATUS_EXACT: $BODY_EXACT)"
+    exit 1
+fi
+
+# Test 17: POST /v1/assist/interpret missing Content-Type header (expects 415 UNSUPPORTED_MEDIA_TYPE)
+echo -n "[TEST] 17. Validating missing Content-Type header (RFC 7807 415) ... "
+RES_NOCT=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/v1/assist/interpret" \
+    -d '{"query": "tem quarto suite?", "reference_date": "2026-08-27"}')
+BODY_NOCT=$(echo "$RES_NOCT" | head -n -1)
+STATUS_NOCT=$(echo "$RES_NOCT" | tail -n 1)
+
+if [ "$STATUS_NOCT" -eq 415 ] && echo "$BODY_NOCT" | grep -q "UNSUPPORTED_MEDIA_TYPE"; then
+    echo "OK (HTTP 415 - UNSUPPORTED_MEDIA_TYPE)"
+else
+    echo "FAILED (HTTP $STATUS_NOCT: $BODY_NOCT)"
+    exit 1
+fi
+
+# Test 18: POST /v1/assist/interpret incompatible Content-Type text/plain (expects 415 UNSUPPORTED_MEDIA_TYPE)
+echo -n "[TEST] 18. Validating incompatible Content-Type: text/plain (RFC 7807 415) ... "
+RES_BADCT=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/v1/assist/interpret" \
+    -H "Content-Type: text/plain" \
+    -d '{"query": "tem quarto suite?", "reference_date": "2026-08-27"}')
+BODY_BADCT=$(echo "$RES_BADCT" | head -n -1)
+STATUS_BADCT=$(echo "$RES_BADCT" | tail -n 1)
+
+if [ "$STATUS_BADCT" -eq 415 ] && echo "$BODY_BADCT" | grep -q "UNSUPPORTED_MEDIA_TYPE"; then
+    echo "OK (HTTP 415 - UNSUPPORTED_MEDIA_TYPE)"
+else
+    echo "FAILED (HTTP $STATUS_BADCT: $BODY_BADCT)"
+    exit 1
+fi
+
+echo "=== [SUCCESS] All 18 API tests passed successfully! ==="

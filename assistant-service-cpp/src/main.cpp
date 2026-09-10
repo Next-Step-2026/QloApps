@@ -12,6 +12,20 @@ int main() {
     });
 
     svr.Post("/v1/assist/interpret", [](const httplib::Request& req, httplib::Response& res) {
+        if (!req.has_header("Content-Type") || req.get_header_value("Content-Type").find("application/json") == std::string::npos) {
+            res.status = 415;
+            res.set_content(
+                "{\"code\":\"UNSUPPORTED_MEDIA_TYPE\","
+                "\"detail\":\"Header 'Content-Type' must be 'application/json'.\","
+                "\"instance\":\"/v1/assist/interpret\","
+                "\"status\":415,"
+                "\"title\":\"Unsupported Media Type\","
+                "\"type\":\"https://hotel.local/errors/unsupported-media-type\"}",
+                "application/problem+json"
+            );
+            return;
+        }
+
         std::string corrId = req.has_header("X-Correlation-ID") ? req.get_header_value("X-Correlation-ID") : "corr-local-demo";
         auto result = assistant::AssistantEngine::interpret(req.body, corrId);
         res.status = result.httpStatus;
