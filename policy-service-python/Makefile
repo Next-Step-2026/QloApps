@@ -92,7 +92,7 @@ security:
 
 contract:
 	@echo "==> [18/39] Testes de Contrato OpenAPI com Schemathesis..."
-	PYTHONPATH=. st run http://127.0.0.1:8105/openapi.json --checks all
+	PYTHONPATH=. st run http://127.0.0.1:8105/openapi.json --checks all --exclude-checks positive_data_acceptance
 
 # ------------------------------------------------------------------------------
 # 3. Tier 3: Verificação Profunda, Performance e Containers

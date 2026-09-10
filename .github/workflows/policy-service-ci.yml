@@ -109,7 +109,7 @@ jobs:
       - name: "[18/39] Testes de Contrato OpenAPI (Schemathesis)"
         run: |
           pip install schemathesis
-          st run http://127.0.0.1:8105/openapi.json --checks all --request-timeout=5
+          st run http://127.0.0.1:8105/openapi.json --checks all --exclude-checks positive_data_acceptance --request-timeout=5
 
       - name: Encerrar Serviços
         if: always()

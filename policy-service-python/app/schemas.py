@@ -43,4 +43,14 @@ class PolicyEvaluationResponse(BaseModel):
     policy: str = Field(..., description="Nome da política avaliada")
     decision: PolicyDecision = Field(..., description="Decisão da política: ALLOW ou DENY")
     reason_code: str = Field(..., description="Código de motivo padronizado")
-    explanation: str = Field(..., description="Justificativa em linguagem natural")
+    explanation: str = Field(..., description="Justificativa legível da decisão")
+
+
+class ProblemDetails(BaseModel):
+    type: str | None = Field(
+        default="https://hotel.local/errors/invalid-policy-facts", description="URI de referência do tipo de erro"
+    )
+    title: str | None = Field(default="Fatos de Política Inválidos", description="Resumo legível do erro")
+    status: int = Field(default=400, description="Código de status HTTP")
+    detail: str = Field(..., description="Explicação detalhada do erro")
+    instance: str | None = Field(default=None, description="URI da requisição que originou o erro")

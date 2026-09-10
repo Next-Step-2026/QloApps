@@ -11,7 +11,7 @@ from fastapi import FastAPI, Header, Request, status
 from fastapi.responses import JSONResponse
 
 from app.engine import evaluate_policy
-from app.schemas import PolicyEvaluationRequest, PolicyEvaluationResponse
+from app.schemas import PolicyEvaluationRequest, PolicyEvaluationResponse, ProblemDetails
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("policy-engine")
@@ -52,6 +52,12 @@ def health_check():
     "/v1/policy-evaluations",
     response_model=PolicyEvaluationResponse,
     status_code=status.HTTP_200_OK,
+    responses={
+        400: {
+            "model": ProblemDetails,
+            "description": "Fatos de política inválidos ou ausentes (RFC 7807)",
+        }
+    },
 )
 def evaluate(req: PolicyEvaluationRequest, x_correlation_id: str | None = Header(default=None)):
     """
