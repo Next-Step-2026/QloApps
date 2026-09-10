@@ -22,6 +22,12 @@
                         </option>
                     {/foreach}
                 </select>
+                {if isset($roomsTruncated) && $roomsTruncated}
+                    <p class="help-block text-warning" style="margin-top: 5px;">
+                        <i class="icon-warning-sign"></i> 
+                        {l s='Showing first %1$d of %2$d rooms. Some rooms are not displayed.' sprintf=[$roomsLimit, $roomsTotalCount] mod='qlovisualinspection'}
+                    </p>
+                {/if}
             </div>
         </div>
 

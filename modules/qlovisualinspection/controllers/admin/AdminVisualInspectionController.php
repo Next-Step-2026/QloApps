@@ -16,6 +16,7 @@ class AdminVisualInspectionController extends ModuleAdminController
     const PYTHON_SERVICE_URL = 'http://127.0.0.1:8102/v1/visual-inspections';
     const CURL_TIMEOUT_MS = 800;
     const MAX_FILE_SIZE_BYTES = 5242880; // 5 MB
+    const MAX_ROOMS_SELECT_LIMIT = 50;
 
     public function __construct()
     {
@@ -156,12 +157,17 @@ class AdminVisualInspectionController extends ModuleAdminController
             }
         }
 
+        $roomsData = $this->getHotelRoomsList();
+
         $this->context->smarty->assign([
             'itemsResults'      => $itemsResults,
             'overallAssessment' => $overallAssessment,
             'inspectionError'   => $errorMessage,
             'selectedRoomId'    => $selectedRoomId,
-            'roomsList'         => $this->getHotelRoomsList(),
+            'roomsList'         => $roomsData['rooms'],
+            'roomsTruncated'    => $roomsData['is_truncated'],
+            'roomsTotalCount'   => $roomsData['total_count'],
+            'roomsLimit'        => $roomsData['limit'],
             'recentInspections' => $this->getRecentInspections(),
             'moduleImgUri'      => __PS_BASE_URI__ . 'modules/' . $this->module->name . '/views/img/inspections/',
         ]);
@@ -327,23 +333,28 @@ class AdminVisualInspectionController extends ModuleAdminController
     }
 
     /**
-     * Retrieve active hotel rooms from database or fallback list
+     * Retrieve active hotel rooms from database or fallback list with truncation metadata
      *
      * @return array
      */
     protected function getHotelRoomsList()
     {
         $rooms = [];
+        $totalCount = 0;
 
         try {
             if (class_exists('Db')) {
+                $totalCount = (int) Db::getInstance()->getValue(
+                    'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'htl_room_information`'
+                );
+
                 $idLang = (int) (isset($this->context->language->id) ? $this->context->language->id : Configuration::get('PS_LANG_DEFAULT'));
 
                 $sql = 'SELECT r.`id` AS id_room, r.`room_num`, r.`id_status`, r.`floor`,
                                pl.`name` AS room_type_name
                         FROM `' . _DB_PREFIX_ . 'htl_room_information` r
                         LEFT JOIN `' . _DB_PREFIX_ . 'product_lang` pl ON (pl.`id_product` = r.`id_product` AND pl.`id_lang` = ' . (int) $idLang . ')
-                        ORDER BY r.`room_num` ASC LIMIT 50';
+                        ORDER BY r.`room_num` ASC LIMIT ' . (int) self::MAX_ROOMS_SELECT_LIMIT;
                 $dbRooms = Db::getInstance()->executeS($sql);
 
                 if (!empty($dbRooms)) {
@@ -375,8 +386,14 @@ class AdminVisualInspectionController extends ModuleAdminController
                 ['id' => 'room-201', 'name' => 'Room 201 (Presidential Suite)'],
                 ['id' => 'room-202', 'name' => 'Room 202 (Executive)'],
             ];
+            $totalCount = count($rooms);
         }
 
-        return $rooms;
+        return [
+            'rooms'        => $rooms,
+            'total_count'  => $totalCount,
+            'is_truncated' => ($totalCount > self::MAX_ROOMS_SELECT_LIMIT),
+            'limit'        => self::MAX_ROOMS_SELECT_LIMIT,
+        ];
     }
 }
