@@ -124,14 +124,20 @@ class AdminVisualInspectionController extends ModuleAdminController
 
                             // Save evidence file permanently and persist in database
                             $savedImagePath = $this->saveEvidenceImage($tmpFilePath, $subInspectionId, $mimeType);
-                            $this->saveInspectionRecord(
-                                $subInspectionId,
-                                $selectedRoomId,
-                                $itemKey,
-                                $itemConfig['title'],
-                                $savedImagePath,
-                                $itemResult
-                            );
+                            if (!$savedImagePath) {
+                                $itemError = $this->l('Could not save image to disk due to a storage or permission error.');
+                                $hasAnyError = true;
+                                $overallAssessment = 'EVIDENCE_REQUIRES_RETAKE';
+                            } else {
+                                $this->saveInspectionRecord(
+                                    $subInspectionId,
+                                    $selectedRoomId,
+                                    $itemKey,
+                                    $itemConfig['title'],
+                                    $savedImagePath,
+                                    $itemResult
+                                );
+                            }
                         }
                     }
                 }
@@ -171,23 +177,39 @@ class AdminVisualInspectionController extends ModuleAdminController
      * @param string $tmpPath
      * @param string $subInspectionId
      * @param string $mimeType
-     * @return string
+     * @return string|false
      */
-    protected function saveEvidenceImage($tmpPath, $subInspectionId, $mimeType)
-    {
-        $ext = ($mimeType === 'image/png' || $mimeType === 'image/x-png') ? 'png' : 'jpg';
-        $filename = $subInspectionId . '.' . $ext;
-        $targetDir = _PS_MODULE_DIR_ . $this->module->name . '/views/img/inspections/';
+     protected function saveEvidenceImage($tmpPath, $subInspectionId, $mimeType)
+     {
+         $ext = ($mimeType === 'image/png' || $mimeType === 'image/x-png') ? 'png' : 'jpg';
+         $filename = $subInspectionId . '.' . $ext;
+         $targetDir = _PS_MODULE_DIR_ . $this->module->name . '/views/img/inspections/';
 
-        if (!is_dir($targetDir)) {
-            @mkdir($targetDir, 0755, true);
-        }
+         if (!is_dir($targetDir) && !@mkdir($targetDir, 0755, true) && !is_dir($targetDir)) {
+             PrestaShopLogger::addLog(
+                 sprintf('[VisualInspection] Failed to create destination directory: %s', $targetDir),
+                 3,
+                 null,
+                 'VisualInspection',
+                 isset($this->context->employee->id) ? (int) $this->context->employee->id : null
+             );
+             return false;
+         }
 
-        $targetPath = $targetDir . $filename;
-        @copy($tmpPath, $targetPath);
+         $targetPath = $targetDir . $filename;
+         if (!@copy($tmpPath, $targetPath) || !file_exists($targetPath)) {
+             PrestaShopLogger::addLog(
+                 sprintf('[VisualInspection] Failed to copy evidence image to: %s', $targetPath),
+                 3,
+                 null,
+                 'VisualInspection',
+                 isset($this->context->employee->id) ? (int) $this->context->employee->id : null
+             );
+             return false;
+         }
 
-        return $filename;
-    }
+         return $filename;
+     }
 
     /**
      * Insert inspection record into qlo_visual_inspection table
