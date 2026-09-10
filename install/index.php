@@ -24,7 +24,13 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-if (file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR.'.installed')) {
+$definesFile = dirname(__FILE__).DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'defines.inc.php';
+if (file_exists($definesFile)) {
+    require_once($definesFile);
+}
+$markerFile = defined('_PS_INSTALL_MARKER_FILE_') ? _PS_INSTALL_MARKER_FILE_ : '.installed';
+
+if (file_exists(dirname(__FILE__).DIRECTORY_SEPARATOR.$markerFile)) {
     header('Location: ../');
     exit;
 }

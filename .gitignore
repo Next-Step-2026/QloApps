@@ -24,6 +24,9 @@ search-service-cpp/test_search
 search-service-cpp/*.o
 search-service-cpp/src/*.o
 
+# Installer disabled marker
+install/.installed
+
 # Cache and temp files
 /cache/**
 !/cache/cacert.pem
