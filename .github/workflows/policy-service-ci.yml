@@ -22,6 +22,7 @@ jobs:
   # ============================================================================
   fast-gate:
     name: ⚡ Fast Gate (Lint, Types, Tests, Secrets)
+    if: github.repository == 'ggabrielladlima/QloApps'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do Repositório
@@ -72,6 +73,7 @@ jobs:
   # ============================================================================
   security-and-contract:
     name: 🔒 Security, SCA & API Contract
+    if: github.repository == 'ggabrielladlima/QloApps'
     needs: fast-gate
     runs-on: ubuntu-latest
     steps:
@@ -121,6 +123,7 @@ jobs:
   # ============================================================================
   deep-verification:
     name: 🔬 Formal Proofs & Property-Based Testing
+    if: github.repository == 'ggabrielladlima/QloApps'
     needs: fast-gate
     runs-on: ubuntu-latest
     steps:
