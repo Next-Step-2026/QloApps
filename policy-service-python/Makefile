@@ -3,15 +3,17 @@
 # Execução local das 39 categorias via CLI de alta performance (Rust / Go)
 # ==============================================================================
 
-PYTHON ?= python3
 VENV ?= venv
 BIN = $(VENV)/bin
+PYTHON ?= $(shell [ -f $(BIN)/python ] && echo $(BIN)/python || echo python3)
 RUFF ?= $(shell command -v ruff 2>/dev/null || ( [ -f $(BIN)/ruff ] && echo $(BIN)/ruff ) || echo ruff)
 PYRIGHT ?= $(shell command -v pyright 2>/dev/null || ( [ -f $(BIN)/pyright ] && echo $(BIN)/pyright ) || echo pyright)
 RIPGREP ?= rg
 GITLEAKS ?= gitleaks
 TRIVY ?= trivy
 K6 ?= k6
+ST ?= $(shell command -v st 2>/dev/null || ( [ -f $(BIN)/st ] && echo $(BIN)/st ) || echo st)
+MUTMUT ?= $(shell command -v mutmut 2>/dev/null || ( [ -f $(BIN)/mutmut ] && echo $(BIN)/mutmut ) || echo mutmut)
 
 .PHONY: help fast lint format check-syntax typecheck test test-cov security contract mutate load-test all
 
@@ -67,9 +69,25 @@ test:
 	@echo "==> [15, 16, 22/39] Executando testes com Pytest..."
 	PYTHONPATH=. $(BIN)/pytest tests/
 
+test-unittest:
+	@echo "==> [15/39] Executando testes com o módulo nativo unittest..."
+	PYTHONPATH=. $(PYTHON) -m unittest discover -s tests -p "test_unittest*.py" -v
+
 test-cov:
 	@echo "==> [19/39] Cobertura de código..."
 	PYTHONPATH=. $(BIN)/pytest --cov=app --cov-report=term-missing --cov-report=xml
+
+e2e:
+	@echo "==> [23/39] Testes End-to-End com Playwright..."
+	PYTHONPATH=. $(BIN)/pytest tests/test_e2e_playwright.py -v
+
+pact:
+	@echo "==> [18/39] Testes de Contrato CDC com Pact-Python..."
+	PYTHONPATH=. $(BIN)/pytest tests/test_pact_contract.py -v
+
+fuzz:
+	@echo "==> [21/39] Fuzzing com Atheris (Google Coverage-Guided Fuzzer)..."
+	PYTHONPATH=. $(PYTHON) tests/fuzz_engine.py
 
 fast: check-syntax lint test
 
@@ -92,14 +110,16 @@ security:
 
 contract:
 	@echo "==> [18/39] Testes de Contrato OpenAPI com Schemathesis..."
-	PYTHONPATH=. st run http://127.0.0.1:8105/openapi.json --checks all --exclude-checks positive_data_acceptance
+	PYTHONPATH=. $(ST) run http://127.0.0.1:8105/openapi.json --checks all --exclude-checks positive_data_acceptance
 
 # ------------------------------------------------------------------------------
 # 3. Tier 3: Verificação Profunda, Performance e Containers
 # ------------------------------------------------------------------------------
 mutate:
 	@echo "==> [20/39] Mutation Testing com Mutmut..."
-	PYTHONPATH=. mutmut run --paths-to-mutate=app/engine.py
+	PYTHONPATH=. $(MUTMUT) run
+
+test-all: test test-unittest test-cov
 
 load-test:
 	@echo "==> [25/39] Teste de Carga com k6..."

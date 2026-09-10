@@ -273,3 +273,4 @@ policy-service-python/venv/
 coverage.xml
 htmlcov/
 .schemathesis/
+mutants/

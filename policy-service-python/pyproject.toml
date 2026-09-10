@@ -23,6 +23,9 @@ dev = [
     "mutmut>=2.4.4",
     "deptry>=0.16.0",
     "import-linter>=2.0",
+    "testcontainers>=4.0.0",
+    "playwright>=1.40.0",
+    "pact-python>=2.0.0",
 ]
 
 [tool.pytest.ini_options]
@@ -31,7 +34,9 @@ testpaths = ["tests"]
 addopts = "-v --strict-markers"
 markers = [
     "unit: Testes unitários das regras de negócio",
-    "integration: Testes dos endpoints HTTP via TestClient",
+    "integration: Testes dos endpoints HTTP e containers",
+    "e2e: Testes ponta a ponta com Playwright",
+    "contract: Testes de contrato orientados ao consumidor (Pact/Schemathesis)",
     "property: Testes baseados em propriedades com Hypothesis",
     "formal: Verificação formal matemática com Z3",
 ]
@@ -96,3 +101,8 @@ layers = [
     "app.engine",
     "app.schemas",
 ]
+
+[tool.mutmut]
+debug = false
+source_paths = ["app/"]
+pytest_add_cli_args_test_selection = ["tests/test_engine.py", "tests/test_unittest_engine.py"]
