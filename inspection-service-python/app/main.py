@@ -27,6 +27,10 @@ logger.handlers = [handler]
 app = FastAPI(title="Visual Inspection Quality Evaluator", version="1.0.0")
 
 
+# Maximum payload limit: 5 MB (5 * 1024 * 1024 bytes)
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+
+
 def rfc7807_error_response(status_code: int, title: str, detail: str, instance: str = "/v1/visual-inspections") -> JSONResponse:
     """Format an RFC 7807 compliant Problem Details error response."""
     return JSONResponse(
@@ -83,6 +87,13 @@ async def create_visual_inspection(
                 status_code=400,
                 title="Empty File",
                 detail="The uploaded file is empty.",
+            )
+
+        if len(contents) > MAX_FILE_SIZE_BYTES:
+            return rfc7807_error_response(
+                status_code=400,
+                title="File Too Large",
+                detail="The uploaded file exceeds the maximum allowed size of 5 MB.",
             )
 
         # Attempt to open and verify image integrity

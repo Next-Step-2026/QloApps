@@ -89,3 +89,20 @@ def test_post_empty_file():
     assert response.status_code == 400
     body = response.json()
     assert body["title"] == "Empty File"
+
+def test_post_file_exceeds_max_size():
+    oversized_data = b"0" * (5 * 1024 * 1024 + 1)
+    files = {"file": ("large.jpg", io.BytesIO(oversized_data), "image/jpeg")}
+    data = {
+        "room_id": "room-105",
+        "inspection_id": "INSP-2026-005",
+    }
+    response = client.post("/v1/visual-inspections", files=files, data=data)
+
+    assert response.status_code == 400
+    assert response.headers.get("content-type") == "application/problem+json"
+    body = response.json()
+    assert body["status"] == 400
+    assert body["title"] == "File Too Large"
+    assert "5 MB" in body["detail"]
+
