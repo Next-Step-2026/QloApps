@@ -46,7 +46,7 @@ class QloVisualInspection extends Module
      */
     public function uninstall()
     {
-        return $this->uninstallTab() && $this->deleteTable() && parent::uninstall();
+        return $this->uninstallTab() && parent::uninstall();
     }
 
     /**
@@ -83,16 +83,6 @@ class QloVisualInspection extends Module
         ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
         return (bool) Db::getInstance()->execute($sql);
-    }
-
-    /**
-     * Delete inspection history table on uninstall
-     *
-     * @return bool
-     */
-    private function deleteTable()
-    {
-        return (bool) Db::getInstance()->execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'visual_inspection`');
     }
 
     /**
