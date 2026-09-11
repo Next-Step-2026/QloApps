@@ -1,7 +1,7 @@
 package com.hotel.contacthealth.domain.validation
 
 object FormatValidators {
-    private val EMAIL_REGEX = Regex("^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$")
+    private val EMAIL_REGEX = Regex("^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,63}$")
     private val E164_PHONE_REGEX = Regex("^\\+[1-9]\\d{7,14}$")
 
     fun isValidEmail(email: String): Boolean {

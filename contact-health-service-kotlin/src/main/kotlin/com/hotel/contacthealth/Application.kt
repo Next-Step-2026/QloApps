@@ -3,6 +3,7 @@ package com.hotel.contacthealth
 import com.hotel.contacthealth.model.ContactEvaluationRequest
 import com.hotel.contacthealth.model.ErrorResponse
 import com.hotel.contacthealth.service.HygieneEvaluator
+import com.hotel.contacthealth.util.StructuredLogger
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -98,9 +99,12 @@ fun Application.module() {
                 return@post
             }
 
+            val startTime = System.nanoTime()
             val request = call.receive<ContactEvaluationRequest>()
             request.validate()
             val response = evaluator.evaluate(request, correlationId.trim())
+            val durationMs = (System.nanoTime() - startTime) / 1_000_000.0
+            StructuredLogger.logEvaluation(correlationId.trim(), request.customerId, response, durationMs)
             call.respond(HttpStatusCode.OK, response)
         }
     }
