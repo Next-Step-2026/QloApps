@@ -18,18 +18,13 @@ object StalenessCalculator {
 
     fun calculate(lastVerifiedAt: String?, refDate: LocalDate): StalenessResult {
         val lastVerifiedDate = parseDate(lastVerifiedAt, "last_verified_at")
+            ?: return StalenessResult(180L, FactorStatus.STALE, "STALENESS_EXCEEDED_90_DAYS")
 
-        if (lastVerifiedDate != null) {
-            require(!lastVerifiedDate.isAfter(refDate)) {
-                "Field 'last_verified_at' cannot be in the future relative to 'reference_date'."
-            }
+        require(!lastVerifiedDate.isAfter(refDate)) {
+            "Field 'last_verified_at' cannot be in the future relative to 'reference_date'."
         }
 
-        val days = if (lastVerifiedDate != null) {
-            refDate.toEpochDay() - lastVerifiedDate.toEpochDay()
-        } else {
-            180L
-        }
+        val days = refDate.toEpochDay() - lastVerifiedDate.toEpochDay()
 
         return when {
             days > 90 -> StalenessResult(days, FactorStatus.STALE, "STALENESS_EXCEEDED_90_DAYS")
