@@ -14,7 +14,7 @@ suspend fun ApplicationTestBuilder.withTestApp(testBlock: suspend HttpClient.() 
 
 suspend fun HttpClient.postEvaluation(
     payload: String,
-    correlationId: String? = "test-corr-id",
+    correlationId: String? = "e3b0c442-98fc-4c14-9afb-4c8996fb9242",
     contentType: ContentType = ContentType.Application.Json
 ): HttpResponse = post("/v1/contact-evaluations") {
     contentType(contentType)

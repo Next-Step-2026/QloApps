@@ -41,6 +41,18 @@ class ContactEvaluationRouteTest {
         }
 
         @Test
+        @DisplayName("Should reject invalid UUIDv4 X-Correlation-ID with 400 Bad Request")
+        fun testInvalidUuidFormatReturns400() = testApplication {
+            withTestApp {
+                val response = postEvaluation(payload = jsonPayload(), correlationId = "test-corr-12345")
+                assertEquals(HttpStatusCode.BadRequest, response.status)
+                val body = response.bodyAsText()
+                assertTrue(body.contains("INVALID_PAYLOAD"))
+                assertTrue(body.contains("UUIDv4"))
+            }
+        }
+
+        @Test
         @DisplayName("Should reject non-JSON Content-Type with 415 Unsupported Media Type")
         fun testUnsupportedMediaType() = testApplication {
             withTestApp {
@@ -173,6 +185,18 @@ class ContactEvaluationRouteTest {
                 assertTrue(response.bodyAsText().contains("INVALID_PAYLOAD"))
             }
         }
+
+        @Test
+        @DisplayName("Should reject last_verified_at in the future with 400 Bad Request")
+        fun testFutureLastVerifiedAtReturns400() = testApplication {
+            withTestApp {
+                val response = postEvaluation(payload = jsonPayload(lastVerifiedAt = "2026-09-10T10:00:00Z"))
+                assertEquals(HttpStatusCode.BadRequest, response.status)
+                val body = response.bodyAsText()
+                assertTrue(body.contains("INVALID_PAYLOAD"))
+                assertTrue(body.contains("future"))
+            }
+        }
     }
 
     @Nested
@@ -183,13 +207,25 @@ class ContactEvaluationRouteTest {
         @DisplayName("Valid JSON should return 200 OK and propagate correlation ID")
         fun testSuccessfulEvaluationWithCorrelationId() = testApplication {
             withTestApp {
-                val correlationId = "test-corr-12345"
+                val correlationId = "a1b2c3d4-e5f6-4a1b-8c2d-0123456789ab"
                 val response = postEvaluation(payload = jsonPayload(), correlationId = correlationId)
                 assertEquals(HttpStatusCode.OK, response.status)
                 val body = response.bodyAsText()
                 assertTrue(body.contains(""""correlation_id":"$correlationId""""))
                 assertTrue(body.contains(""""days_since_verification""""))
                 assertTrue(body.contains(""""issues""""))
+            }
+        }
+
+        @Test
+        @DisplayName("Should accept MySQL datetime format with space sent by PHP in last_verified_at with 200 OK")
+        fun testMysqlDatetimeFormatFromPhpReturns200() = testApplication {
+            withTestApp {
+                val payload = jsonPayload(lastVerifiedAt = "2026-08-20 10:00:00Z")
+                val response = postEvaluation(payload = payload)
+                assertEquals(HttpStatusCode.OK, response.status)
+                val body = response.bodyAsText()
+                assertTrue(body.contains(""""overall_status""""))
             }
         }
 

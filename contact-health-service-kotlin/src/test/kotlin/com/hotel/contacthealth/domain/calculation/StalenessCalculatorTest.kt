@@ -65,12 +65,12 @@ class StalenessCalculatorTest {
         }
 
         @Test
-        @DisplayName("Temporal inconsistency: last_verified_at in future should clamp days to 0 and FRESH")
-        fun shouldClampFutureDateToZeroDays() {
-            val result = StalenessCalculator.calculate("2026-09-10", referenceDate)
-            assertEquals(0L, result.daysSince)
-            assertEquals(FactorStatus.FRESH, result.status)
-            assertNull(result.issue)
+        @DisplayName("Temporal inconsistency: last_verified_at in future should throw IllegalArgumentException")
+        fun shouldThrowWhenLastVerifiedAtIsInFuture() {
+            val exception = assertThrows<IllegalArgumentException> {
+                StalenessCalculator.calculate("2026-09-10", referenceDate)
+            }
+            assertTrue(exception.message?.contains("future") == true)
         }
 
         @Test
@@ -93,6 +93,13 @@ class StalenessCalculatorTest {
             assertEquals(LocalDate.of(2026, 8, 20), StalenessCalculator.parseDate("2026-08-20"))
             assertEquals(LocalDate.of(2026, 8, 20), StalenessCalculator.parseDate("2026-08-20T10:00:00Z"))
             assertEquals(LocalDate.of(2026, 8, 20), StalenessCalculator.parseDate("2026-08-20T10:00:00"))
+        }
+
+        @Test
+        @DisplayName("Should parse MySQL datetime format with space and appended Z sent by PHP")
+        fun shouldParseMysqlDatetimeFormats() {
+            assertEquals(LocalDate.of(2026, 8, 20), StalenessCalculator.parseDate("2026-08-20 10:00:00Z"))
+            assertEquals(LocalDate.of(2026, 8, 20), StalenessCalculator.parseDate("2026-08-20 10:00:00"))
         }
 
         @Test
