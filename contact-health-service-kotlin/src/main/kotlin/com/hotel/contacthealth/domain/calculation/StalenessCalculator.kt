@@ -19,8 +19,14 @@ object StalenessCalculator {
     fun calculate(lastVerifiedAt: String?, refDate: LocalDate): StalenessResult {
         val lastVerifiedDate = parseDate(lastVerifiedAt, "last_verified_at")
 
+        if (lastVerifiedDate != null) {
+            require(!lastVerifiedDate.isAfter(refDate)) {
+                "Field 'last_verified_at' cannot be in the future relative to 'reference_date'."
+            }
+        }
+
         val days = if (lastVerifiedDate != null) {
-            (refDate.toEpochDay() - lastVerifiedDate.toEpochDay()).coerceAtLeast(0)
+            refDate.toEpochDay() - lastVerifiedDate.toEpochDay()
         } else {
             180L
         }
@@ -37,18 +43,19 @@ object StalenessCalculator {
             return null
         }
         val trimmed = raw.trim()
+        val normalized = trimmed.replace(Regex("\\s+"), "T")
 
         runCatching {
-            return OffsetDateTime.parse(trimmed, DateTimeFormatter.ISO_DATE_TIME).toLocalDate()
+            return OffsetDateTime.parse(normalized, DateTimeFormatter.ISO_DATE_TIME).toLocalDate()
         }
         runCatching {
-            return Instant.parse(trimmed).atZone(ZoneOffset.UTC).toLocalDate()
+            return Instant.parse(normalized).atZone(ZoneOffset.UTC).toLocalDate()
         }
         runCatching {
-            return LocalDateTime.parse(trimmed, DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalDate()
+            return LocalDateTime.parse(normalized, DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalDate()
         }
         runCatching {
-            return LocalDate.parse(trimmed, DateTimeFormatter.ISO_LOCAL_DATE)
+            return LocalDate.parse(normalized, DateTimeFormatter.ISO_LOCAL_DATE)
         }
 
         throw IllegalArgumentException("Field '$fieldName' contains invalid date/timestamp: $raw")

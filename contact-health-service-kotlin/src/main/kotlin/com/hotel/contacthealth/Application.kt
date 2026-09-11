@@ -85,6 +85,19 @@ fun Application.module() {
                 return@post
             }
 
+            val isValidUuidV4 = runCatching {
+                val parsed = UUID.fromString(correlationId.trim())
+                parsed.version() == 4
+            }.getOrDefault(false)
+
+            if (!isValidUuidV4) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse("INVALID_PAYLOAD", "Header 'X-Correlation-ID' must be a valid UUIDv4 (RFC 4122).")
+                )
+                return@post
+            }
+
             val request = call.receive<ContactEvaluationRequest>()
             val response = evaluator.evaluate(request, correlationId.trim())
             call.respond(HttpStatusCode.OK, response)
