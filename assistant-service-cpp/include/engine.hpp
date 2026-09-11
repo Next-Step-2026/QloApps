@@ -217,14 +217,6 @@ public:
                 checkIn = inDate;
                 checkOut = outDate;
                 dateExplanation = " e data relativa '" + rel.label + "' calculada como " + inDate + " baseada em " + refDate;
-            } else {
-                // If no relative term explicitly found but user asked for availability,
-                // default to 1 day ahead (tomorrow) if unspecified or calculate
-                std::string inDate = DateResolver::addDays(refDate, 1);
-                std::string outDate = DateResolver::addDays(inDate, 1);
-                checkIn = inDate;
-                checkOut = outDate;
-                dateExplanation = " com data padrao calculada como " + inDate;
             }
 
             // Extract guests count

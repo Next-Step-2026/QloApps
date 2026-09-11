@@ -52,17 +52,30 @@ inline std::string normalizeText(const std::string& input) {
                     i++;
                     break;
                 default:
-                    // Unknown C3 byte sequence, retain or skip
                     result += static_cast<char>(std::tolower(next));
                     i++;
                     break;
             }
+        } else if (c < 32 || c == 127) {
+            // Control characters: replace whitespace controls with single space, strip other controls
+            if (c == '\r' || c == '\n' || c == '\t') {
+                if (!result.empty() && result.back() != ' ') {
+                    result += ' ';
+                }
+            }
+            // Other non-printable controls (\0, ESC, etc.) are discarded
         } else {
             result += static_cast<char>(std::tolower(c));
         }
     }
 
-    return result;
+    // Trim leading and trailing whitespace
+    size_t start = result.find_first_not_of(' ');
+    if (start == std::string::npos) {
+        return "";
+    }
+    size_t end = result.find_last_not_of(' ');
+    return result.substr(start, end - start + 1);
 }
 
 } // namespace assistant
