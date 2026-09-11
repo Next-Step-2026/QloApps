@@ -9,7 +9,7 @@ object FormatValidators {
     }
 
     fun normalizePhone(phone: String): String {
-        return phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        return phone.filterNot { it in " -()" }
     }
 
     fun isValidPhone(phone: String): Boolean {
@@ -30,15 +30,12 @@ object FormatValidators {
         if (clean.length < 8) {
             return "****"
         }
-        val prefixLen = if (clean.startsWith("+")) {
-            minOf(5, clean.length - 4)
-        } else {
-            minOf(2, clean.length - 4)
-        }
+        val maxPrefix = if (clean.startsWith("+")) 5 else 2
+        val prefixLen = minOf(maxPrefix, clean.length - 4)
         val prefix = clean.take(prefixLen)
         val suffix = clean.takeLast(4)
-        val middleLen = clean.length - prefixLen - 4
-        val middle = "*".repeat(maxOf(0, middleLen))
+        val middleLen = maxOf(0, clean.length - prefixLen - 4)
+        val middle = "*".repeat(middleLen)
         return "$prefix$middle$suffix"
     }
 }

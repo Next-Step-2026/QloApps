@@ -1,5 +1,6 @@
 package com.hotel.contacthealth.model
 
+import com.hotel.contacthealth.util.DateTimeParser
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -17,6 +18,20 @@ data class ContactEvaluationRequest(
         require(email.isNotBlank()) { "Field 'email' is required and cannot be blank." }
         require(phone.isNotBlank()) { "Field 'phone' is required and cannot be blank." }
         require(referenceDate.isNotBlank()) { "Field 'reference_date' is required and cannot be blank." }
+
+        val refDate = DateTimeParser.parseDate(referenceDate, "reference_date")
+            ?: throw IllegalArgumentException("Field 'reference_date' is required.")
+
+        val lastVerifiedDate = DateTimeParser.parseDate(lastVerifiedAt, "last_verified_at")
+        if (lastVerifiedDate != null) {
+            require(!lastVerifiedDate.isAfter(refDate)) {
+                "Field 'last_verified_at' cannot be in the future relative to 'reference_date'."
+            }
+        }
+
+        if (!consentExpiresAt.isNullOrBlank()) {
+            DateTimeParser.parseDate(consentExpiresAt, "consent_expires_at")
+        }
     }
 }
 

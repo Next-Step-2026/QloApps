@@ -99,6 +99,7 @@ fun Application.module() {
             }
 
             val request = call.receive<ContactEvaluationRequest>()
+            request.validate()
             val response = evaluator.evaluate(request, correlationId.trim())
             call.respond(HttpStatusCode.OK, response)
         }
