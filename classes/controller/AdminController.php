@@ -540,6 +540,17 @@ class AdminControllerCore extends Controller
             $this->_defaultOrderBy = $this->identifier;
         }
         $this->tabAccess = Profile::getProfileAccess($this->context->employee->id_profile, $this->id);
+        if (!is_array($this->tabAccess)) {
+            $this->tabAccess = array(
+                'view' => 0,
+                'add' => 0,
+                'edit' => 0,
+                'delete' => 0,
+                'kpi' => 0,
+            );
+        } elseif (!isset($this->tabAccess['kpi'])) {
+            $this->tabAccess['kpi'] = 0;
+        }
 
         if ($this->context->employee->id_profile != _PS_ADMIN_PROFILE_) {
             // Here we wiil check the query if hotel wise access is available
@@ -563,6 +574,7 @@ class AdminControllerCore extends Controller
                         $this->tabAccess['add'] = 0;
                         $this->tabAccess['edit'] = 0;
                         $this->tabAccess['delete'] = 0;
+                        $this->tabAccess['kpi'] = 0;
                     }
                 }
             }
@@ -2324,7 +2336,7 @@ class AdminControllerCore extends Controller
             $this->content .= $this->renderDetails();
         } elseif (!$this->ajax) {
             $this->content .= $this->renderModulesList();
-            if ($this->tabAccess['kpi'] === 1) {
+            if (isset($this->tabAccess['kpi']) && $this->tabAccess['kpi'] === 1) {
                 $this->content .= $this->renderKpis();
             }
             $this->content .= $this->renderList();

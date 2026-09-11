@@ -94,12 +94,12 @@ class CookieCore
         $replace = array('/', '~', '(', ')', '+', '&');
         $this->_path = str_replace($search, $replace, $this->_path);
         $this->_domain = $this->getDomain($shared_urls);
-        $this->_sameSite = Configuration::get('PS_COOKIE_SAMESITE');
+        $this->_sameSite = ($this->_standalone || defined('PS_INSTALLATION_IN_PROGRESS') || !defined('_DB_PREFIX_')) ? 'Lax' : Configuration::get('PS_COOKIE_SAMESITE');
         $this->_name = 'QloApps-'.md5(($this->_standalone ? '' : _PS_VERSION_).$name.$this->_domain);
         $this->_allow_writing = true;
         $this->_salt = $this->_standalone ? str_pad('', 8, md5('ps'.__FILE__)) : _COOKIE_IV_;
         if ($this->_standalone) {
-            $asciiSafeString = \Defuse\Crypto\Encoding::saveBytesToChecksummedAsciiSafeString(Key::KEY_CURRENT_VERSION, str_pad($name, Key::KEY_BYTE_SIZE, md5(__FILE__)));
+            $asciiSafeString = \Defuse\Crypto\Encoding::saveBytesToChecksummedAsciiSafeString(\Defuse\Crypto\Key::KEY_CURRENT_VERSION, str_pad($name, \Defuse\Crypto\Key::KEY_BYTE_SIZE, md5(__FILE__)));
             $this->_cipherTool = new PhpEncryption($asciiSafeString);
         } else {
             $this->_cipherTool = new PhpEncryption(_NEW_COOKIE_KEY_);

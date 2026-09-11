@@ -15,15 +15,74 @@ This document provides guidance for AI coding agents contributing to the QloApps
 - **Architecture:** MVC with hook-based module system
 - **License:** OSL-3.0 (core), AFL-3.0 (modules)
 - **Required PHP Extensions:** PDO_MySQL, cURL, OpenSSL, SOAP, GD, SimpleXML, DOM, Zip, Phar
+- **Recommended Extensions (Docker / Production):** Intl, Opcache
 
 ## Environment Setup
 
-Install dependencies:
+### 1. Docker Compose Setup (Recommended)
+
+The project includes a containerized development stack with PHP 8.2 (Apache) and MariaDB 10.11:
+
+```bash
+# Build and start services
+docker compose up -d
+
+# Stop services
+docker compose down
+```
+
+**Service Details & Credentials:**
+- **Web Server (`qlo-app`):** Port `8080` (mapped to container port `80`)
+- **Database Server (`qlo-db`):** Port `3306`
+  - Host: `qlo-db` (from containers) or `127.0.0.1:3306` (from host)
+  - Database: `qloapps`
+  - User: `qloapps`
+  - Password: `qlopassword`
+  - Table Prefix: `qlo_`
+
+### 2. File & Directory Permissions
+
+The web server in Docker runs as user `www-data` (UID 33). The following directories require recursive read/write permissions for the application and installer to function properly:
+
+```bash
+chmod 755 . ..
+chmod -R a+rwX cache config download img log mails modules themes translations upload
+```
+
+### 3. Remote Development & Port Forwarding
+
+When developing on a remote host (e.g., Cloudtop / remote SSH workstation):
+- **VS Code Web Server (Zero-Lag Web IDE for ChromeOS / Remote):** Run the built-in VS Code Web Server on the remote host:
+  ```bash
+  code serve-web --host 0.0.0.0 --port 8000 --without-connection-token --accept-server-license-terms --default-folder /usr/local/google/home/joaolisboa/projeto/QloApps
+  ```
+  Access directly via `http://<host>:8000/` or forward port 8000 in SSH (`-L 8000:localhost:8000` -> `http://localhost:8000`).
+- **Chrome Remote Desktop (Cloudtop GUI):** Connect via `remotedesktop.google.com/access` and open `http://localhost:8080` directly in the workstation's Chrome.
+- **Chrome Secure Shell (nassh on ChromeOS):** In connection profile settings, set **SSH Arguments** to `-L 8080:127.0.0.1:8080 -L 8000:127.0.0.1:8000`.
+- **VS Code / Cursor Remote - SSH:** In the **Ports** panel, click **Forward a Port** and enter `8080`.
+- **SSH CLI:** `ssh -L 8080:127.0.0.1:8080 -L 8000:127.0.0.1:8000 -L 3306:127.0.0.1:3306 <user>@<host>`
+
+### 4. Canonical Domain, Proxies & Redirect Loops
+
+PrestaShop/QloApps enforces canonical URL checking and cookie IP matching. When accessing via a port-forwarded URL or corporate web proxy (e.g., `*.proxy.googlers.com`), update database records to prevent 301/302 redirect loops and silent session logouts caused by rotating proxy IPs:
+
+```sql
+-- Disable canonical redirects and cookie IP checking (critical behind corporate proxies)
+UPDATE qlo_configuration SET value = '0' WHERE name IN ('PS_CANONICAL_REDIRECT', 'PS_COOKIE_CHECKIP');
+
+-- Set shop domain (use localhost:8080 or the proxy domain)
+UPDATE qlo_shop_url SET domain = 'localhost:8080', domain_ssl = 'localhost:8080', physical_uri = '/' WHERE id_shop_url = 1;
+UPDATE qlo_configuration SET value = 'localhost:8080' WHERE name IN ('PS_SHOP_DOMAIN', 'PS_SHOP_DOMAIN_SSL');
+```
+
+### 5. Dependency Installation & Cache Management
+
+Install PHP dependencies:
 ```bash
 composer install
 ```
 
-Clear caches:
+Clear caches (run whenever modifying templates, overrides, or domain settings):
 ```bash
 rm -rf cache/smarty/compile/* cache/smarty/cache/*
 rm -f cache/class_index.php
@@ -190,6 +249,49 @@ Testing infrastructure is being configured. Check tests/ directory for available
 After making changes:
 - Clear caches if modifying templates or overrides
 - Add PHPDoc to new methods
+
+## Git Workflow & Team Conventions
+
+### 1. Branch Naming (GitHub Flow)
+- **Format:** `feature/RFC-00X-descricao-da-tarefa` or `fix/RFC-00X-descricao-do-bug` (kebab-case)
+- **Active Task Branch:** `feature/RFC-008-busca-entidades-acionaveis`
+- Create short-lived sub-branches for specific components and merge into the main task branch.
+
+### 2. Conventional Commits (Strictly in English)
+All commit messages must follow the Conventional Commits specification with descriptions in English using the imperative mood:
+`<type>[optional scope]: <description>`
+
+Tags:
+- `feat`: New feature or capability
+- `fix`: Bug fix
+- `docs`: Documentation updates only
+- `style`: Formatting, missing semi-colons, white-space changes (no code logic changes)
+- `refactor`: Refactoring code without changing behavior
+- `perf`: Performance improvement
+- `test`: Adding or correcting tests
+- `chore`: Build tasks, package configs, dependencies, auxiliary tools
+- `build`: Build system or external dependencies
+- `ci`: Continuous Integration / CD configuration files and scripts
+
+### 3. GitHub HTTPS Authentication
+When pushing to GitHub over HTTPS, personal passwords are not supported. Use a Personal Access Token (PAT):
+- **Fine-grained PAT:** Must have **Contents: Read and write** permission enabled under *Repository permissions*.
+- **Classic PAT:** Must have the **`repo`** scope enabled.
+
+### 4. Pull Request Standards
+Each PR must include:
+- **Description & Context:** Problem solved and why it was needed.
+- **Summary of Changes:** Bulleted list of code modifications.
+- **Testing Instructions:** Step-by-step reproduction and validation guide.
+- **Checklist:** Project standards followed, no sensitive data exposed, tests updated.
+
+## Repository & Development Hygiene
+
+To keep the development repository clean and prevent committing local installation or generated assets:
+- **Do not commit `config/settings.inc.php`:** Contains local environment secrets, database credentials, and cookie encryption keys.
+- **Do not commit generated admin folders:** PrestaShop/QloApps renames `admin/` to a random directory (e.g., `admin847azx/`) post-installation. Add any custom generated `admin*/` to `.git/info/exclude` rather than modifying `.gitignore`.
+- **Do not commit generated images or uploads:** Keep local test images in `img/`, uploads in `upload/`, and temporary cache files untracked.
+- **Post-installation cleanup:** Do not delete or rename the `install/` folder. Instead, use the marker file `touch install/.installed`. QloApps will recognize this marker, automatically deactivate the installer endpoint (redirecting to `/`), and allow Back Office login without marking the 2,840 installer files as deleted in Git.
 
 ## Safety Rules
 

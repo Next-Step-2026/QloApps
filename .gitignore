@@ -1,6 +1,6 @@
 
 # Editors, tools and OS's
-
+install/.installed
 .buildpath
 /.htaccess
 .project
@@ -23,6 +23,9 @@ search-service-cpp/search_service
 search-service-cpp/test_search
 search-service-cpp/*.o
 search-service-cpp/src/*.o
+
+# Installer disabled marker
+install/.installed
 
 # Cache and temp files
 /cache/**

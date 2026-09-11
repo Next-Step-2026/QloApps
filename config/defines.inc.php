@@ -80,6 +80,9 @@ if (!defined('_PS_CACHE_DIR_')) {
 }
 define('_PS_CONFIG_DIR_',             _PS_CORE_DIR_.'/config/');
 define('_PS_CUSTOM_CONFIG_FILE_',     _PS_CONFIG_DIR_.'settings_custom.inc.php');
+if (!defined('_PS_INSTALL_MARKER_FILE_')) {
+    define('_PS_INSTALL_MARKER_FILE_', '.installed');
+}
 define('_PS_CLASS_DIR_',             _PS_CORE_DIR_.'/classes/');
 if (!defined('_PS_DOWNLOAD_DIR_')) {
     define('_PS_DOWNLOAD_DIR_',          _PS_ROOT_DIR_.'/download/');
