@@ -150,7 +150,7 @@ Realiza a validação completa de formato, defasagem e consentimento de um conta
 
 #### Headers:
 - `Content-Type: application/json`
-- `X-Correlation-ID: <string>` *(obrigatório; rejeita com HTTP 400 se ausente ou em branco)*
+- `X-Correlation-ID: <uuid-v4>` *(obrigatório; padrão RFC 4122; rejeita com HTTP 400 se ausente, em branco ou fora do padrão UUIDv4)*
 
 #### Parâmetros do Payload (JSON):
 | Campo | Tipo | Obrigatório | Descrição |
@@ -172,7 +172,7 @@ Realiza a validação completa de formato, defasagem e consentimento de um conta
 ```bash
 curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
   -H "Content-Type: application/json" \
-  -H "X-Correlation-ID: req-fresh-01" \
+  -H "X-Correlation-ID: 7a8b9c0d-1e2f-4a5b-8c6d-7e8f9a0b1c2d" \
   -d '{
     "customer_id": "cust-001",
     "email": "marina.costa@tech.com",
@@ -186,7 +186,7 @@ curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
 **Resposta esperada (HTTP 200 OK):**
 ```json
 {
-  "correlation_id": "req-fresh-001",
+  "correlation_id": "7a8b9c0d-1e2f-4a5b-8c6d-7e8f9a0b1c2d",
   "customer_id": "cust-001",
   "overall_status": "FRESH",
   "hygiene_score": 100,
@@ -219,7 +219,7 @@ curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
 ```bash
 curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
   -H "Content-Type: application/json" \
-  -H "X-Correlation-ID: req-stale-002" \
+  -H "X-Correlation-ID: 8b9c0d1e-2f3a-4b5c-9d6e-8f9a0b1c2d3e" \
   -d '{
     "customer_id": "cust-002",
     "email": "joao.antigo@provedor.com.br",
@@ -233,7 +233,7 @@ curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
 **Resposta esperada (HTTP 200 OK):**
 ```json
 {
-  "correlation_id": "req-stale-002",
+  "correlation_id": "8b9c0d1e-2f3a-4b5c-9d6e-8f9a0b1c2d3e",
   "customer_id": "cust-002",
   "overall_status": "STALE",
   "hygiene_score": 40,
@@ -270,7 +270,7 @@ curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
 ```bash
 curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
   -H "Content-Type: application/json" \
-  -H "X-Correlation-ID: req-consent-003" \
+  -H "X-Correlation-ID: 9c0d1e2f-3a4b-4c5d-ae6f-9a0b1c2d3e4f" \
   -d '{
     "customer_id": "cust-003",
     "email": "paulo.silva@empresa.com",
@@ -284,7 +284,7 @@ curl -s -X POST http://127.0.0.1:8103/v1/contact-evaluations \
 **Resposta esperada (HTTP 200 OK):**
 ```json
 {
-  "correlation_id": "req-consent-003",
+  "correlation_id": "9c0d1e2f-3a4b-4c5d-ae6f-9a0b1c2d3e4f",
   "customer_id": "cust-003",
   "overall_status": "CONSENT_EXPIRED",
   "hygiene_score": 40,
