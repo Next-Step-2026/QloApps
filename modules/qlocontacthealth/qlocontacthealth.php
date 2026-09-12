@@ -150,26 +150,7 @@ class QloContactHealth extends Module
             );
         }
 
-        $addressId = (int) Address::getFirstCustomerAddressId($customer->id);
-        $address = new Address($addressId);
-
-        $phone = '+5511999990000';
-        if (Validate::isLoadedObject($address)) {
-            if (!empty($address->phone_mobile)) {
-                $phone = $address->phone_mobile;
-            } elseif (!empty($address->phone)) {
-                $phone = $address->phone;
-            }
-        }
-
-        // Normalize phone to E.164
-        $cleanPhone = preg_replace('/[^\d+]/', '', $phone);
-        if ($cleanPhone !== '' && $cleanPhone[0] !== '+') {
-            $cleanPhone = '+55' . ltrim($cleanPhone, '0');
-        }
-        if (empty($cleanPhone) || $cleanPhone === '+55') {
-            $cleanPhone = '+5511999990000';
-        }
+        $cleanPhone = !empty($customer->phone) ? trim($customer->phone) : '';
 
         $corrId = self::generateUuidV4();
         $apiUrl = Configuration::get(self::CONFIG_API_URL) ?: self::DEFAULT_API_URL;
