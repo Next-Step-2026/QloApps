@@ -31,10 +31,12 @@
             <div class="panel-body text-center">
                 <i class="icon-map-marker text-warning" style="font-size: 24px;"></i>
                 <h4 class="text-muted">{l s='Geofence' mod='qloarrivalsharing'}</h4>
-                <h3><strong>{$geofenceRadius|escape:'html':'UTF-8'} m</strong></h3>
-                <button type="button" class="btn btn-default btn-xs" data-toggle="modal" data-target="#modalGeofenceConfig" style="margin-top: 5px;">
-                    <i class="icon-pencil"></i> {l s='Alterar' mod='qloarrivalsharing'}
-                </button>
+                <h3>
+                    <strong>{$geofenceRadius|escape:'html':'UTF-8'} m</strong>
+                    <a href="#" data-toggle="modal" data-target="#modalGeofenceConfig" class="text-muted" title="{l s='Alterar' mod='qloarrivalsharing'}" style="font-size: 14px; margin-left: 6px;">
+                        <i class="icon-pencil"></i>
+                    </a>
+                </h3>
             </div>
         </div>
     </div>
