@@ -16,6 +16,21 @@ class AdminArrivalSharingController extends ModuleAdminController
         $this->override_folder = '';
     }
 
+    public function postProcess()
+    {
+        if (Tools::isSubmit('submitGeofenceRadius')) {
+            $radius = (float) Tools::getValue('geofence_radius');
+            if ($radius <= 0) {
+                $this->errors[] = $this->l('O raio de geofence deve ser um valor numérico positivo maior que zero.');
+            } else {
+                Configuration::updateValue('QLO_ARRIVAL_GEOFENCE_RADIUS', $radius);
+                $this->confirmations[] = $this->l('Raio de geofence atualizado com sucesso.');
+            }
+        }
+
+        parent::postProcess();
+    }
+
     public function initContent()
     {
         parent::initContent();
@@ -23,6 +38,11 @@ class AdminArrivalSharingController extends ModuleAdminController
         $today = date('Y-m-d');
         $idHotel = (int) Tools::getValue('id_hotel', (isset($this->context->cookie->id_hotel) ? $this->context->cookie->id_hotel : 0));
         $arrivals = ArrivalBookingRepository::getTodayArrivals($today, $idHotel ?: null);
+
+        $geofenceRadius = (float) Configuration::get('QLO_ARRIVAL_GEOFENCE_RADIUS');
+        if ($geofenceRadius <= 0) {
+            $geofenceRadius = 200.0;
+        }
 
         $totalGuests = 0;
         foreach ($arrivals as $arrival) {
@@ -34,6 +54,7 @@ class AdminArrivalSharingController extends ModuleAdminController
             'arrivals'       => $arrivals,
             'totalArrivals'  => count($arrivals),
             'totalGuests'    => $totalGuests,
+            'geofenceRadius' => $geofenceRadius,
             'orderAdminLink' => $this->context->link->getAdminLink('AdminOrders', true),
         ));
 

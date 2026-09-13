@@ -31,7 +31,10 @@
             <div class="panel-body text-center">
                 <i class="icon-map-marker text-warning" style="font-size: 24px;"></i>
                 <h4 class="text-muted">{l s='Geofence' mod='qloarrivalsharing'}</h4>
-                <h3><strong>200 m</strong></h3>
+                <h3><strong>{$geofenceRadius|escape:'html':'UTF-8'} m</strong></h3>
+                <button type="button" class="btn btn-default btn-xs" data-toggle="modal" data-target="#modalGeofenceConfig" style="margin-top: 5px;">
+                    <i class="icon-pencil"></i> {l s='Alterar' mod='qloarrivalsharing'}
+                </button>
             </div>
         </div>
     </div>
@@ -114,5 +117,28 @@
                 {/foreach}
             </tbody>
         </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGeofenceConfig" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <form method="post" action="">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title"><i class="icon-map-marker"></i> {l s='Configurar Raio de Geofence' mod='qloarrivalsharing'}</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="control-label">{l s='Raio do Perímetro (metros):' mod='qloarrivalsharing'}</label>
+                        <input type="number" name="geofence_radius" class="form-control" value="{$geofenceRadius|escape:'html':'UTF-8'}" min="1" step="1" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">{l s='Cancelar' mod='qloarrivalsharing'}</button>
+                    <button type="submit" name="submitGeofenceRadius" class="btn btn-primary">{l s='Salvar' mod='qloarrivalsharing'}</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
