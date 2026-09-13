@@ -8,21 +8,21 @@
 #include "Normalizer.hpp"
 
 // Utilitario simples para assercoes com mensagens claras
-#define ASSERT_TRUE(condition, message)                                       \
-  do {                                                                        \
-    if (!(condition)) {                                                       \
-      std::cerr << "FAIL: " << message << " (" << #condition << ") na linha " \
-                << __LINE__ << std::endl;                                     \
-      std::exit(1);                                                           \
-    }                                                                         \
+#define ASSERT_TRUE(condition, message)                        \
+  do {                                                         \
+    if (!(condition)) {                                        \
+      std::cerr << "FAIL: " << (message) << " (" << #condition \
+                << ") na linha " << __LINE__ << '\n';          \
+      std::exit(1);                                            \
+    }                                                          \
   } while (0)
 
 #define ASSERT_EQ(val1, val2, message)                                 \
   do {                                                                 \
     if ((val1) != (val2)) {                                            \
-      std::cerr << "FAIL: " << message << " | Esperado: " << (val2)    \
+      std::cerr << "FAIL: " << (message) << " | Esperado: " << (val2)  \
                 << " | Obtido: " << (val1) << " na linha " << __LINE__ \
-                << std::endl;                                          \
+                << '\n';                                               \
       std::exit(1);                                                    \
     }                                                                  \
   } while (0)
@@ -36,8 +36,9 @@ void testNormalization() {
 
   auto tokens = Normalizer::tokenize(text, true);
   // Stopwords como "com" devem ser removidas
-  std::vector<std::string> expected = {"suite",    "vista",   "mar",
-                                       "banheira", "piscina", "climatizada"};
+  std::vector<std::string> expected = {
+      "suite", "vista", "mar", "banheira", "piscina", "climatizada",
+  };
   ASSERT_EQ(tokens.size(), expected.size(),
             "Quantidade de tokens apos stopwords");
   for (size_t i = 0; i < expected.size(); ++i) {
@@ -49,7 +50,7 @@ void testNormalization() {
   ASSERT_TRUE(!Normalizer::isStopword("spa"), "'spa' nao pode ser stopword");
   ASSERT_TRUE(!Normalizer::isStopword("sol"), "'sol' nao pode ser stopword");
 
-  std::cout << "[PASS] testNormalization" << std::endl;
+  std::cout << "[PASS] testNormalization" << '\n';
 }
 
 // 2. Teste de Extracao de Ocupacao e Comodidades (RN-002)
@@ -78,7 +79,7 @@ void testExtractor() {
   ASSERT_TRUE(!f4.adults.has_value(),
               "Numero solto 104 nao pode ser interpretado como adultos");
 
-  std::cout << "[PASS] testExtractor" << std::endl;
+  std::cout << "[PASS] testExtractor" << '\n';
 }
 
 // Fixture padrao do catalogo para os testes de busca
@@ -147,19 +148,19 @@ void testConjunctiveSearchAndCapacity() {
   auto res4 = index.searchConjunctive(tokens4);
   ASSERT_EQ(res4.size(), 0, "Termo inexistente deve retornar vazio");
 
-  std::cout << "[PASS] testConjunctiveSearchAndCapacity" << std::endl;
+  std::cout << "[PASS] testConjunctiveSearchAndCapacity" << '\n';
 }
 
 int main() {
   std::cout << "=== Executando Testes Unitarios do Motor de Busca C++ "
                "(QLO-FEAT-008) ==="
-            << std::endl;
+            << '\n';
 
   testNormalization();
   testExtractor();
   testConjunctiveSearchAndCapacity();
 
   std::cout << ">>> TODOS OS TESTES PASSARAM COM SUCESSO (100% OK)! <<<"
-            << std::endl;
+            << '\n';
   return 0;
 }

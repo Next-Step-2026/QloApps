@@ -117,7 +117,7 @@ std::vector<std::string> InvertedIndex::searchConjunctive(
 const CatalogEntity* InvertedIndex::getEntity(const std::string& id) const {
   auto it = entities_.find(id);
   if (it != entities_.end()) {
-    return &(it->second);
+    return &it->second;
   }
   return nullptr;
 }

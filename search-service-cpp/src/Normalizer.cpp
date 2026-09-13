@@ -9,18 +9,19 @@ const std::unordered_set<std::string> Normalizer::STOPWORDS = {
     "nas", "com", "para", "por", "pelo", "pela", "pelos", "pelas", "um",
     "uma", "uns", "umas", "o",   "a",    "os",   "as",    "e",     "ou",
     "que", "se",  "ao",   "aos", "nao",  "não",  "the",   "in",    "on",
-    "at",  "to",  "for",  "of",  "and",  "or",   "with",  "an"};
+    "at",  "to",  "for",  "of",  "and",  "or",   "with",  "an",
+};
 
 std::string Normalizer::toLowerAndStripAccents(const std::string& input) {
   std::string result;
   result.reserve(input.size());
 
   for (size_t i = 0; i < input.size(); ++i) {
-    unsigned char c = static_cast<unsigned char>(input[i]);
+    auto c = static_cast<unsigned char>(input[i]);
 
     // Verifica sequencia UTF-8 de 2 bytes (0xC3 ...)
     if (c == 0xC3 && i + 1 < input.size()) {
-      unsigned char next = static_cast<unsigned char>(input[i + 1]);
+      auto next = static_cast<unsigned char>(input[i + 1]);
       ++i;  // consome o segundo byte
       switch (next) {
         // A / a
@@ -117,7 +118,7 @@ std::vector<std::string> Normalizer::tokenize(const std::string& input,
 
   // Substitui pontuacoes e caracteres especiais por espacos
   for (char& ch : normalized) {
-    if (!std::isalnum(static_cast<unsigned char>(ch))) {
+    if (std::isalnum(static_cast<unsigned char>(ch)) == 0) {
       ch = ' ';
     }
   }

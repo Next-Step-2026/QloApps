@@ -23,24 +23,24 @@ ExtractedFilters Extractor::extract(const std::string& normalizedQuery) {
   if (normalizedQuery.find("vista mar") != std::string::npos ||
       normalizedQuery.find("vista para o mar") != std::string::npos ||
       normalizedQuery.find("frente mar") != std::string::npos) {
-    filters.amenities.push_back("vista_mar");
+    filters.amenities.emplace_back("vista_mar");
   }
   if (normalizedQuery.find("ar condicionado") != std::string::npos ||
       normalizedQuery.find("ar-condicionado") != std::string::npos ||
       normalizedQuery.find("climatizado") != std::string::npos) {
-    filters.amenities.push_back("ar_condicionado");
+    filters.amenities.emplace_back("ar_condicionado");
   }
   if (normalizedQuery.find("banheira") != std::string::npos ||
       normalizedQuery.find("hidro") != std::string::npos ||
       normalizedQuery.find("hidromassagem") != std::string::npos) {
-    filters.amenities.push_back("banheira");
+    filters.amenities.emplace_back("banheira");
   }
   if (normalizedQuery.find("piscina") != std::string::npos) {
-    filters.amenities.push_back("piscina");
+    filters.amenities.emplace_back("piscina");
   }
   if (normalizedQuery.find("varanda") != std::string::npos ||
       normalizedQuery.find("sacada") != std::string::npos) {
-    filters.amenities.push_back("varanda");
+    filters.amenities.emplace_back("varanda");
   }
 
   return filters;

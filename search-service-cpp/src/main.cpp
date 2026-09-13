@@ -12,7 +12,7 @@
 #include "httplib.h"
 #include "json.hpp"
 
-using json = nlohmann::json;
+using nlohmann::json;
 
 // Gera timestamp ISO 8601 UTC
 static std::string getIsoTimestamp() {
@@ -52,11 +52,13 @@ int main() {
                           .count());
 
     if (req.body.empty()) {
-      json errorResp = {{"type", "https://hotel.local/errors/invalid-query"},
-                        {"title", "Consulta de Busca Invalida"},
-                        {"status", 400},
-                        {"detail", "O corpo da requisicao nao pode ser vazio."},
-                        {"instance", "/v1/search/parse"}};
+      json errorResp = {
+          {"type", "https://hotel.local/errors/invalid-query"},
+          {"title", "Consulta de Busca Invalida"},
+          {"status", 400},
+          {"detail", "O corpo da requisicao nao pode ser vazio."},
+          {"instance", "/v1/search/parse"},
+      };
       res.status = 400;
       res.set_content(errorResp.dump(), "application/problem+json");
       return;
@@ -72,7 +74,8 @@ int main() {
             {"title", "Consulta de Busca Invalida"},
             {"status", 400},
             {"detail", "O campo 'query' e obrigatorio e deve ser texto."},
-            {"instance", "/v1/search/parse"}};
+            {"instance", "/v1/search/parse"},
+        };
         res.status = 400;
         res.set_content(errorResp.dump(), "application/problem+json");
         return;
@@ -81,11 +84,13 @@ int main() {
       std::string query = body["query"].get<std::string>();
       if (query.empty() ||
           query.find_first_not_of(" \t\n\r") == std::string::npos) {
-        json errorResp = {{"type", "https://hotel.local/errors/invalid-query"},
-                          {"title", "Consulta de Busca Invalida"},
-                          {"status", 400},
-                          {"detail", "O campo 'query' nao pode ser vazio."},
-                          {"instance", "/v1/search/parse"}};
+        json errorResp = {
+            {"type", "https://hotel.local/errors/invalid-query"},
+            {"title", "Consulta de Busca Invalida"},
+            {"status", 400},
+            {"detail", "O campo 'query' nao pode ser vazio."},
+            {"instance", "/v1/search/parse"},
+        };
         res.status = 400;
         res.set_content(errorResp.dump(), "application/problem+json");
         return;
@@ -97,7 +102,8 @@ int main() {
             {"title", "Consulta de Busca Invalida"},
             {"status", 400},
             {"detail", "O campo 'query' excede o limite de 256 caracteres."},
-            {"instance", "/v1/search/parse"}};
+            {"instance", "/v1/search/parse"},
+        };
         res.status = 400;
         res.set_content(errorResp.dump(), "application/problem+json");
         return;
@@ -110,7 +116,8 @@ int main() {
             {"title", "Catalogo Invalido"},
             {"status", 400},
             {"detail", "O campo 'catalog' e obrigatorio e deve ser uma lista."},
-            {"instance", "/v1/search/parse"}};
+            {"instance", "/v1/search/parse"},
+        };
         res.status = 400;
         res.set_content(errorResp.dump(), "application/problem+json");
         return;
@@ -122,7 +129,8 @@ int main() {
             {"title", "Limite de Catalogo Excedido"},
             {"status", 400},
             {"detail", "O catalogo excede o limite maximo de 100 itens."},
-            {"instance", "/v1/search/parse"}};
+            {"instance", "/v1/search/parse"},
+        };
         res.status = 400;
         res.set_content(errorResp.dump(), "application/problem+json");
         return;
@@ -178,9 +186,13 @@ int main() {
       response["correlation_id"] = correlationId;
       response["tokens_matched"] = matchedTokens;
       response["extracted_filters"] = {
-          {"adults", filters.adults.has_value() ? json(filters.adults.value())
-                                                : json(nullptr)},
-          {"amenities", filters.amenities}};
+          {
+              "adults",
+              filters.adults.has_value() ? json(filters.adults.value())
+                                         : json(nullptr),
+          },
+          {"amenities", filters.amenities},
+      };
       response["matching_entity_ids"] = matchingIds;
       response["total_matches"] = matchingIds.size();
 
@@ -190,33 +202,39 @@ int main() {
           std::chrono::duration<double, std::milli>(endTime - startTime)
               .count();
 
-      json logEntry = {{"timestamp", getIsoTimestamp()},
-                       {"level", "INFO"},
-                       {"correlation_id", correlationId},
-                       {"event", "SEARCH_PARSED"},
-                       {"query", query},
-                       {"tokens_count", queryTokens.size()},
-                       {"matches_count", matchingIds.size()},
-                       {"duration_ms", durationMs}};
-      std::cout << logEntry.dump() << std::endl;
+      json logEntry = {
+          {"timestamp", getIsoTimestamp()},
+          {"level", "INFO"},
+          {"correlation_id", correlationId},
+          {"event", "SEARCH_PARSED"},
+          {"query", query},
+          {"tokens_count", queryTokens.size()},
+          {"matches_count", matchingIds.size()},
+          {"duration_ms", durationMs},
+      };
+      std::cout << logEntry.dump() << '\n';
 
       res.status = 200;
       res.set_content(response.dump(), "application/json");
 
     } catch (const json::exception& e) {
-      json errorResp = {{"type", "https://hotel.local/errors/invalid-json"},
-                        {"title", "JSON Malformado"},
-                        {"status", 400},
-                        {"detail", e.what()},
-                        {"instance", "/v1/search/parse"}};
+      json errorResp = {
+          {"type", "https://hotel.local/errors/invalid-json"},
+          {"title", "JSON Malformado"},
+          {"status", 400},
+          {"detail", e.what()},
+          {"instance", "/v1/search/parse"},
+      };
       res.status = 400;
       res.set_content(errorResp.dump(), "application/problem+json");
     } catch (const std::exception& e) {
-      json errorResp = {{"type", "https://hotel.local/errors/internal-error"},
-                        {"title", "Erro Interno no Processamento"},
-                        {"status", 500},
-                        {"detail", e.what()},
-                        {"instance", "/v1/search/parse"}};
+      json errorResp = {
+          {"type", "https://hotel.local/errors/internal-error"},
+          {"title", "Erro Interno no Processamento"},
+          {"status", 500},
+          {"detail", e.what()},
+          {"instance", "/v1/search/parse"},
+      };
       res.status = 500;
       res.set_content(errorResp.dump(), "application/problem+json");
     }
@@ -228,14 +246,16 @@ int main() {
   const std::string host = (envHost != nullptr) ? envHost : "0.0.0.0";
 
   const char* envPort = std::getenv("SEARCH_SERVICE_PORT");
-  const int port = (envPort != nullptr) ? std::atoi(envPort) : 8108;
+  const int port = (envPort != nullptr)
+                       ? static_cast<int>(std::strtol(envPort, nullptr, 10))
+                       : 8108;
 
   std::cout << "[QLO-FEAT-008] Servico de Busca C++ inicializado em http://"
-            << host << ":" << port << std::endl;
+            << host << ":" << port << '\n';
 
   if (!svr.listen(host, port)) {
     std::cerr << "Erro fatal: nao foi possivel abrir o servidor HTTP em "
-              << host << ":" << port << std::endl;
+              << host << ":" << port << '\n';
     return 1;
   }
 
