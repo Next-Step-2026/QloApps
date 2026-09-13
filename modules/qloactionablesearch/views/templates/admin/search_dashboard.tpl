@@ -4,37 +4,37 @@
 
 <div class="panel">
     <div class="panel-heading">
-        <i class="icon-search"></i> {l s='Motor Lexical de Busca Rápida e Reconhecimento de Entidades' mod='qloactionablesearch'}
+        <i class="icon-search"></i> {l s='Fast Lexical Search Engine & Entity Recognition' mod='qloactionablesearch'}
     </div>
 
     <div class="alert alert-info">
-        <i class="icon-info-sign"></i> {l s='Digite consultas em linguagem natural combinando tipo de quarto, comodidades e ocupantes (ex.: "suite com vista mar 2 adultos", "quarto com ar condicionado"). O motor em C++ analisa e normaliza os termos em milissegundos.' mod='qloactionablesearch'}
+        <i class="icon-info-sign"></i> {l s='Enter natural language queries combining room type, amenities, and occupants (e.g.: "suite com vista mar 2 adultos", "quarto com ar condicionado"). The C++ engine parses and normalizes terms in milliseconds.' mod='qloactionablesearch'}
     </div>
 
     {if $searchError}
         <div class="alert alert-warning">
-            <i class="icon-warning-sign"></i> <strong>{l s='Aviso de Contingência:' mod='qloactionablesearch'}</strong> {$searchError|escape:'html':'UTF-8'}
+            <i class="icon-warning-sign"></i> <strong>{l s='Contingency Notice:' mod='qloactionablesearch'}</strong> {$searchError|escape:'html':'UTF-8'}
         </div>
     {/if}
 
     <form method="post" action="" class="form-horizontal">
         <div class="form-group">
             <label class="control-label col-lg-3">
-                <span class="label-tooltip" data-toggle="tooltip" data-html="true" title="{l s='Digite termos como: suite mar 2 pessoas, quarto standard, com banheira' mod='qloactionablesearch'}">
-                    {l s='Consulta Textual Livre:' mod='qloactionablesearch'}
+                <span class="label-tooltip" data-toggle="tooltip" data-html="true" title="{l s='Enter terms like: suite mar 2 pessoas, quarto standard, com banheira' mod='qloactionablesearch'}">
+                    {l s='Free Text Query:' mod='qloactionablesearch'}
                 </span>
             </label>
             <div class="col-lg-6">
                 <div class="input-group">
                     <input type="text" name="search_query" id="search_query" value="{$searchQuery|escape:'html':'UTF-8'}" 
-                           placeholder="{l s='Ex: suite com vista para o mar 2 adultos' mod='qloactionablesearch'}" 
+                           placeholder="{l s='e.g.: suite com vista para o mar 2 adultos' mod='qloactionablesearch'}" 
                            class="form-control" autofocus required />
                     <span class="input-group-addon"><i class="icon-terminal"></i></span>
                 </div>
             </div>
             <div class="col-lg-3">
                 <button type="submit" name="submitSearchQuery" class="btn btn-primary btn-block">
-                    <i class="icon-search"></i> {l s='Pesquisar Entidades' mod='qloactionablesearch'}
+                    <i class="icon-search"></i> {l s='Search Entities' mod='qloactionablesearch'}
                 </button>
             </div>
         </div>
@@ -45,32 +45,32 @@
         <div class="well">
             <div class="row">
                 <div class="col-md-6">
-                    <h4><i class="icon-tags"></i> {l s='Entidades e Termos Identificados:' mod='qloactionablesearch'}</h4>
+                    <h4><i class="icon-tags"></i> {l s='Identified Entities & Terms:' mod='qloactionablesearch'}</h4>
                     <p>
-                        <strong>{l s='Tokens Normalizados Casados:' mod='qloactionablesearch'}</strong>
+                        <strong>{l s='Matched Normalized Tokens:' mod='qloactionablesearch'}</strong>
                         {if !empty($searchResult.tokens_matched)}
                             {foreach from=$searchResult.tokens_matched item=token}
                                 <span class="badge badge-info" style="font-size: 13px; margin: 2px;">{$token|escape:'html':'UTF-8'}</span>
                             {/foreach}
                         {else}
-                            <span class="text-muted">{l s='Nenhum termo do catálogo diretamente casado.' mod='qloactionablesearch'}</span>
+                            <span class="text-muted">{l s='No catalog terms directly matched.' mod='qloactionablesearch'}</span>
                         {/if}
                     </p>
 
                     <p>
-                        <strong>{l s='Filtro de Capacidade Extraído:' mod='qloactionablesearch'}</strong>
+                        <strong>{l s='Extracted Capacity Filter:' mod='qloactionablesearch'}</strong>
                         {if isset($searchResult.extracted_filters.adults) && $searchResult.extracted_filters.adults}
                             <span class="label label-primary" style="font-size: 13px;">
-                                <i class="icon-user"></i> {$searchResult.extracted_filters.adults|intval} {l s='Adulto(s)' mod='qloactionablesearch'}
+                                <i class="icon-user"></i> {$searchResult.extracted_filters.adults|intval} {l s='Adult(s)' mod='qloactionablesearch'}
                             </span>
                         {else}
-                            <span class="text-muted">{l s='Não especificado na consulta' mod='qloactionablesearch'}</span>
+                            <span class="text-muted">{l s='Not specified in query' mod='qloactionablesearch'}</span>
                         {/if}
                     </p>
 
                     {if !empty($searchResult.extracted_filters.amenities)}
                         <p>
-                            <strong>{l s='Comodidades Detectadas:' mod='qloactionablesearch'}</strong>
+                            <strong>{l s='Detected Amenities:' mod='qloactionablesearch'}</strong>
                             {foreach from=$searchResult.extracted_filters.amenities item=amenity}
                                 <span class="label label-success" style="font-size: 12px; margin: 2px;">
                                     <i class="icon-check"></i> {$amenity|escape:'html':'UTF-8'}
@@ -87,7 +87,7 @@
                 <div class="col-md-6">
                     <h4>
                         <i class="icon-building"></i> 
-                        {l s='Acomodações Compatíveis' mod='qloactionablesearch'} 
+                        {l s='Matching Accommodations' mod='qloactionablesearch'} 
                         <span class="badge badge-success">{$searchResult.total_matches|intval}</span>
                     </h4>
 
@@ -112,11 +112,11 @@
                                     </h4>
                                     <p class="list-group-item-text text-muted">
                                         {if $entityId == 'room-suite-01'}
-                                            Capacidade: 2 Adultos | Comodidades: Vista Mar, Ar Condicionado, Banheira
+                                            Capacity: 2 Adults | Amenities: Vista Mar, Ar Condicionado, Banheira
                                         {elseif $entityId == 'room-std-02'}
-                                            Capacidade: 2 Adultos | Comodidades: Ar Condicionado
+                                            Capacity: 2 Adults | Amenities: Ar Condicionado
                                         {elseif $entityId == 'room-sgl-03'}
-                                            Capacidade: 1 Adulto | Comodidades: Ventilador
+                                            Capacity: 1 Adult | Amenities: Ventilador
                                         {/if}
                                     </p>
                                 </div>
@@ -124,7 +124,7 @@
                         </div>
                     {else}
                         <div class="alert alert-warning" style="margin-top: 10px;">
-                            <i class="icon-info-circle"></i> {l s='Nenhum quarto atendeu a todos os critérios simultâneos da busca.' mod='qloactionablesearch'}
+                            <i class="icon-info-circle"></i> {l s='No room matched all simultaneous search criteria.' mod='qloactionablesearch'}
                         </div>
                     {/if}
                 </div>
@@ -134,7 +134,7 @@
 
     <div class="panel-footer">
         <span class="text-muted">
-            <i class="icon-cogs"></i> {l s='Motor C++ escutando em' mod='qloactionablesearch'} <code>http://127.0.0.1:8108</code> | SLA &lt; 5ms
+            <i class="icon-cogs"></i> {l s='C++ Engine listening on' mod='qloactionablesearch'} <code>http://127.0.0.1:8108</code> | SLA &lt; 5ms
         </span>
     </div>
 </div>

@@ -13,7 +13,7 @@ class AdminActionableSearchController extends ModuleAdminController
     {
         $this->bootstrap = true;
         parent::__construct();
-        $this->page_header_toolbar_title = $this->l('Busca de Entidades Acionáveis');
+        $this->page_header_toolbar_title = $this->l('Actionable Entity Search');
     }
 
     public function initContent()
@@ -31,7 +31,7 @@ class AdminActionableSearchController extends ModuleAdminController
             $userQuery = trim((string) Tools::getValue('search_query'));
 
             if (empty($userQuery)) {
-                $searchError = $this->l('Por favor, informe ao menos um termo para realizar a busca.');
+                $searchError = $this->l('Please enter at least one search term.');
             } else {
                 $correlationId = Tools::passwdGen(16, 'ALPHANUMERIC');
 
@@ -47,11 +47,11 @@ class AdminActionableSearchController extends ModuleAdminController
                     $searchResult = json_decode($response, true);
                 } elseif ($httpCode === 400 && $response) {
                     $errData = json_decode($response, true);
-                    $detail = isset($errData['detail']) ? $errData['detail'] : $this->l('Consulta de busca inválida.');
+                    $detail = isset($errData['detail']) ? $errData['detail'] : $this->l('Invalid search query.');
                     $searchError = $detail;
                 } else {
-                    $searchError = $this->l('Motor de busca C++ offline ou indisponível no momento.') . ' ' .
-                        $this->l('Falha de conexão em 127.0.0.1:8108 (timeout máximo de 600ms).');
+                    $searchError = $this->l('C++ search engine is offline or currently unavailable.') . ' ' .
+                        $this->l('Connection failed at 127.0.0.1:8108 (max timeout of 600ms).');
                     if ($curlError) {
                         $searchError .= ' (' . $curlError . ')';
                     }

@@ -22,8 +22,8 @@ class QloActionableSearch extends Module
 
         parent::__construct();
 
-        $this->displayName = $this->l('Busca de Entidades Acionáveis');
-        $this->description = $this->l('Motor lexical rápido para pesquisa de quartos e comodidades de catálogo.');
+        $this->displayName = $this->l('Actionable Entity Search');
+        $this->description = $this->l('Fast lexical search engine for hotel rooms and catalog amenities.');
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
     }
 
@@ -56,7 +56,7 @@ class QloActionableSearch extends Module
         $tab->class_name = 'AdminActionableSearch';
         $tab->name = array();
         foreach (Language::getLanguages(true) as $lang) {
-            $tab->name[$lang['id_lang']] = 'Busca de Entidades';
+            $tab->name[$lang['id_lang']] = 'Actionable Entity Search';
         }
 
         // Tenta associar sob o menu de Pedidos/Bookings, senao deixa na raiz
