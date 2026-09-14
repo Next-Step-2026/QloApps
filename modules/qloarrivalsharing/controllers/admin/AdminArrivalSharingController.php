@@ -73,13 +73,17 @@ class AdminArrivalSharingController extends ModuleAdminController
             $totalGuests += (int) $arrival['total_guests'];
         }
 
+        $hotelCoords = ArrivalBookingRepository::getHotelCoordinates($idHotel ?: null);
+        $hotelLat = $hotelCoords['latitude'];
+        $hotelLng = $hotelCoords['longitude'];
+
         $isLocationServiceUp = $this->locationClient->isServiceAvailable();
         $arrivalResult = null;
         $arrivalError = null;
 
         if (Tools::isSubmit('submitCheckLocation')) {
-            $hotelLat = (float) Tools::getValue('hotel_lat', -8.052240);
-            $hotelLng = (float) Tools::getValue('hotel_lng', -34.885650);
+            $inputHotelLat = (float) Tools::getValue('hotel_lat', $hotelLat);
+            $inputHotelLng = (float) Tools::getValue('hotel_lng', $hotelLng);
             $guestLat = (float) Tools::getValue('guest_lat');
             $guestLng = (float) Tools::getValue('guest_lng');
             $prevState = Tools::getValue('previous_state', 'outside');
@@ -88,8 +92,8 @@ class AdminArrivalSharingController extends ModuleAdminController
 
             $payload = array(
                 'hotel_id'          => $hotelId,
-                'hotel_lat'         => $hotelLat,
-                'hotel_lng'         => $hotelLng,
+                'hotel_lat'         => $inputHotelLat,
+                'hotel_lng'         => $inputHotelLng,
                 'guest_lat'         => $guestLat,
                 'guest_lng'         => $guestLng,
                 'geofence_radius_m' => $radius,
@@ -110,6 +114,9 @@ class AdminArrivalSharingController extends ModuleAdminController
             'totalArrivals'         => count($arrivals),
             'totalGuests'           => $totalGuests,
             'geofenceRadius'        => $geofenceRadius,
+            'hotelLat'              => $hotelLat,
+            'hotelLng'              => $hotelLng,
+            'idHotel'               => $idHotel,
             'locationServiceOnline' => $isLocationServiceUp,
             'arrivalResult'         => $arrivalResult,
             'arrivalError'          => $arrivalError,
