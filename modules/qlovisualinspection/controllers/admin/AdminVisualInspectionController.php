@@ -177,7 +177,7 @@ class AdminVisualInspectionController extends ModuleAdminController
             'roomsTotalCount'   => $roomsData['total_count'],
             'roomsLimit'        => $roomsData['limit'],
             'recentInspections' => $this->getRecentInspections(),
-            'moduleImgUri'      => __PS_BASE_URI__ . 'modules/' . $this->module->name . '/views/img/inspections/',
+            'moduleImgUri'      => rtrim(__PS_BASE_URI__, '/') . '/modules/' . $this->module->name . '/views/img/inspections/',
         ]);
 
         $this->template = 'content.tpl';
@@ -349,6 +349,13 @@ class AdminVisualInspectionController extends ModuleAdminController
                         $fullTitleParts[] = '[' . $row['hotel_name'] . ']';
                     }
                     $row['full_room_title'] = implode(' - ', $fullTitleParts);
+
+                    // Check physical file existence to avoid 404 requests and broken image icons
+                    $row['image_exists'] = false;
+                    if (!empty($row['image_path'])) {
+                        $physicalImgPath = _PS_MODULE_DIR_ . $this->module->name . '/views/img/inspections/' . basename($row['image_path']);
+                        $row['image_exists'] = file_exists($physicalImgPath);
+                    }
 
                     $inspections[] = $row;
                 }
