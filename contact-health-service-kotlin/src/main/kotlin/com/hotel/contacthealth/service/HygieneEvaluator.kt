@@ -10,17 +10,21 @@ import com.hotel.contacthealth.model.FactorEvaluation
 import com.hotel.contacthealth.model.FactorStatus
 import com.hotel.contacthealth.model.FactorType
 import com.hotel.contacthealth.model.RecommendedAction
+import com.hotel.contacthealth.util.DateTimeParser
 
 class HygieneEvaluator {
 
     fun evaluate(request: ContactEvaluationRequest, correlationId: String): ContactEvaluationResponse {
         request.validate()
 
-        val refDate = StalenessCalculator.parseDate(request.referenceDate, "reference_date")
+        val refDate = DateTimeParser.parseDate(request.referenceDate, "reference_date")
             ?: throw IllegalArgumentException("Field 'reference_date' is required.")
 
-        val staleness = StalenessCalculator.calculate(request.lastVerifiedAt, refDate)
-        val consent = ConsentValidator.validate(request.consentExpiresAt, refDate)
+        val lastVerifiedDate = DateTimeParser.parseDate(request.lastVerifiedAt, "last_verified_at")
+        val consentExpiresDate = DateTimeParser.parseDate(request.consentExpiresAt, "consent_expires_at")
+
+        val staleness = StalenessCalculator.calculateDate(lastVerifiedDate, refDate)
+        val consent = ConsentValidator.validateDate(consentExpiresDate, refDate)
 
         val emailFactor = buildEmailFactor(request.email, staleness)
         val phoneFactor = buildPhoneFactor(request.phone, staleness)
@@ -52,32 +56,40 @@ class HygieneEvaluator {
         )
     }
 
-    private fun buildEmailFactor(email: String, staleness: StalenessCalculator.StalenessResult): FactorEvaluation {
-        val isValid = FormatValidators.isValidEmail(email)
-        val status = if (!isValid) FactorStatus.INVALID_FORMAT else staleness.status
-        val issues = mutableListOf<String>()
-        if (!isValid) issues.add("INVALID_EMAIL_FORMAT")
-        staleness.issue?.let { if (isValid) issues.add(it) }
-
-        return FactorEvaluation(
+    private fun buildEmailFactor(email: String, staleness: StalenessCalculator.StalenessResult): FactorEvaluation =
+        buildFactor(
             type = FactorType.EMAIL,
-            valueMasked = FormatValidators.maskEmail(email),
-            status = status,
-            daysSinceVerification = staleness.daysSince,
-            issues = issues
+            value = email,
+            isValid = FormatValidators.isValidEmail(email),
+            invalidIssue = "INVALID_EMAIL_FORMAT",
+            maskFn = FormatValidators::maskEmail,
+            staleness = staleness
         )
-    }
 
-    private fun buildPhoneFactor(phone: String, staleness: StalenessCalculator.StalenessResult): FactorEvaluation {
-        val isValid = FormatValidators.isValidPhone(phone)
+    private fun buildPhoneFactor(phone: String, staleness: StalenessCalculator.StalenessResult): FactorEvaluation =
+        buildFactor(
+            type = FactorType.PHONE,
+            value = phone,
+            isValid = FormatValidators.isValidPhone(phone),
+            invalidIssue = "INVALID_E164_PHONE_FORMAT",
+            maskFn = FormatValidators::maskPhone,
+            staleness = staleness
+        )
+
+    private fun buildFactor(
+        type: FactorType,
+        value: String,
+        isValid: Boolean,
+        invalidIssue: String,
+        maskFn: (String) -> String,
+        staleness: StalenessCalculator.StalenessResult
+    ): FactorEvaluation {
         val status = if (!isValid) FactorStatus.INVALID_FORMAT else staleness.status
-        val issues = mutableListOf<String>()
-        if (!isValid) issues.add("INVALID_E164_PHONE_FORMAT")
-        staleness.issue?.let { if (isValid) issues.add(it) }
+        val issues = listOfNotNull(if (!isValid) invalidIssue else staleness.issue)
 
         return FactorEvaluation(
-            type = FactorType.PHONE,
-            valueMasked = FormatValidators.maskPhone(phone),
+            type = type,
+            valueMasked = maskFn(value),
             status = status,
             daysSinceVerification = staleness.daysSince,
             issues = issues
