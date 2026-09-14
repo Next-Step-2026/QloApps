@@ -1,11 +1,9 @@
 package com.hotel.location
 
-import com.hotel.location.dto.GeofenceErrorLog
 import com.hotel.location.dto.HealthResponse
 import com.hotel.location.dto.LocationEventRequestDto
 import com.hotel.location.dto.ProblemDetailsResponse
 import com.hotel.location.dto.toDto
-import com.hotel.location.dto.toLog
 import com.hotel.location.exception.DomainException
 import com.hotel.location.exception.InvalidContentTypeException
 import com.hotel.location.exception.InvalidCoordinatesException
@@ -80,6 +78,34 @@ private suspend fun ApplicationCall.respondProblem(
     )
 }
 
+private fun logError(
+    level: String,
+    event: String,
+    correlationId: String,
+    errorType: String,
+    statusCode: HttpStatusCode,
+    path: String,
+    detail: String,
+    field: String? = null,
+    code: String? = null
+) {
+    try {
+        MDC.put("correlation_id", correlationId)
+        MDC.put("event", event)
+        MDC.put("error_type", errorType)
+        MDC.put("status_code", statusCode.value.toString())
+        MDC.put("path", path)
+        MDC.put("error_detail", detail)
+        if (field != null) MDC.put("field", field)
+        if (code != null) MDC.put("code", code)
+        MDC.put("timestamp", java.time.Instant.now().toString())
+
+        if (level == "ERROR") logger.error(event) else logger.warn(event)
+    } finally {
+        MDC.clear()
+    }
+}
+
 fun Application.module() {
     install(ContentNegotiation) {
         val defaultJson = Json {
@@ -101,19 +127,17 @@ fun Application.module() {
                 is MissingFieldException -> "urn:problem-type:invalid-payload" to "Invalid Payload"
                 else -> "urn:problem-type:bad-request" to "Bad Request"
             }
-            val errorLog = GeofenceErrorLog(
-                timestamp = java.time.Instant.now().toString(),
+            logError(
                 level = "WARN",
-                correlation_id = correlationId,
                 event = "GEOFENCE_VALIDATION_FAILED",
-                error_type = typeUri,
-                status_code = HttpStatusCode.BadRequest.value,
+                correlationId = correlationId,
+                errorType = typeUri,
+                statusCode = HttpStatusCode.BadRequest,
                 path = call.request.path(),
-                message = cause.message,
+                detail = cause.message,
                 field = cause.field,
                 code = cause.errorCode.name
             )
-            logger.warn(Json.encodeToString(errorLog))
             call.respondProblem(
                 HttpStatusCode.BadRequest,
                 ProblemDetailsResponse(
@@ -129,19 +153,17 @@ fun Application.module() {
 
         exception<LocationValidationException> { call, cause ->
             val correlationId = call.request.headers["X-Correlation-ID"] ?: "none"
-            val errorLog = GeofenceErrorLog(
-                timestamp = java.time.Instant.now().toString(),
+            logError(
                 level = "WARN",
-                correlation_id = correlationId,
                 event = "GEOFENCE_VALIDATION_FAILED",
-                error_type = cause.typeUri,
-                status_code = cause.statusCode.value,
+                correlationId = correlationId,
+                errorType = cause.typeUri,
+                statusCode = cause.statusCode,
                 path = call.request.path(),
-                message = cause.message,
+                detail = cause.message,
                 field = cause.field,
                 code = cause.errorCode.name
             )
-            logger.warn(Json.encodeToString(errorLog))
             call.respondProblem(
                 cause.statusCode,
                 ProblemDetailsResponse(
@@ -163,19 +185,17 @@ fun Application.module() {
             } else {
                 "O payload enviado é um JSON malformado ou incompatível."
             }
-            val errorLog = GeofenceErrorLog(
-                timestamp = java.time.Instant.now().toString(),
+            logError(
                 level = "WARN",
-                correlation_id = correlationId,
                 event = "MALFORMED_JSON_ERROR",
-                error_type = "urn:problem-type:malformed-json",
-                status_code = HttpStatusCode.BadRequest.value,
+                correlationId = correlationId,
+                errorType = "urn:problem-type:malformed-json",
+                statusCode = HttpStatusCode.BadRequest,
                 path = call.request.path(),
-                message = detail,
+                detail = detail,
                 field = field,
                 code = "MALFORMED_JSON"
             )
-            logger.warn(Json.encodeToString(errorLog))
             call.respondProblem(
                 HttpStatusCode.BadRequest,
                 ProblemDetailsResponse(
@@ -209,19 +229,17 @@ fun Application.module() {
                 "Requisição inválida."
             }
 
-            val errorLog = GeofenceErrorLog(
-                timestamp = java.time.Instant.now().toString(),
+            logError(
                 level = "WARN",
-                correlation_id = correlationId,
                 event = if (isSerialization) "MALFORMED_JSON_ERROR" else "BAD_REQUEST_ERROR",
-                error_type = typeUri,
-                status_code = HttpStatusCode.BadRequest.value,
+                correlationId = correlationId,
+                errorType = typeUri,
+                statusCode = HttpStatusCode.BadRequest,
                 path = call.request.path(),
-                message = detail,
+                detail = detail,
                 field = field,
                 code = code
             )
-            logger.warn(Json.encodeToString(errorLog))
             call.respondProblem(
                 HttpStatusCode.BadRequest,
                 ProblemDetailsResponse(
@@ -237,19 +255,17 @@ fun Application.module() {
 
         exception<ServiceUnavailableException> { call, cause ->
             val correlationId = call.request.headers["X-Correlation-ID"] ?: "none"
-            val errorLog = GeofenceErrorLog(
-                timestamp = java.time.Instant.now().toString(),
+            logError(
                 level = "ERROR",
-                correlation_id = correlationId,
                 event = "GEOFENCE_SERVICE_UNAVAILABLE",
-                error_type = cause.typeUri,
-                status_code = cause.statusCode.value,
+                correlationId = correlationId,
+                errorType = cause.typeUri,
+                statusCode = cause.statusCode,
                 path = call.request.path(),
-                message = cause.message,
+                detail = cause.message,
                 field = cause.field,
                 code = cause.errorCode.name
             )
-            logger.error(Json.encodeToString(errorLog))
             call.respondProblem(
                 HttpStatusCode.ServiceUnavailable,
                 ProblemDetailsResponse(
@@ -265,18 +281,17 @@ fun Application.module() {
 
         exception<Throwable> { call, cause ->
             val correlationId = call.request.headers["X-Correlation-ID"] ?: "none"
-            val errorLog = GeofenceErrorLog(
-                timestamp = java.time.Instant.now().toString(),
+            val detail = cause.message ?: "Erro interno inesperado no servidor."
+            logError(
                 level = "ERROR",
-                correlation_id = correlationId,
                 event = "INTERNAL_SERVER_ERROR",
-                error_type = "urn:problem-type:internal-server-error",
-                status_code = HttpStatusCode.InternalServerError.value,
+                correlationId = correlationId,
+                errorType = "urn:problem-type:internal-server-error",
+                statusCode = HttpStatusCode.InternalServerError,
                 path = call.request.path(),
-                message = cause.message ?: "Erro interno inesperado no servidor.",
+                detail = detail,
                 code = "INTERNAL_SERVER_ERROR"
             )
-            logger.error(Json.encodeToString(errorLog))
             call.respondProblem(
                 HttpStatusCode.InternalServerError,
                 ProblemDetailsResponse(

@@ -111,17 +111,3 @@ fun GeofenceEvaluationResult.toLog(
     )
 }
 
-@Serializable
-data class GeofenceErrorLog(
-    val timestamp: String,
-    val level: String,
-    val correlation_id: String,
-    val event: String,
-    val error_type: String,
-    val status_code: Int,
-    val path: String,
-    val message: String,
-    val field: String? = null,
-    val code: String? = null
-)
-

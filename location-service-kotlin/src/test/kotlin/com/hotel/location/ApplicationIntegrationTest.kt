@@ -499,24 +499,24 @@ class ApplicationIntegrationTest {
 
                 assertEquals(HttpStatusCode.BadRequest, response.status)
 
-                val logEvent = listAppender.list.firstOrNull { it.formattedMessage.contains("GEOFENCE_VALIDATION_FAILED") }
+                val logEvent = listAppender.list.firstOrNull { it.mdcPropertyMap["event"] == "GEOFENCE_VALIDATION_FAILED" }
                 assertNotNull(logEvent, "Deveria ter registrado log estruturado com evento GEOFENCE_VALIDATION_FAILED")
 
-                val jsonLog = json.parseToJsonElement(logEvent!!.formattedMessage).jsonObject
-                assertEquals("WARN", jsonLog["level"]?.jsonPrimitive?.content)
-                assertEquals(VALID_CORRELATION_ID, jsonLog["correlation_id"]?.jsonPrimitive?.content)
-                assertEquals("GEOFENCE_VALIDATION_FAILED", jsonLog["event"]?.jsonPrimitive?.content)
-                assertEquals("urn:problem-type:invalid-coordinates", jsonLog["error_type"]?.jsonPrimitive?.content)
-                assertEquals("INVALID_COORDINATES", jsonLog["code"]?.jsonPrimitive?.content)
-                assertEquals(400, jsonLog["status_code"]?.jsonPrimitive?.int)
-                assertEquals("/v1/location-events", jsonLog["path"]?.jsonPrimitive?.content)
-                assertNotNull(jsonLog["timestamp"]?.jsonPrimitive?.content)
-                assertNotNull(jsonLog["message"]?.jsonPrimitive?.content)
+                val mdc = logEvent!!.mdcPropertyMap
+                assertEquals("WARN", logEvent.level.toString())
+                assertEquals(VALID_CORRELATION_ID, mdc["correlation_id"])
+                assertEquals("GEOFENCE_VALIDATION_FAILED", mdc["event"])
+                assertEquals("urn:problem-type:invalid-coordinates", mdc["error_type"])
+                assertEquals("INVALID_COORDINATES", mdc["code"])
+                assertEquals("400", mdc["status_code"])
+                assertEquals("/v1/location-events", mdc["path"])
+                assertNotNull(mdc["timestamp"])
+                assertNotNull(logEvent.formattedMessage)
 
-                assertFalse(jsonLog.containsKey("hotel_lat"))
-                assertFalse(jsonLog.containsKey("hotel_lng"))
-                assertFalse(jsonLog.containsKey("guest_lat"))
-                assertFalse(jsonLog.containsKey("guest_lng"))
+                assertFalse(mdc.containsKey("hotel_lat"))
+                assertFalse(mdc.containsKey("hotel_lng"))
+                assertFalse(mdc.containsKey("guest_lat"))
+                assertFalse(mdc.containsKey("guest_lng"))
             } finally {
                 logbackLogger.detachAppender(listAppender)
             }
@@ -541,18 +541,19 @@ class ApplicationIntegrationTest {
 
                 assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
 
-                val logEvent = listAppender.list.firstOrNull { it.formattedMessage.contains("GEOFENCE_SERVICE_UNAVAILABLE") }
+                val logEvent = listAppender.list.firstOrNull { it.mdcPropertyMap["event"] == "GEOFENCE_SERVICE_UNAVAILABLE" }
                 assertNotNull(logEvent, "Deveria ter registrado log estruturado com evento GEOFENCE_SERVICE_UNAVAILABLE")
 
-                val jsonLog = json.parseToJsonElement(logEvent!!.formattedMessage).jsonObject
-                assertEquals("ERROR", jsonLog["level"]?.jsonPrimitive?.content)
-                assertEquals(VALID_CORRELATION_ID, jsonLog["correlation_id"]?.jsonPrimitive?.content)
-                assertEquals("GEOFENCE_SERVICE_UNAVAILABLE", jsonLog["event"]?.jsonPrimitive?.content)
-                assertEquals("urn:problem-type:service-unavailable", jsonLog["error_type"]?.jsonPrimitive?.content)
-                assertEquals("SERVICE_UNAVAILABLE", jsonLog["code"]?.jsonPrimitive?.content)
-                assertEquals(503, jsonLog["status_code"]?.jsonPrimitive?.int)
-                assertEquals("/v1/location-events", jsonLog["path"]?.jsonPrimitive?.content)
-                assertNotNull(jsonLog["timestamp"]?.jsonPrimitive?.content)
+                val mdc = logEvent!!.mdcPropertyMap
+                assertEquals("ERROR", logEvent.level.toString())
+                assertEquals(VALID_CORRELATION_ID, mdc["correlation_id"])
+                assertEquals("GEOFENCE_SERVICE_UNAVAILABLE", mdc["event"])
+                assertEquals("urn:problem-type:service-unavailable", mdc["error_type"])
+                assertEquals("SERVICE_UNAVAILABLE", mdc["code"])
+                assertEquals("503", mdc["status_code"])
+                assertEquals("/v1/location-events", mdc["path"])
+                assertNotNull(mdc["timestamp"])
+                assertNotNull(logEvent.formattedMessage)
             } finally {
                 logbackLogger.detachAppender(listAppender)
             }
@@ -576,16 +577,18 @@ class ApplicationIntegrationTest {
 
                 assertEquals(HttpStatusCode.BadRequest, response.status)
 
-                val logEvent = listAppender.list.firstOrNull { it.formattedMessage.contains("MALFORMED_JSON_ERROR") }
+                val logEvent = listAppender.list.firstOrNull { it.mdcPropertyMap["event"] == "MALFORMED_JSON_ERROR" }
                 assertNotNull(logEvent, "Deveria ter registrado log estruturado com evento MALFORMED_JSON_ERROR")
 
-                val jsonLog = json.parseToJsonElement(logEvent!!.formattedMessage).jsonObject
-                assertEquals("WARN", jsonLog["level"]?.jsonPrimitive?.content)
-                assertEquals(VALID_CORRELATION_ID, jsonLog["correlation_id"]?.jsonPrimitive?.content)
-                assertEquals("MALFORMED_JSON_ERROR", jsonLog["event"]?.jsonPrimitive?.content)
-                assertEquals("urn:problem-type:malformed-json", jsonLog["error_type"]?.jsonPrimitive?.content)
-                assertEquals("MALFORMED_JSON", jsonLog["code"]?.jsonPrimitive?.content)
-                assertEquals(400, jsonLog["status_code"]?.jsonPrimitive?.int)
+                val mdc = logEvent!!.mdcPropertyMap
+                assertEquals("WARN", logEvent.level.toString())
+                assertEquals(VALID_CORRELATION_ID, mdc["correlation_id"])
+                assertEquals("MALFORMED_JSON_ERROR", mdc["event"])
+                assertEquals("urn:problem-type:malformed-json", mdc["error_type"])
+                assertEquals("MALFORMED_JSON", mdc["code"])
+                assertEquals("400", mdc["status_code"])
+                assertNotNull(mdc["timestamp"])
+                assertNotNull(logEvent.formattedMessage)
             } finally {
                 logbackLogger.detachAppender(listAppender)
             }
