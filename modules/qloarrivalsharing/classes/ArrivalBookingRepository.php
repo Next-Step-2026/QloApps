@@ -64,4 +64,37 @@ class ArrivalBookingRepository
 
         return is_array($results) ? $results : array();
     }
+
+    /**
+     * Retorna as coordenadas geográficas (latitude e longitude) do hotel.
+     *
+     * @param int|null $idHotel ID do hotel (opcional)
+     * @return array Coordenadas com latitude e longitude (com fallback RFC-004)
+     */
+    public static function getHotelCoordinates($idHotel = null)
+    {
+        $defaultCoords = array(
+            'latitude'  => -8.052240,
+            'longitude' => -34.885650,
+        );
+
+        if (!$idHotel) {
+            return $defaultCoords;
+        }
+
+        $sql = new DbQuery();
+        $sql->select('`latitude`, `longitude`');
+        $sql->from('htl_branch_info');
+        $sql->where('`id` = ' . (int) $idHotel);
+
+        $row = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
+        if ($row && !empty((float) $row['latitude']) && !empty((float) $row['longitude'])) {
+            return array(
+                'latitude'  => (float) $row['latitude'],
+                'longitude' => (float) $row['longitude'],
+            );
+        }
+
+        return $defaultCoords;
+    }
 }
