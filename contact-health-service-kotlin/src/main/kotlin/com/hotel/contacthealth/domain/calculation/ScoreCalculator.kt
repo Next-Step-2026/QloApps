@@ -8,26 +8,21 @@ object ScoreCalculator {
         phoneStatus: FactorStatus,
         consentValid: Boolean
     ): Int {
-        var score = 100
-
-        when (emailStatus) {
-            FactorStatus.INVALID_FORMAT -> score -= 40
-            FactorStatus.STALE -> score -= 30
-            FactorStatus.AGING -> score -= 15
-            else -> {}
+        val emailPenalty = when (emailStatus) {
+            FactorStatus.INVALID_FORMAT -> 40
+            FactorStatus.STALE -> 30
+            FactorStatus.AGING -> 15
+            else -> 0
         }
 
-        when (phoneStatus) {
-            FactorStatus.INVALID_FORMAT -> score -= 30
-            FactorStatus.STALE -> score -= 30
-            FactorStatus.AGING -> score -= 15
-            else -> {}
+        val phonePenalty = when (phoneStatus) {
+            FactorStatus.INVALID_FORMAT -> 30
+            FactorStatus.STALE -> 30
+            FactorStatus.AGING -> 15
+            else -> 0
         }
 
-        if (!consentValid) {
-            score = score.coerceAtMost(40)
-        }
-
-        return score.coerceIn(0, 100)
+        val baseScore = (100 - emailPenalty - phonePenalty).coerceIn(0, 100)
+        return if (consentValid) baseScore else minOf(baseScore, 40)
     }
 }

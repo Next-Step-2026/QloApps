@@ -20,6 +20,9 @@ class FormatValidatorsTest {
             assertTrue(FormatValidators.isValidEmail("user@example.com"))
             assertTrue(FormatValidators.isValidEmail("carlos.silva@empresa.com.br"))
             assertTrue(FormatValidators.isValidEmail("marina_costa+tag@tech.co"))
+            assertTrue(FormatValidators.isValidEmail("hospede@hotel.technology"))
+            assertTrue(FormatValidators.isValidEmail("reserva@pousada.restaurant"))
+            assertTrue(FormatValidators.isValidEmail("contato@rede.international"))
         }
 
         @Test

@@ -154,5 +154,14 @@ class HygieneEvaluatorTest {
             assertThrows<IllegalArgumentException> { evaluator.evaluate(createRequest(lastVerifiedAt = "2026/08/27"), "t2") }
             assertThrows<IllegalArgumentException> { evaluator.evaluate(createRequest(consentExpiresAt = "invalid-consent-date"), "t3") }
         }
+
+        @Test
+        @DisplayName("Future last_verified_at relative to reference_date must throw IllegalArgumentException")
+        fun shouldThrowOnFutureLastVerifiedAt() {
+            val exception = assertThrows<IllegalArgumentException> {
+                evaluator.evaluate(createRequest(lastVerifiedAt = "2026-08-28", referenceDate = "2026-08-27"), "t5")
+            }
+            assertTrue(exception.message!!.contains("future"))
+        }
     }
 }
