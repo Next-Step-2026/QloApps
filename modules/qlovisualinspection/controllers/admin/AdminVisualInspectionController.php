@@ -130,7 +130,7 @@ class AdminVisualInspectionController extends ModuleAdminController
                                 $hasAnyError = true;
                                 $overallAssessment = 'EVIDENCE_REQUIRES_RETAKE';
                             } else {
-                                $this->saveInspectionRecord(
+                                $dbSaved = $this->saveInspectionRecord(
                                     $subInspectionId,
                                     $selectedRoomId,
                                     $itemKey,
@@ -138,6 +138,14 @@ class AdminVisualInspectionController extends ModuleAdminController
                                     $savedImagePath,
                                     $itemResult
                                 );
+
+                                if (!$dbSaved) {
+                                    $this->deleteEvidenceImage($savedImagePath);
+                                    $savedImagePath = null;
+                                    $itemError = $this->l('Could not persist inspection record in database.');
+                                    $hasAnyError = true;
+                                    $overallAssessment = 'EVIDENCE_REQUIRES_RETAKE';
+                                }
                             }
                         }
                     }
@@ -216,6 +224,26 @@ class AdminVisualInspectionController extends ModuleAdminController
 
          return $filename;
      }
+
+    /**
+     * Delete evidence image file from disk (e.g. on rollback)
+     *
+     * @param string $filename
+     * @return bool
+     */
+    protected function deleteEvidenceImage($filename)
+    {
+        if (empty($filename)) {
+            return false;
+        }
+
+        $targetPath = _PS_MODULE_DIR_ . $this->module->name . '/views/img/inspections/' . basename($filename);
+        if (file_exists($targetPath)) {
+            return @unlink($targetPath);
+        }
+
+        return false;
+    }
 
     /**
      * Insert inspection record into qlo_visual_inspection table
