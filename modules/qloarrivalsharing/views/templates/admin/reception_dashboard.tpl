@@ -308,7 +308,7 @@ $(document).ready(function() {
                             {if !empty($arrival.check_in_time)}
                                 <i class="icon-time"></i> {$arrival.check_in_time|escape:'html':'UTF-8'}
                             {else}
-                                <span class="text-muted">14:00</span>
+                                <span class="text-muted"><i class="icon-time"></i> 14:00</span>
                             {/if}
                         </td>
                         <td class="text-center">
