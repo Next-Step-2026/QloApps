@@ -33,10 +33,10 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Configurar Python 3.13
+      - name: Configurar Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
 
       - name: "[29/39] Secrets Scanning (Gitleaks)"
         uses: gitleaks/gitleaks-action@v2
@@ -83,7 +83,7 @@ jobs:
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
 
       - name: "[7, 8/39] SAST e Taint Analysis (Semgrep)"
         uses: returntocorp/semgrep-action@v1
@@ -134,7 +134,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
 
       - name: Instalar Dependências Avançadas (Hypothesis, Z3 Solver)
         run: |
