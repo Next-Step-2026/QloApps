@@ -69,9 +69,20 @@ class AdminArrivalSharingController extends ModuleAdminController
         }
 
         $totalGuests = 0;
-        foreach ($arrivals as $arrival) {
+        foreach ($arrivals as &$arrival) {
             $totalGuests += (int) $arrival['total_guests'];
+            if (!empty($arrival['guest_token'])) {
+                $arrival['guest_link'] = $this->context->link->getModuleLink(
+                    'qloarrivalsharing',
+                    'arrivaltracking',
+                    array(
+                        'id_order' => (int) $arrival['id_order'],
+                        'token'    => $arrival['guest_token'],
+                    )
+                );
+            }
         }
+        unset($arrival);
 
         $hotelCoords = ArrivalBookingRepository::getHotelCoordinates($idHotel ?: null);
         $hotelLat = $hotelCoords['latitude'];
