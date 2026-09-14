@@ -161,7 +161,9 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
             ArrivalBookingRepository::saveArrivalTracking(
                 $idOrder,
                 $data['current_state'],
-                $data['distance_meters']
+                $data['distance_meters'],
+                $previousState,
+                isset($data['transition']) ? $data['transition'] : 'NO_CHANGE'
             );
 
             if ($isInside) {
@@ -187,7 +189,13 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
             ));
         } else {
             // Modo de contingência transparente (persiste sinal básico)
-            ArrivalBookingRepository::saveArrivalTracking($idOrder, 'outside', 0.0);
+            ArrivalBookingRepository::saveArrivalTracking(
+                $idOrder,
+                'outside',
+                0.0,
+                $previousState,
+                'NO_CHANGE'
+            );
 
             echo json_encode(array(
                 'success'         => true,

@@ -44,7 +44,9 @@ class ArrivalBookingRepository
             hbd.`date_to`,
             hbd.`check_in_time`,
             hbd.`id_status`,
+            trk.`previous_state` AS tracking_previous_state,
             trk.`current_state` AS tracking_state,
+            trk.`transition` AS tracking_transition,
             trk.`distance_meters` AS tracking_distance,
             trk.`date_upd` AS tracking_date_upd
         ');
@@ -187,7 +189,7 @@ class ArrivalBookingRepository
     }
 
     /**
-     * Garante a existência da tabela de rastreamento de chegadas do módulo.
+     * Garante a existência da tabela de rastreamento de chegadas do módulo e colunas necessárias.
      *
      * @return bool
      */
@@ -195,24 +197,46 @@ class ArrivalBookingRepository
     {
         $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'qlo_arrival_tracking` (
             `id_order` INT(10) UNSIGNED NOT NULL,
+            `previous_state` VARCHAR(16) NOT NULL DEFAULT "outside",
             `current_state` VARCHAR(16) NOT NULL DEFAULT "outside",
+            `transition` VARCHAR(16) NOT NULL DEFAULT "NO_CHANGE",
             `distance_meters` DECIMAL(10,2) NULL,
             `date_upd` DATETIME NOT NULL,
             PRIMARY KEY (`id_order`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8';
 
-        return Db::getInstance()->execute($sql);
+        Db::getInstance()->execute($sql);
+
+        // Migração idempotente caso a tabela tenha sido criada em versão anterior sem as colunas
+        $columns = Db::getInstance()->executeS('SHOW COLUMNS FROM `' . _DB_PREFIX_ . 'qlo_arrival_tracking`');
+        $existingCols = array();
+        if (!empty($columns)) {
+            foreach ($columns as $col) {
+                $existingCols[] = $col['Field'];
+            }
+        }
+
+        if (!in_array('previous_state', $existingCols)) {
+            Db::getInstance()->execute('ALTER TABLE `' . _DB_PREFIX_ . 'qlo_arrival_tracking` ADD `previous_state` VARCHAR(16) NOT NULL DEFAULT "outside" AFTER `id_order`');
+        }
+        if (!in_array('transition', $existingCols)) {
+            Db::getInstance()->execute('ALTER TABLE `' . _DB_PREFIX_ . 'qlo_arrival_tracking` ADD `transition` VARCHAR(16) NOT NULL DEFAULT "NO_CHANGE" AFTER `current_state`');
+        }
+
+        return true;
     }
 
     /**
      * Salva ou atualiza o estado de aproximação de uma reserva no banco.
      *
      * @param int $idOrder ID do pedido
-     * @param string $state Estado retornado pelo motor (inside ou outside)
+     * @param string $currentState Estado retornado pelo motor (inside ou outside)
      * @param float $distance Distância em metros calculada
+     * @param string $previousState Estado anterior (inside ou outside)
+     * @param string $transition Transição calculada (ENTERED, EXITED, NO_CHANGE)
      * @return bool
      */
-    public static function saveArrivalTracking($idOrder, $state, $distance)
+    public static function saveArrivalTracking($idOrder, $currentState, $distance, $previousState = 'outside', $transition = 'NO_CHANGE')
     {
         $idOrder = (int) $idOrder;
         if ($idOrder <= 0) {
@@ -221,12 +245,14 @@ class ArrivalBookingRepository
 
         self::initTrackingTable();
 
-        $state = in_array($state, array('inside', 'outside')) ? $state : 'outside';
+        $currentState = in_array($currentState, array('inside', 'outside')) ? $currentState : 'outside';
+        $previousState = in_array($previousState, array('inside', 'outside')) ? $previousState : 'outside';
+        $transition = in_array($transition, array('ENTERED', 'EXITED', 'NO_CHANGE')) ? $transition : 'NO_CHANGE';
         $distance = (float) $distance;
 
         $sql = 'REPLACE INTO `' . _DB_PREFIX_ . 'qlo_arrival_tracking`
-                (`id_order`, `current_state`, `distance_meters`, `date_upd`)
-                VALUES (' . $idOrder . ', \'' . pSQL($state) . '\', ' . $distance . ', NOW())';
+                (`id_order`, `previous_state`, `current_state`, `transition`, `distance_meters`, `date_upd`)
+                VALUES (' . $idOrder . ', \'' . pSQL($previousState) . '\', \'' . pSQL($currentState) . '\', \'' . pSQL($transition) . '\', ' . $distance . ', NOW())';
 
         return Db::getInstance()->execute($sql);
     }
@@ -246,7 +272,7 @@ class ArrivalBookingRepository
 
         self::initTrackingTable();
 
-        $sql = 'SELECT `current_state`, `distance_meters`, `date_upd`
+        $sql = 'SELECT `previous_state`, `current_state`, `transition`, `distance_meters`, `date_upd`
                 FROM `' . _DB_PREFIX_ . 'qlo_arrival_tracking`
                 WHERE `id_order` = ' . $idOrder;
 
