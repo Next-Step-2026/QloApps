@@ -317,6 +317,11 @@ $(document).ready(function() {
                             </span>
                         </td>
                         <td class="text-right">
+                            {if isset($arrival.guest_token)}
+                                <a href="{$base_dir|escape:'html':'UTF-8'}index.php?fc=module&module=qloarrivalsharing&controller=arrivaltracking&id_order={$arrival.id_order|escape:'html':'UTF-8'}&token={$arrival.guest_token|escape:'html':'UTF-8'}" target="_blank" class="btn btn-info btn-xs" title="{l s='Abrir Link do Hóspede' mod='qloarrivalsharing'}">
+                                    <i class="icon-external-link"></i> {l s='Link Hóspede' mod='qloarrivalsharing'}
+                                </a>
+                            {/if}
                             <a href="{$orderAdminLink|escape:'html':'UTF-8'}&id_order={$arrival.id_order|escape:'html':'UTF-8'}&vieworder" target="_blank" class="btn btn-default btn-xs">
                                 <i class="icon-eye"></i> {l s='Detalhes' mod='qloarrivalsharing'}
                             </a>
