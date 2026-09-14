@@ -9,6 +9,15 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
+/**
+ * Adapter for external reservation requests from PROVIDER_A.
+ *
+ * Implements business rules defined in RFC-006:
+ * - RN-001: Maps arrival + nights into check_in and check_out (LocalDate.plusDays).
+ * - RN-003: Strictly requires nights >= 1 to prevent check_out <= check_in.
+ * - RN-004: Sanitizes and normalizes guest_full_name into canonical guest_name.
+ * - RN-005: Defaults room_count to 1 if omitted.
+ */
 class ProviderAAdapter : ChannelAdapter {
     override val providerName: String = "PROVIDER_A"
 
@@ -17,7 +26,6 @@ class ProviderAAdapter : ChannelAdapter {
         val guestName = rawGuestName?.let { normalizeGuestName(it) }.orEmpty()
         val checkInStr = getStringField(payload, "arrival")
         val nightsRaw = payload["nights"]?.jsonPrimitive?.content?.toIntOrNull()
-        val roomsRaw = payload["room_count"]?.jsonPrimitive?.content?.toIntOrNull()
 
         val errors = mutableListOf<ValidationError>()
         if (rawGuestName == null) {
@@ -40,7 +48,7 @@ class ProviderAAdapter : ChannelAdapter {
 
         val inDate = validateArrival(checkInStr, errors)
         val nights = validateNights(payload["nights"] != null, nightsRaw, errors)
-        val rooms = validateRooms(payload["room_count"] != null, roomsRaw, errors)
+        val rooms = resolveRoomCount(payload, errors)
 
         return if (errors.isNotEmpty() || inDate == null) {
             ValidationResult.Failure(errors)
@@ -80,7 +88,7 @@ class ProviderAAdapter : ChannelAdapter {
         } catch (e: DateTimeParseException) {
             errors.add(
                 ValidationError(
-                    "payload",
+                    "arrival",
                     "INVALID_SCHEMA",
                     "Formato de data inválido para 'arrival': ${e.message}",
                 ),

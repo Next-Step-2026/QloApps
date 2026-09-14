@@ -10,6 +10,16 @@ import java.time.LocalDate
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 
+/**
+ * Adapter for external reservation requests from PROVIDER_B.
+ *
+ * Implements business rules defined in RFC-006:
+ * - RN-002: Maps checkin_date and checkout_date into check_in, check_out,
+ *   and calculates nights (ChronoUnit.DAYS.between).
+ * - RN-003: Strictly validates that check_out > check_in, rejecting with CHECKOUT_BEFORE_CHECKIN otherwise.
+ * - RN-004: Unifies nested customer { first_name, last_name } into canonical guest_name with sanitization.
+ * - RN-005: Defaults room count to 1 if omitted, supporting room_count and rooms keys.
+ */
 class ProviderBAdapter : ChannelAdapter {
     override val providerName: String = "PROVIDER_B"
 
@@ -18,10 +28,7 @@ class ProviderBAdapter : ChannelAdapter {
         val guestName = validateCustomer(payload, errors)
         val dates = validateDates(payload, errors)
 
-        val roomCountRaw =
-            (payload["room_count"] ?: payload["rooms"])?.jsonPrimitive?.content?.toIntOrNull()
-        val hasRoomCount = payload["room_count"] != null || payload["rooms"] != null
-        val rooms = validateRooms(hasRoomCount, roomCountRaw, errors)
+        val rooms = resolveRoomCount(payload, errors)
         val channelRef = payload["reference_id"]?.jsonPrimitive?.content ?: "N/A"
 
         return if (errors.isNotEmpty() || dates == null) {
@@ -91,7 +98,7 @@ class ProviderBAdapter : ChannelAdapter {
         } catch (e: DateTimeParseException) {
             errors.add(
                 ValidationError(
-                    "payload",
+                    field,
                     "INVALID_SCHEMA",
                     "Formato de data inválido para '$field': ${e.message}",
                 ),
