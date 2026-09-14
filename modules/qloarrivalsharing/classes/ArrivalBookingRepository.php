@@ -19,6 +19,8 @@ class ArrivalBookingRepository
      */
     public static function getTodayArrivals($date = null, $idHotel = null)
     {
+        self::initTrackingTable();
+
         $targetDate = $date ? pSQL($date) : date('Y-m-d');
 
         $sql = new DbQuery();
@@ -41,12 +43,16 @@ class ArrivalBookingRepository
             hbd.`date_from`,
             hbd.`date_to`,
             hbd.`check_in_time`,
-            hbd.`id_status`
+            hbd.`id_status`,
+            trk.`current_state` AS tracking_state,
+            trk.`distance_meters` AS tracking_distance,
+            trk.`date_upd` AS tracking_date_upd
         ');
         $sql->from('htl_booking_detail', 'hbd');
         $sql->innerJoin('orders', 'o', 'o.`id_order` = hbd.`id_order`');
         $sql->innerJoin('customer', 'c', 'c.`id_customer` = hbd.`id_customer`');
         $sql->leftJoin('address', 'addr', 'addr.`id_address` = o.`id_address_delivery`');
+        $sql->leftJoin('qlo_arrival_tracking', 'trk', 'trk.`id_order` = hbd.`id_order`');
 
         $sql->where('hbd.`date_from` >= \'' . $targetDate . ' 00:00:00\'');
         $sql->where('hbd.`date_from` <= \'' . $targetDate . ' 23:59:59\'');
@@ -178,5 +184,72 @@ class ArrivalBookingRepository
         $row['guest_display_name'] = trim($row['firstname'] . ' ' . $lastNameInitial);
 
         return $row;
+    }
+
+    /**
+     * Garante a existência da tabela de rastreamento de chegadas do módulo.
+     *
+     * @return bool
+     */
+    public static function initTrackingTable()
+    {
+        $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'qlo_arrival_tracking` (
+            `id_order` INT(10) UNSIGNED NOT NULL,
+            `current_state` VARCHAR(16) NOT NULL DEFAULT "outside",
+            `distance_meters` DECIMAL(10,2) NULL,
+            `date_upd` DATETIME NOT NULL,
+            PRIMARY KEY (`id_order`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8';
+
+        return Db::getInstance()->execute($sql);
+    }
+
+    /**
+     * Salva ou atualiza o estado de aproximação de uma reserva no banco.
+     *
+     * @param int $idOrder ID do pedido
+     * @param string $state Estado retornado pelo motor (inside ou outside)
+     * @param float $distance Distância em metros calculada
+     * @return bool
+     */
+    public static function saveArrivalTracking($idOrder, $state, $distance)
+    {
+        $idOrder = (int) $idOrder;
+        if ($idOrder <= 0) {
+            return false;
+        }
+
+        self::initTrackingTable();
+
+        $state = in_array($state, array('inside', 'outside')) ? $state : 'outside';
+        $distance = (float) $distance;
+
+        $sql = 'REPLACE INTO `' . _DB_PREFIX_ . 'qlo_arrival_tracking`
+                (`id_order`, `current_state`, `distance_meters`, `date_upd`)
+                VALUES (' . $idOrder . ', \'' . pSQL($state) . '\', ' . $distance . ', NOW())';
+
+        return Db::getInstance()->execute($sql);
+    }
+
+    /**
+     * Retorna o último estado registrado de aproximação de uma reserva.
+     *
+     * @param int $idOrder ID do pedido
+     * @return array|false
+     */
+    public static function getArrivalTrackingState($idOrder)
+    {
+        $idOrder = (int) $idOrder;
+        if ($idOrder <= 0) {
+            return false;
+        }
+
+        self::initTrackingTable();
+
+        $sql = 'SELECT `current_state`, `distance_meters`, `date_upd`
+                FROM `' . _DB_PREFIX_ . 'qlo_arrival_tracking`
+                WHERE `id_order` = ' . $idOrder;
+
+        return Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
     }
 }

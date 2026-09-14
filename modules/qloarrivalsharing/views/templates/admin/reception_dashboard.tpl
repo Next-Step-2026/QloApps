@@ -314,9 +314,21 @@ $(document).ready(function() {
                             {/if}
                         </td>
                         <td class="text-center">
-                            <span class="label label-default">
-                                <i class="icon-clock-o"></i> {l s='Aguardando Sinal' mod='qloarrivalsharing'}
-                            </span>
+                            {if isset($arrival.tracking_state) && $arrival.tracking_state == 'inside'}
+                                <span class="label label-success" style="font-size: 11px; padding: 4px 8px; display: inline-block;" {if !empty($arrival.tracking_date_upd)}title="{l s='Último sinal:' mod='qloarrivalsharing'} {$arrival.tracking_date_upd|escape:'html':'UTF-8'}"{/if}>
+                                    <i class="icon-bell"></i> {l s='Chegou às Imediações' mod='qloarrivalsharing'}
+                                    {if isset($arrival.tracking_distance)}<br><small style="font-size: 10px;">(~{$arrival.tracking_distance|string_format:"%.0f"}m)</small>{/if}
+                                </span>
+                            {elseif isset($arrival.tracking_state) && $arrival.tracking_state == 'outside' && isset($arrival.tracking_distance) && $arrival.tracking_distance > 0}
+                                <span class="label label-info" style="font-size: 11px; padding: 4px 8px; display: inline-block;" {if !empty($arrival.tracking_date_upd)}title="{l s='Último sinal:' mod='qloarrivalsharing'} {$arrival.tracking_date_upd|escape:'html':'UTF-8'}"{/if}>
+                                    <i class="icon-road"></i> {l s='A Caminho' mod='qloarrivalsharing'}
+                                    <br><small style="font-size: 10px;">(~{$arrival.tracking_distance|string_format:"%.0f"}m)</small>
+                                </span>
+                            {else}
+                                <span class="label label-default" style="font-size: 11px; padding: 4px 8px;">
+                                    <i class="icon-clock-o"></i> {l s='Aguardando Sinal' mod='qloarrivalsharing'}
+                                </span>
+                            {/if}
                         </td>
                         <td class="text-right">
                             {if !empty($arrival.guest_link)}

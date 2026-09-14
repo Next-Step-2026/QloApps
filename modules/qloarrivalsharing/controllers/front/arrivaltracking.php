@@ -137,6 +137,9 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
             $geofenceRadius = 200.0;
         }
 
+        $tracking = ArrivalBookingRepository::getArrivalTrackingState($idOrder);
+        $previousState = (!empty($tracking) && !empty($tracking['current_state'])) ? $tracking['current_state'] : 'outside';
+
         $payload = array(
             'hotel_id'          => 'htl-' . (int) $booking['id_hotel'],
             'hotel_lat'         => (float) $hotelCoords['latitude'],
@@ -144,7 +147,7 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
             'guest_lat'         => $guestLat,
             'guest_lng'         => $guestLng,
             'geofence_radius_m' => $geofenceRadius,
-            'previous_state'    => 'outside',
+            'previous_state'    => $previousState,
         );
 
         $response = $this->locationClient->sendLocationEvent($payload);
@@ -153,6 +156,13 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
             $data = $response['data'];
             $isInside = ($data['current_state'] === 'inside');
             $distance = round($data['distance_meters'], 1);
+
+            // Persiste o estado de aproximação para atualizar o painel da recepção em tempo real
+            ArrivalBookingRepository::saveArrivalTracking(
+                $idOrder,
+                $data['current_state'],
+                $data['distance_meters']
+            );
 
             if ($isInside) {
                 $msg = sprintf(
@@ -176,7 +186,9 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
                 'message'         => $msg,
             ));
         } else {
-            // Modo de contingência transparente (se o Kotlin estiver fora, o hóspede não recebe erro fatal)
+            // Modo de contingência transparente (persiste sinal básico)
+            ArrivalBookingRepository::saveArrivalTracking($idOrder, 'outside', 0.0);
+
             echo json_encode(array(
                 'success'         => true,
                 'inside_geofence' => false,
