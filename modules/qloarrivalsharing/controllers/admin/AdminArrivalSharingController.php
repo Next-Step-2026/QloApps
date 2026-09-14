@@ -142,9 +142,40 @@ class AdminArrivalSharingController extends ModuleAdminController
             'simPrevState'          => Tools::getValue('previous_state', 'outside'),
             'simRadius'             => Tools::getValue('radius', $geofenceRadius),
             'orderAdminLink'        => $this->context->link->getAdminLink('AdminOrders', true),
+            'ajaxArrivalStatusUrl'  => $this->context->link->getAdminLink('AdminArrivalSharing', true) . '&ajax=1&action=refresh_arrival_status',
         ));
 
         $this->setTemplate('reception_dashboard.tpl');
+    }
+
+    /**
+     * Endpoint AJAX para polling de status em tempo real do painel da recepção.
+     *
+     * @return void
+     */
+    public function ajaxProcessRefreshArrivalStatus()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $today = date('Y-m-d');
+        $idHotel = (int) Tools::getValue('id_hotel', (isset($this->context->cookie->id_hotel) ? $this->context->cookie->id_hotel : 0));
+        $arrivals = ArrivalBookingRepository::getTodayArrivals($today, $idHotel ?: null);
+
+        $statuses = array();
+        foreach ($arrivals as $arrival) {
+            $idOrder = (int) $arrival['id_order'];
+            $statuses[$idOrder] = array(
+                'tracking_state'      => !empty($arrival['tracking_state']) ? $arrival['tracking_state'] : 'waiting',
+                'tracking_distance'   => isset($arrival['tracking_distance']) ? (float) $arrival['tracking_distance'] : null,
+                'tracking_transition' => !empty($arrival['tracking_transition']) ? $arrival['tracking_transition'] : null,
+                'tracking_date_upd'   => !empty($arrival['tracking_date_upd']) ? $arrival['tracking_date_upd'] : null,
+            );
+        }
+
+        die(json_encode(array(
+            'success'  => true,
+            'statuses' => $statuses,
+        )));
     }
 
     /**

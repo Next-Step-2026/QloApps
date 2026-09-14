@@ -313,7 +313,7 @@ $(document).ready(function() {
                                 </span>
                             {/if}
                         </td>
-                        <td class="text-center">
+                        <td class="text-center tracking-cell" id="tracking-cell-{$arrival.id_order|escape:'html':'UTF-8'}" data-id-order="{$arrival.id_order|escape:'html':'UTF-8'}">
                             {if isset($arrival.tracking_state) && $arrival.tracking_state == 'inside'}
                                 <span class="label label-success" style="font-size: 11px; padding: 4px 8px; display: inline-block;" {if !empty($arrival.tracking_date_upd)}title="{l s='Último sinal:' mod='qloarrivalsharing'} {$arrival.tracking_date_upd|escape:'html':'UTF-8'}{if !empty($arrival.tracking_transition)} ({$arrival.tracking_transition|escape:'html':'UTF-8'}){/if}"{/if}>
                                     <i class="icon-bell"></i> {l s='Chegou às Imediações' mod='qloarrivalsharing'}
@@ -373,3 +373,65 @@ $(document).ready(function() {
         </form>
     </div>
 </div>
+
+{if isset($ajaxArrivalStatusUrl)}
+<script type="text/javascript">
+$(document).ready(function() {
+    var ajaxStatusUrl = '{$ajaxArrivalStatusUrl}';
+
+    function refreshArrivalStatuses() {
+        if (document.hidden) {
+            setTimeout(refreshArrivalStatuses, 10000);
+            return;
+        }
+
+        $.ajax({
+            url: ajaxStatusUrl,
+            type: 'GET',
+            dataType: 'json',
+            cache: false,
+            timeout: 5000,
+            success: function(res) {
+                if (res && res.success && res.statuses) {
+                    $('.tracking-cell').each(function() {
+                        var idOrder = $(this).data('id-order');
+                        var data = res.statuses[idOrder];
+                        if (!data) {
+                            return;
+                        }
+
+                        var titleAttr = data.tracking_date_upd ? ' title="{l s='Último sinal:' mod='qloarrivalsharing' js=1} ' + data.tracking_date_upd + (data.tracking_transition ? ' (' + data.tracking_transition + ')' : '') + '"' : '';
+                        var newHtml = '';
+
+                        if (data.tracking_state === 'inside') {
+                            newHtml = '<span class="label label-success" style="font-size: 11px; padding: 4px 8px; display: inline-block;"' + titleAttr + '>' +
+                                '<i class="icon-bell"></i> {l s='Chegou às Imediações' mod='qloarrivalsharing' js=1}' +
+                                (data.tracking_distance !== null ? '<br><small style="font-size: 10px;">(~' + Math.round(data.tracking_distance) + 'm)</small>' : '') +
+                                '</span>';
+                        } else if (data.tracking_state === 'outside' && data.tracking_distance > 0) {
+                            newHtml = '<span class="label label-info" style="font-size: 11px; padding: 4px 8px; display: inline-block;"' + titleAttr + '>' +
+                                '<i class="icon-road"></i> {l s='A Caminho' mod='qloarrivalsharing' js=1}' +
+                                '<br><small style="font-size: 10px;">(~' + Math.round(data.tracking_distance) + 'm)</small>' +
+                                '</span>';
+                        } else {
+                            newHtml = '<span class="label label-default" style="font-size: 11px; padding: 4px 8px;">' +
+                                '<i class="icon-clock-o"></i> {l s='Aguardando Sinal' mod='qloarrivalsharing' js=1}' +
+                                '</span>';
+                        }
+
+                        if ($(this).html().trim() !== newHtml.trim()) {
+                            $(this).html(newHtml);
+                        }
+                    });
+                }
+            },
+            complete: function() {
+                setTimeout(refreshArrivalStatuses, 10000);
+            }
+        });
+    }
+
+    setTimeout(refreshArrivalStatuses, 10000);
+});
+</script>
+{/if}
