@@ -191,18 +191,16 @@ fun Application.module() {
 
         exception<BadRequestException> { call, cause ->
             val correlationId = call.request.headers["X-Correlation-ID"] ?: "none"
-            val isSerialization = cause.cause is SerializationException ||
-                cause.cause?.cause is SerializationException ||
-                cause.message?.contains("convert", ignoreCase = true) == true ||
-                cause.message?.contains("json", ignoreCase = true) == true ||
-                cause.cause?.javaClass?.simpleName?.contains("Json", ignoreCase = true) == true ||
-                cause.cause?.javaClass?.simpleName?.contains("Convert", ignoreCase = true) == true
+            val serializationException = generateSequence(cause as Throwable) { it.cause }
+                .filterIsInstance<SerializationException>()
+                .firstOrNull()
 
+            val isSerialization = serializationException != null
             val typeUri = if (isSerialization) "urn:problem-type:malformed-json" else "urn:problem-type:bad-request"
             val title = if (isSerialization) "Malformed JSON Request" else "Bad Request"
             val code = if (isSerialization) "MALFORMED_JSON" else "BAD_REQUEST"
 
-            val field = extractFieldFromSerializationMessage(cause.cause?.message ?: cause.message)
+            val field = extractFieldFromSerializationMessage(serializationException?.message ?: cause.cause?.message ?: cause.message)
             val detail = if (field != null) {
                 "O campo '$field' contém dados inválidos."
             } else if (isSerialization) {
