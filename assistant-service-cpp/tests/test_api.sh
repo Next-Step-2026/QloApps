@@ -387,4 +387,18 @@ else
     exit 1
 fi
 
-echo "=== [SUCCESS] All 24 API tests passed successfully! ==="
+# Test 25: Content-Type with invalid parameter: application/json; foo=bar (expects 415 UNSUPPORTED_MEDIA_TYPE)
+echo -n "[TEST] 25. Validating Content-Type with unknown parameter: application/json; foo=bar ... "
+RES_FOOBAR=$(curl -s -i -X POST "$BASE_URL/v1/assist/interpret" \
+    -H "Content-Type: application/json; foo=bar" \
+    -H "X-Correlation-ID: $DEFAULT_CORR" \
+    -d '{"query": "tem quarto suite para amanha?", "reference_date": "2026-08-27"}')
+
+if echo "$RES_FOOBAR" | grep -q "415 Unsupported Media Type" && echo "$RES_FOOBAR" | grep -q "UNSUPPORTED_MEDIA_TYPE"; then
+    echo "OK (HTTP 415 - rejected unknown parameter foo=bar)"
+else
+    echo "FAILED ($RES_FOOBAR)"
+    exit 1
+fi
+
+echo "=== [SUCCESS] All 25 API tests passed successfully! ==="

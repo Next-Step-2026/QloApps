@@ -23,25 +23,29 @@ bool isValidJsonContentType(const std::string& headerVal) {
         return false;
     }
 
-    // If parameters exist, only charset=utf-8 is permitted
-    if (semi != std::string::npos) {
-        std::string params = headerVal.substr(semi + 1);
-        trim(params);
-        std::transform(params.begin(), params.end(), params.begin(), ::tolower);
-        if (params.find("charset=") != std::string::npos) {
-            size_t eq = params.find("charset=");
-            std::string charset = params.substr(eq + 8);
-            trim(charset);
-            if (!charset.empty() && (charset.front() == '"' || charset.front() == '\'')) {
-                charset = charset.substr(1, charset.size() - 2);
-            }
-            if (charset != "utf-8") {
-                return false;
-            }
-        }
+    if (semi == std::string::npos) {
+        return true;
     }
 
-    return true;
+    std::string params = headerVal.substr(semi + 1);
+    trim(params);
+    std::transform(params.begin(), params.end(), params.begin(), ::tolower);
+
+    const size_t charsetStart = params.find("charset=");
+    if (charsetStart == std::string::npos || charsetStart != 0) {
+        return false;
+    }
+
+    std::string charset = params.substr(8);
+    trim(charset);
+    if (charset.size() >= 2 && (charset.front() == '"' || charset.front() == '\'')) {
+        if (charset.back() != charset.front()) {
+            return false;
+        }
+        charset = charset.substr(1, charset.size() - 2);
+    }
+
+    return charset == "utf-8";
 }
 
 } // namespace
