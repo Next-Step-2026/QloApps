@@ -4,8 +4,19 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+/**
+ * Class ArrivalBookingRepository
+ * Repositório para consulta de reservas de chegada no hotel.
+ */
 class ArrivalBookingRepository
 {
+    /**
+     * Retorna a lista de chegadas previstas para a data e hotel informados.
+     *
+     * @param string|null $date Data no formato Y-m-d (padrão: hoje se null)
+     * @param int|null $idHotel ID do hotel para filtragem (opcional)
+     * @return array Lista de reservas de chegada
+     */
     public static function getTodayArrivals($date = null, $idHotel = null)
     {
         $targetDate = $date ? pSQL($date) : date('Y-m-d');

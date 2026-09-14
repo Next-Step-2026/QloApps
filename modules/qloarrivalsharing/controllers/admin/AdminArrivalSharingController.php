@@ -6,8 +6,15 @@ if (!defined('_PS_VERSION_')) {
 
 require_once dirname(__FILE__) . '/../../classes/ArrivalBookingRepository.php';
 
+/**
+ * Class AdminArrivalSharingController
+ * Controlador de administração para recepção e monitoramento de chegadas/traslados.
+ */
 class AdminArrivalSharingController extends ModuleAdminController
 {
+    /**
+     * Inicializa as configurações do controlador administrativo.
+     */
     public function __construct()
     {
         $this->bootstrap = true;
@@ -16,6 +23,11 @@ class AdminArrivalSharingController extends ModuleAdminController
         $this->override_folder = '';
     }
 
+    /**
+     * Processa requisições de formulários submetidos no módulo.
+     *
+     * @return void
+     */
     public function postProcess()
     {
         if (Tools::isSubmit('submitGeofenceRadius')) {
@@ -31,6 +43,11 @@ class AdminArrivalSharingController extends ModuleAdminController
         parent::postProcess();
     }
 
+    /**
+     * Inicializa e renderiza o conteúdo da página do painel de recepção.
+     *
+     * @return void
+     */
     public function initContent()
     {
         parent::initContent();
@@ -61,6 +78,12 @@ class AdminArrivalSharingController extends ModuleAdminController
         $this->setTemplate('reception_dashboard.tpl');
     }
 
+    /**
+     * Cria e retorna o objeto de template Smarty para visualização.
+     *
+     * @param string $tpl_name Nome do arquivo de template
+     * @return Smarty_Internal_Template
+     */
     public function createTemplate($tpl_name)
     {
         $templatePath = _PS_MODULE_DIR_ . $this->module->name . '/views/templates/admin/' . $tpl_name;
