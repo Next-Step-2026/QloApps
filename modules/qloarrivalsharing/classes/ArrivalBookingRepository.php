@@ -62,6 +62,13 @@ class ArrivalBookingRepository
 
         $results = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
 
+        if (is_array($results)) {
+            foreach ($results as &$arrival) {
+                $arrival['guest_token'] = self::generateGuestToken((int) $arrival['id_order']);
+            }
+            unset($arrival);
+        }
+
         return is_array($results) ? $results : array();
     }
 
@@ -96,5 +103,80 @@ class ArrivalBookingRepository
         }
 
         return $defaultCoords;
+    }
+
+    /**
+     * Gera o token de segurança para acesso exclusivo à tela do hóspede.
+     * Utiliza chave criptográfica privada do sistema (_COOKIE_KEY_) para impedir IDOR.
+     *
+     * @param int $idOrder ID da reserva/pedido
+     * @return string Token com 16 caracteres hexadecimais
+     */
+    public static function generateGuestToken($idOrder)
+    {
+        return substr(md5('qloarrival_' . (int) $idOrder . '_' . _COOKIE_KEY_), 0, 16);
+    }
+
+    /**
+     * Valida de forma segura contra timing attacks o token de acesso do hóspede.
+     *
+     * @param int $idOrder ID do pedido
+     * @param string $token Token informado na requisição
+     * @return bool
+     */
+    public static function validateGuestToken($idOrder, $token)
+    {
+        if (empty($token) || (int) $idOrder <= 0) {
+            return false;
+        }
+
+        return hash_equals(self::generateGuestToken((int) $idOrder), (string) $token);
+    }
+
+    /**
+     * Obtém informações públicas e seguras de uma reserva para a tela do hóspede.
+     * Mascara e restringe dados sensíveis para proteger a privacidade (LGPD).
+     *
+     * @param int $idOrder ID do pedido
+     * @return array|false Dados resumidos da reserva ou false se inválida/cancelada
+     */
+    public static function getBookingForGuest($idOrder)
+    {
+        $idOrder = (int) $idOrder;
+        if ($idOrder <= 0) {
+            return false;
+        }
+
+        $sql = new DbQuery();
+        $sql->select('
+            hbd.`id_order`,
+            o.`reference` AS order_reference,
+            c.`firstname`,
+            c.`lastname`,
+            hbd.`id_hotel`,
+            hbd.`hotel_name`,
+            hbd.`room_type_name`,
+            hbd.`date_from`,
+            hbd.`date_to`,
+            hbd.`check_in_time`
+        ');
+        $sql->from('htl_booking_detail', 'hbd');
+        $sql->innerJoin('orders', 'o', 'o.`id_order` = hbd.`id_order`');
+        $sql->innerJoin('customer', 'c', 'c.`id_customer` = hbd.`id_customer`');
+        $sql->where('hbd.`id_order` = ' . (int) $idOrder);
+        $sql->where('hbd.`is_refunded` = 0');
+        $sql->where('hbd.`is_cancelled` = 0');
+        $sql->where('hbd.`id_status` NOT IN (2, 3)');
+
+        $row = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
+        if (!$row) {
+            return false;
+        }
+
+        // Anonimização / proteção de PII (Primeiro nome + inicial do sobrenome)
+        $lastNameInitial = !empty($row['lastname']) ? mb_substr(trim($row['lastname']), 0, 1, 'UTF-8') . '.' : '';
+        $row['guest_display_name'] = trim($row['firstname'] . ' ' . $lastNameInitial);
+
+        return $row;
     }
 }
