@@ -242,10 +242,14 @@
                     {foreach from=$recentInspections item=row}
                         <tr>
                             <td class="text-center">
-                                {if !empty($row.image_path)}
+                                {if !empty($row.image_path) && !empty($row.image_exists)}
                                     <a href="{$moduleImgUri}{$row.image_path|escape:'html':'UTF-8'}" target="_blank" title="{l s='View original size' mod='qlovisualinspection'}">
                                         <img src="{$moduleImgUri}{$row.image_path|escape:'html':'UTF-8'}" alt="Thumb" style="width: 45px; height: 35px; object-fit: cover; border-radius: 3px; border: 1px solid #ccc;" />
                                     </a>
+                                {elseif !empty($row.image_path)}
+                                    <span class="text-muted" title="{l s='Image file missing from disk' mod='qlovisualinspection'}">
+                                        <i class="icon-file-image-o"></i> <small>{l s='Missing' mod='qlovisualinspection'}</small>
+                                    </span>
                                 {else}
                                     <span class="text-muted">—</span>
                                 {/if}
