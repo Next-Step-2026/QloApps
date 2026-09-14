@@ -103,6 +103,12 @@ class AdminArrivalSharingController extends ModuleAdminController
             $response = $this->locationClient->sendLocationEvent($payload);
             if ($response['success']) {
                 $arrivalResult = $response['data'];
+                if (!isset($arrivalResult['previous_state'])) {
+                    $arrivalResult['previous_state'] = $payload['previous_state'];
+                }
+                if (!isset($arrivalResult['geofence_radius_m'])) {
+                    $arrivalResult['geofence_radius_m'] = $payload['geofence_radius_m'];
+                }
             } else {
                 $arrivalError = $response['error'];
             }
@@ -120,6 +126,10 @@ class AdminArrivalSharingController extends ModuleAdminController
             'locationServiceOnline' => $isLocationServiceUp,
             'arrivalResult'         => $arrivalResult,
             'arrivalError'          => $arrivalError,
+            'simGuestLat'           => Tools::getValue('guest_lat', '-8.053100'),
+            'simGuestLng'           => Tools::getValue('guest_lng', '-34.886100'),
+            'simPrevState'          => Tools::getValue('previous_state', 'outside'),
+            'simRadius'             => Tools::getValue('radius', $geofenceRadius),
             'orderAdminLink'        => $this->context->link->getAdminLink('AdminOrders', true),
         ));
 

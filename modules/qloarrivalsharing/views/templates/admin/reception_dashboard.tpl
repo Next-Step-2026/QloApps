@@ -6,20 +6,6 @@
     </div>
 {/if}
 
-{if $arrivalError}
-    <div class="alert alert-danger">
-        <i class="icon-exclamation-sign"></i> {$arrivalError|escape:'html':'UTF-8'}
-    </div>
-{/if}
-
-{if $arrivalResult}
-    <div class="alert alert-success">
-        <i class="icon-check"></i> 
-        <strong>{l s='Proximidade Calculada:' mod='qloarrivalsharing'}</strong> 
-        {$arrivalResult.distance_meters|escape:'html':'UTF-8'} m ({$arrivalResult.transition|escape:'html':'UTF-8'}) - {$arrivalResult.message|escape:'html':'UTF-8'}
-    </div>
-{/if}
-
 <div class="row">
     <div class="col-lg-3 col-md-6">
         <div class="panel">
@@ -63,6 +49,211 @@
         </div>
     </div>
 </div>
+
+<!-- Painel de Simulação de Envio de Coordenadas (Demonstração Rápida - RFC-004 Dia 9) -->
+<div class="panel" id="panelSimulationCoordinates">
+    <div class="panel-heading">
+        <i class="icon-location-arrow text-primary"></i> 
+        {l s='Simulação de Envio de Coordenadas (Demonstração Rápida)' mod='qloarrivalsharing'}
+        <span class="text-muted" style="font-weight: normal; font-size: 12px; margin-left: 10px;">
+            <i class="icon-building"></i> {l s='Hotel Ref:' mod='qloarrivalsharing'} <strong>{$hotelLat|string_format:"%.6f"}, {$hotelLng|string_format:"%.6f"}</strong> | {l s='Raio:' mod='qloarrivalsharing'} <strong>{$geofenceRadius|escape:'html':'UTF-8'}m</strong>
+        </span>
+        {if $arrivalResult}
+            <span class="label {if $arrivalResult.alert_triggered}label-success{else}label-default{/if}" style="font-size: 11px; margin-left: 10px;">
+                <i class="icon-check"></i> {$arrivalResult.distance_meters|string_format:"%.1f"}m ({$arrivalResult.transition|escape:'html':'UTF-8'})
+            </span>
+        {/if}
+        <span class="panel-heading-action pull-right">
+            <button type="button" id="btnToggleSimulation" class="btn btn-default btn-xs" data-toggle="collapse" data-target="#simulationCollapse" title="{l s='Expandir / Recolher Simulador' mod='qloarrivalsharing'}">
+                <i class="icon-chevron-{if $arrivalResult || $arrivalError}up{else}down{/if}"></i> {l s='Simulador' mod='qloarrivalsharing'}
+            </button>
+        </span>
+    </div>
+
+    <div id="simulationCollapse" class="panel-collapse collapse {if $arrivalResult || $arrivalError}in{/if}">
+        <div class="panel-body" style="padding: 15px 20px;">
+            
+            {if $arrivalError}
+                <div class="alert alert-danger" style="margin-bottom: 20px;">
+                    <i class="icon-exclamation-sign"></i> 
+                    <strong>{l s='Falha no Teste:' mod='qloarrivalsharing'}</strong> {$arrivalError|escape:'html':'UTF-8'}
+                </div>
+            {/if}
+
+            {if $arrivalResult}
+                <div class="panel {if $arrivalResult.alert_triggered}panel-success{else}panel-default{/if}" style="border: 1px solid {if $arrivalResult.alert_triggered}#72c279{else}#d3d8db{/if}; margin-bottom: 20px; background-color: {if $arrivalResult.alert_triggered}#f4faf5{else}#fafafa{/if};">
+                    <div class="panel-body" style="padding: 15px;">
+                        <div class="row">
+                            <div class="col-md-3 text-center" style="border-right: 1px solid #e0e0e0;">
+                                <div class="text-muted" style="font-size: 11px; text-transform: uppercase; font-weight: bold;">{l s='Distância Calculada' mod='qloarrivalsharing'}</div>
+                                <h2 style="margin: 5px 0 0 0; color: #333;">
+                                    <strong>{$arrivalResult.distance_meters|string_format:"%.1f"|escape:'html':'UTF-8'}</strong> <small>m</small>
+                                </h2>
+                                <span class="text-muted" style="font-size: 12px;">{l s='Raio Configurado:' mod='qloarrivalsharing'} {$arrivalResult.geofence_radius_m|escape:'html':'UTF-8'}m</span>
+                            </div>
+                            <div class="col-md-3 text-center" style="border-right: 1px solid #e0e0e0;">
+                                <div class="text-muted" style="font-size: 11px; text-transform: uppercase; font-weight: bold;">{l s='Transição Detectada' mod='qloarrivalsharing'}</div>
+                                <div style="margin-top: 8px;">
+                                    {if $arrivalResult.transition == 'ENTERED'}
+                                        <span class="label label-success" style="font-size: 13px; padding: 4px 10px;">
+                                            <i class="icon-sign-in"></i> ENTERED
+                                        </span>
+                                    {elseif $arrivalResult.transition == 'EXITED'}
+                                        <span class="label label-warning" style="font-size: 13px; padding: 4px 10px;">
+                                            <i class="icon-sign-out"></i> EXITED
+                                        </span>
+                                    {else}
+                                        <span class="label label-default" style="font-size: 13px; padding: 4px 10px;">
+                                            <i class="icon-minus"></i> NO_CHANGE
+                                        </span>
+                                    {/if}
+                                </div>
+                                <div class="text-muted" style="font-size: 12px; margin-top: 5px;">
+                                    {$arrivalResult.previous_state|escape:'html':'UTF-8'} &rarr; <strong>{$arrivalResult.current_state|escape:'html':'UTF-8'}</strong>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center" style="border-right: 1px solid #e0e0e0;">
+                                <div class="text-muted" style="font-size: 11px; text-transform: uppercase; font-weight: bold;">{l s='Alerta da Recepção' mod='qloarrivalsharing'}</div>
+                                <div style="margin-top: 8px;">
+                                    {if $arrivalResult.alert_triggered}
+                                        <span class="label label-success" style="font-size: 13px; padding: 4px 10px;">
+                                            <i class="icon-bell"></i> {l s='Disparado' mod='qloarrivalsharing'}
+                                        </span>
+                                    {else}
+                                        <span class="label label-default" style="font-size: 13px; padding: 4px 10px;">
+                                            <i class="icon-bell-slash"></i> {l s='Sem Disparo' mod='qloarrivalsharing'}
+                                        </span>
+                                    {/if}
+                                </div>
+                                <div class="text-muted" style="font-size: 12px; margin-top: 5px;">
+                                    {if $arrivalResult.alert_triggered}
+                                        {l s='Equipe de boas-vindas acionada' mod='qloarrivalsharing'}
+                                    {else}
+                                        {l s='Monitoramento contínuo' mod='qloarrivalsharing'}
+                                    {/if}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-muted" style="font-size: 11px; text-transform: uppercase; font-weight: bold;">{l s='Diagnóstico do Motor Ktor' mod='qloarrivalsharing'}</div>
+                                <p style="margin-top: 8px; font-size: 12px; line-height: 1.4; color: #555;">
+                                    <i class="icon-info-circle text-info"></i> {$arrivalResult.message|escape:'html':'UTF-8'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {/if}
+
+            <div style="margin-bottom: 20px; background: #fafbfc; padding: 12px 15px; border-radius: 4px; border: 1px dashed #ced4da;">
+                <div style="font-size: 12px; color: #444; font-weight: bold; margin-bottom: 8px;">
+                    <i class="icon-magic text-primary"></i> {l s='Cenários de Demonstração Rápida (1 Clique - RFC-004):' mod='qloarrivalsharing'}
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-default btn-sm" onclick="applySimulationPreset(-8.053100, -34.886100, 'outside', {$geofenceRadius|escape:'javascript'});" style="border-left: 4px solid #72c279;">
+                        <i class="icon-check text-success"></i> 
+                        <strong>1. {l s='Hóspede Chegando' mod='qloarrivalsharing'}</strong> 
+                        <span class="text-muted">(~108m &bull; outside &bull; ENTERED)</span>
+                    </button>
+                    <button type="button" class="btn btn-default btn-sm" onclick="applySimulationPreset(-8.065000, -34.890000, 'outside', {$geofenceRadius|escape:'javascript'});" style="border-left: 4px solid #999;">
+                        <i class="icon-road text-muted"></i> 
+                        <strong>2. {l s='Hóspede Longe' mod='qloarrivalsharing'}</strong> 
+                        <span class="text-muted">(~1.500m &bull; outside &bull; NO_CHANGE)</span>
+                    </button>
+                    <button type="button" class="btn btn-default btn-sm" onclick="applySimulationPreset(-8.055000, -34.888000, 'inside', {$geofenceRadius|escape:'javascript'});" style="border-left: 4px solid #f0ad4e;">
+                        <i class="icon-sign-out text-warning"></i> 
+                        <strong>3. {l s='Hóspede Saindo' mod='qloarrivalsharing'}</strong> 
+                        <span class="text-muted">(~800m &bull; inside &bull; EXITED)</span>
+                    </button>
+                </div>
+            </div>
+
+            <form method="post" action="" id="formSimulationCoordinates">
+                <input type="hidden" name="hotel_lat" value="{$hotelLat|escape:'html':'UTF-8'}" />
+                <input type="hidden" name="hotel_lng" value="{$hotelLng|escape:'html':'UTF-8'}" />
+                <input type="hidden" name="hotel_id" value="htl-prime-01" />
+                <input type="hidden" name="id_hotel" value="{$idHotel|escape:'html':'UTF-8'}" />
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label" for="sim_guest_lat">
+                                <i class="icon-map-marker text-danger"></i> {l s='Latitude do Hóspede:' mod='qloarrivalsharing'}
+                            </label>
+                            <input type="number" step="any" name="guest_lat" id="sim_guest_lat" class="form-control" value="{$simGuestLat|escape:'html':'UTF-8'}" placeholder="-8.053100" required />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label" for="sim_guest_lng">
+                                <i class="icon-map-marker text-danger"></i> {l s='Longitude do Hóspede:' mod='qloarrivalsharing'}
+                            </label>
+                            <input type="number" step="any" name="guest_lng" id="sim_guest_lng" class="form-control" value="{$simGuestLng|escape:'html':'UTF-8'}" placeholder="-34.886100" required />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label" for="sim_previous_state">
+                                <i class="icon-history text-muted"></i> {l s='Estado Anterior:' mod='qloarrivalsharing'}
+                            </label>
+                            <select name="previous_state" id="sim_previous_state" class="form-control">
+                                <option value="outside" {if $simPrevState == 'outside'}selected="selected"{/if}>{l s='outside (Fora do Raio - Padrão)' mod='qloarrivalsharing'}</option>
+                                <option value="inside" {if $simPrevState == 'inside'}selected="selected"{/if}>{l s='inside (Já estava Dentro)' mod='qloarrivalsharing'}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label" for="sim_radius">
+                                <i class="icon-circle-o text-info"></i> {l s='Raio Geofence (m):' mod='qloarrivalsharing'}
+                            </label>
+                            <input type="number" step="1" min="1" name="radius" id="sim_radius" class="form-control" value="{$simRadius|escape:'html':'UTF-8'}" required />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col-md-7">
+                        <p class="text-muted" style="margin-top: 6px; font-size: 12px;">
+                            <i class="icon-info-circle"></i> {l s='Envia requisição HTTP POST para o microserviço Kotlin com timeout estrito de 600ms.' mod='qloarrivalsharing'}
+                        </p>
+                    </div>
+                    <div class="col-md-5 text-right">
+                        <button type="submit" name="submitCheckLocation" class="btn btn-primary">
+                            <i class="icon-play"></i> {l s='Disparar Verificação de Geofencing' mod='qloarrivalsharing'}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+function applySimulationPreset(lat, lng, state, radius) {
+    var inputLat = document.getElementById('sim_guest_lat');
+    var inputLng = document.getElementById('sim_guest_lng');
+    var selectState = document.getElementById('sim_previous_state');
+    var inputRadius = document.getElementById('sim_radius');
+
+    if (inputLat) inputLat.value = lat;
+    if (inputLng) inputLng.value = lng;
+    if (selectState) selectState.value = state;
+    if (inputRadius && radius) inputRadius.value = radius;
+
+    if (inputLat) {
+        inputLat.focus();
+    }
+}
+
+$(document).ready(function() {
+    $('#simulationCollapse').on('show.bs.collapse', function () {
+        $('#btnToggleSimulation i').removeClass('icon-chevron-down').addClass('icon-chevron-up');
+    });
+    $('#simulationCollapse').on('hide.bs.collapse', function () {
+        $('#btnToggleSimulation i').removeClass('icon-chevron-up').addClass('icon-chevron-down');
+    });
+});
+</script>
 
 <div class="panel">
     <div class="panel-heading">
