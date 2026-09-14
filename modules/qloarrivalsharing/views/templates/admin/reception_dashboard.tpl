@@ -1,3 +1,25 @@
+{if !$locationServiceOnline}
+    <div class="alert alert-warning">
+        <i class="icon-warning-sign"></i> 
+        <strong>{l s='Aviso de Contingência:' mod='qloarrivalsharing'}</strong> 
+        {l s='O serviço de cálculo de geofencing está temporariamente offline. A lista de reservas e traslados continua operacional.' mod='qloarrivalsharing'}
+    </div>
+{/if}
+
+{if $arrivalError}
+    <div class="alert alert-danger">
+        <i class="icon-exclamation-sign"></i> {$arrivalError|escape:'html':'UTF-8'}
+    </div>
+{/if}
+
+{if $arrivalResult}
+    <div class="alert alert-success">
+        <i class="icon-check"></i> 
+        <strong>{l s='Proximidade Calculada:' mod='qloarrivalsharing'}</strong> 
+        {$arrivalResult.distance_meters|escape:'html':'UTF-8'} m ({$arrivalResult.transition|escape:'html':'UTF-8'}) - {$arrivalResult.message|escape:'html':'UTF-8'}
+    </div>
+{/if}
+
 <div class="row">
     <div class="col-lg-3 col-md-6">
         <div class="panel">

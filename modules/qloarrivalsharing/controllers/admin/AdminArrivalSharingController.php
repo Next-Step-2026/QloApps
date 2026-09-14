@@ -5,6 +5,7 @@ if (!defined('_PS_VERSION_')) {
 }
 
 require_once dirname(__FILE__) . '/../../classes/ArrivalBookingRepository.php';
+require_once dirname(__FILE__) . '/../../classes/LocationServiceClient.php';
 
 /**
  * Class AdminArrivalSharingController
@@ -12,6 +13,11 @@ require_once dirname(__FILE__) . '/../../classes/ArrivalBookingRepository.php';
  */
 class AdminArrivalSharingController extends ModuleAdminController
 {
+    /**
+     * @var LocationServiceClient
+     */
+    protected $locationClient;
+
     /**
      * Inicializa as configurações do controlador administrativo.
      */
@@ -21,6 +27,7 @@ class AdminArrivalSharingController extends ModuleAdminController
         parent::__construct();
         $this->meta_title = $this->l('Recepção e Monitoramento de Traslados');
         $this->override_folder = '';
+        $this->locationClient = new LocationServiceClient();
     }
 
     /**
@@ -66,13 +73,47 @@ class AdminArrivalSharingController extends ModuleAdminController
             $totalGuests += (int) $arrival['total_guests'];
         }
 
+        $isLocationServiceUp = $this->locationClient->isServiceAvailable();
+        $arrivalResult = null;
+        $arrivalError = null;
+
+        if (Tools::isSubmit('submitCheckLocation')) {
+            $hotelLat = (float) Tools::getValue('hotel_lat', -8.052240);
+            $hotelLng = (float) Tools::getValue('hotel_lng', -34.885650);
+            $guestLat = (float) Tools::getValue('guest_lat');
+            $guestLng = (float) Tools::getValue('guest_lng');
+            $prevState = Tools::getValue('previous_state', 'outside');
+            $radius = (float) Tools::getValue('radius', $geofenceRadius);
+            $hotelId = Tools::getValue('hotel_id', 'htl-prime-01');
+
+            $payload = array(
+                'hotel_id'          => $hotelId,
+                'hotel_lat'         => $hotelLat,
+                'hotel_lng'         => $hotelLng,
+                'guest_lat'         => $guestLat,
+                'guest_lng'         => $guestLng,
+                'geofence_radius_m' => $radius,
+                'previous_state'    => in_array($prevState, array('inside', 'outside')) ? $prevState : 'outside',
+            );
+
+            $response = $this->locationClient->sendLocationEvent($payload);
+            if ($response['success']) {
+                $arrivalResult = $response['data'];
+            } else {
+                $arrivalError = $response['error'];
+            }
+        }
+
         $this->context->smarty->assign(array(
-            'currentDate'    => Tools::displayDate($today),
-            'arrivals'       => $arrivals,
-            'totalArrivals'  => count($arrivals),
-            'totalGuests'    => $totalGuests,
-            'geofenceRadius' => $geofenceRadius,
-            'orderAdminLink' => $this->context->link->getAdminLink('AdminOrders', true),
+            'currentDate'           => Tools::displayDate($today),
+            'arrivals'              => $arrivals,
+            'totalArrivals'         => count($arrivals),
+            'totalGuests'           => $totalGuests,
+            'geofenceRadius'        => $geofenceRadius,
+            'locationServiceOnline' => $isLocationServiceUp,
+            'arrivalResult'         => $arrivalResult,
+            'arrivalError'          => $arrivalError,
+            'orderAdminLink'        => $this->context->link->getAdminLink('AdminOrders', true),
         ));
 
         $this->setTemplate('reception_dashboard.tpl');
