@@ -146,7 +146,7 @@
 
             <div style="margin-bottom: 20px; background: #fafbfc; padding: 12px 15px; border-radius: 4px; border: 1px dashed #ced4da;">
                 <div style="font-size: 12px; color: #444; font-weight: bold; margin-bottom: 8px;">
-                    <i class="icon-magic text-primary"></i> {l s='Cenários de Demonstração Rápida (1 Clique - RFC-004):' mod='qloarrivalsharing'}
+                    <i class="icon-magic text-primary"></i> {l s='Cenários de Demonstração Rápida:' mod='qloarrivalsharing'}
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button type="button" class="btn btn-default btn-sm" onclick="applySimulationPreset(-8.053100, -34.886100, 'outside', {$geofenceRadius|escape:'javascript'});" style="border-left: 4px solid #72c279;">
