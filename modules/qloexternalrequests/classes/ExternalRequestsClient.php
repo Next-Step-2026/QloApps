@@ -62,6 +62,7 @@ class ExternalRequestsClient
                 'http_code' => 400,
                 'error' => 'Failed to encode request payload into JSON.',
                 'data' => null,
+                'correlation_id' => $traceId,
             ];
         }
 
@@ -84,6 +85,7 @@ class ExternalRequestsClient
                 'http_code' => 500,
                 'error' => 'Failed to initialize cURL handle.',
                 'data' => null,
+                'correlation_id' => $correlationId,
             ];
         }
 
@@ -104,10 +106,16 @@ class ExternalRequestsClient
         curl_close($curlHandle);
 
         if ($curlErrorNo !== 0) {
-            return $this->handleCurlError($curlErrorNo, $curlErrorMsg);
+            $curlResult = $this->handleCurlError($curlErrorNo, $curlErrorMsg);
+            $curlResult['correlation_id'] = $correlationId;
+
+            return $curlResult;
         }
 
-        return $this->handleHttpResponse($httpCode, is_string($response) ? $response : '');
+        $httpResult = $this->handleHttpResponse($httpCode, is_string($response) ? $response : '');
+        $httpResult['correlation_id'] = $correlationId;
+
+        return $httpResult;
     }
 
     /**

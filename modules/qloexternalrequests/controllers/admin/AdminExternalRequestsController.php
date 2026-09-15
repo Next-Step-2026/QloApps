@@ -43,6 +43,7 @@ class AdminExternalRequestsController extends ModuleAdminController
         $rawPayloadJson = (string) Tools::getValue('raw_payload_json', '');
         $conversionResult = null;
         $conversionError = null;
+        $correlationId = null;
 
         if (Tools::isSubmit('submitConvertRequest')) {
             $processOutcome = $this->processConvertRequest(
@@ -51,6 +52,13 @@ class AdminExternalRequestsController extends ModuleAdminController
             );
             $conversionResult = $processOutcome['conversionResult'];
             $conversionError = $processOutcome['conversionError'];
+            $correlationId = $processOutcome['correlationId'];
+        }
+
+        $rawCanonicalJson = null;
+        if (is_array($conversionResult) && !empty($conversionResult['draft']) && is_array($conversionResult['draft'])) {
+            $encodedJson = json_encode($conversionResult['draft'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            $rawCanonicalJson = $encodedJson !== false ? $encodedJson : null;
         }
 
         $this->context->smarty->assign([
@@ -58,7 +66,12 @@ class AdminExternalRequestsController extends ModuleAdminController
             'rawPayloadJson' => $rawPayloadJson,
             'conversionResult' => $conversionResult,
             'conversionError' => $conversionError,
+            'correlationId' => $correlationId,
+            'rawCanonicalJson' => $rawCanonicalJson,
             'actionUrl' => self::$currentIndex . '&token=' . $this->token,
+            'resetUrl' => self::$currentIndex . '&token=' . $this->token,
+            'bookingUrl' => $this->context->link->getAdminLink('AdminHotelRoomsBooking'),
+            'ordersUrl' => $this->context->link->getAdminLink('AdminOrders'),
         ]);
 
         $this->content .= $this->context->smarty->fetch(
@@ -72,7 +85,7 @@ class AdminExternalRequestsController extends ModuleAdminController
      *
      * @param string $provider
      * @param string $rawJson
-     * @return array{conversionResult: array<string, mixed>|null, conversionError: string|null}
+     * @return array{conversionResult: array<string, mixed>|null, conversionError: string|null, correlationId: string|null}
      */
     private function processConvertRequest(string $provider, string $rawJson): array
     {
@@ -81,6 +94,7 @@ class AdminExternalRequestsController extends ModuleAdminController
             return [
                 'conversionResult' => null,
                 'conversionError' => $this->l('JSON payload cannot be empty.'),
+                'correlationId' => null,
             ];
         }
 
@@ -89,6 +103,7 @@ class AdminExternalRequestsController extends ModuleAdminController
             return [
                 'conversionResult' => null,
                 'conversionError' => $this->l('Invalid or malformed JSON input payload.'),
+                'correlationId' => null,
             ];
         }
 
@@ -96,22 +111,36 @@ class AdminExternalRequestsController extends ModuleAdminController
         $payloadArray = $parsedPayload;
 
         $callResult = $this->apiClient->convert($provider, $payloadArray);
-        if ($callResult['http_code'] === 200 || $callResult['http_code'] === 400) {
-            $data = is_array($callResult['data']) ? $this->normalizeErrorMessages($callResult['data']) : null;
-            $error = null;
-            if ($data === null && !empty($callResult['error'])) {
-                $error = $this->l((string) $callResult['error']);
-            }
 
+        return $this->formatCallResult($callResult);
+    }
+
+    /**
+     * Formats API client call result into controller output.
+     *
+     * @param array<string, mixed> $callResult
+     * @return array{conversionResult: array<string, mixed>|null, conversionError: string|null, correlationId: string|null}
+     */
+    private function formatCallResult(array $callResult): array
+    {
+        $correlationId = is_string($callResult['correlation_id'] ?? null) ? $callResult['correlation_id'] : null;
+        $httpCode = (int) ($callResult['http_code'] ?? 500);
+
+        if ($httpCode !== 200 && $httpCode !== 400) {
             return [
-                'conversionResult' => $data,
-                'conversionError' => $error,
+                'conversionResult' => null,
+                'conversionError' => $this->l((string) ($callResult['error'] ?? 'Unknown error')),
+                'correlationId' => $correlationId,
             ];
         }
 
+        $data = is_array($callResult['data'] ?? null) ? $this->normalizeErrorMessages($callResult['data']) : null;
+        $error = ($data === null && !empty($callResult['error'])) ? $this->l((string) $callResult['error']) : null;
+
         return [
-            'conversionResult' => null,
-            'conversionError' => $this->l((string) $callResult['error']),
+            'conversionResult' => $data,
+            'conversionError' => $error,
+            'correlationId' => $correlationId,
         ];
     }
 
@@ -139,6 +168,7 @@ class AdminExternalRequestsController extends ModuleAdminController
             'Campo obrigatório \'last_name\' não encontrado ou vazio.' => 'Required field \'last_name\' not found or empty.',
             'Campo obrigatório \'checkin_date\' não encontrado no payload do PROVIDER_B.' => 'Required field \'checkin_date\' not found in PROVIDER_B payload.',
             'Campo obrigatório \'checkout_date\' não encontrado no payload do PROVIDER_B.' => 'Required field \'checkout_date\' not found in PROVIDER_B payload.',
+            'Campo \'room_count\' deve ser um número inteiro maior ou igual a 1.' => 'Field \'room_count\' must be an integer greater than or equal to 1.',
         ];
 
         /** @var array<int, array<string, mixed>> $errorsList */
