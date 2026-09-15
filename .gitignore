@@ -140,6 +140,13 @@ img/**
 /admin/themes/*/cache/*
 !/admin/themes/*/cache/index.php
 
+# Dynamic Admin folders
+/admin*
+!/admin/
+!/admin-dev/
+!/admin-dev/**
+/admin[0-9]*
+
 # Config
 
 /config/settings.inc.php
