@@ -18,6 +18,8 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/classes/QloContactHealthCustomer.php';
+
 class QloContactHealth extends Module
 {
     const CONFIG_API_URL = 'QLOCONTACTHEALTH_API_URL';
@@ -41,7 +43,7 @@ class QloContactHealth extends Module
     }
 
     /**
-     * Installs module, tab, configuration and registers hooks.
+     * Installs module, database table, tab, configuration and registers hooks.
      *
      * @return bool
      */
@@ -51,12 +53,13 @@ class QloContactHealth extends Module
         Configuration::updateValue(self::CONFIG_API_TIMEOUT, self::DEFAULT_TIMEOUT_MS);
 
         return parent::install()
+            && QloContactHealthCustomer::createTable()
             && $this->installTab()
             && $this->registerHook('displayAdminCustomers');
     }
 
     /**
-     * Uninstalls module, tab, configuration and unregisters hooks.
+     * Uninstalls module, tab, database table and configuration.
      *
      * @return bool
      */
@@ -65,7 +68,9 @@ class QloContactHealth extends Module
         Configuration::deleteByName(self::CONFIG_API_URL);
         Configuration::deleteByName(self::CONFIG_API_TIMEOUT);
 
-        return $this->uninstallTab() && parent::uninstall();
+        return QloContactHealthCustomer::dropTable()
+            && $this->uninstallTab()
+            && parent::uninstall();
     }
 
     /**
@@ -135,6 +140,21 @@ class QloContactHealth extends Module
     }
 
     /**
+     * Formats a database datetime string into ISO-8601 UTC format, returning null if empty or invalid.
+     *
+     * @param string|null $dateStr
+     * @return string|null
+     */
+    public static function formatIsoDate($dateStr)
+    {
+        if (empty($dateStr) || $dateStr === '0000-00-00 00:00:00') {
+            return null;
+        }
+
+        return date('Y-m-d\TH:i:s\Z', strtotime($dateStr));
+    }
+
+    /**
      * Evaluates customer contact health against the Kotlin microservice.
      *
      * @param int $customerId
@@ -171,14 +191,11 @@ class QloContactHealth extends Module
             ? min(max(1, $configuredTimeout), self::DEFAULT_TIMEOUT_MS)
             : self::DEFAULT_TIMEOUT_MS;
 
-        // Dates formatting conforme RN-003 e RN-005: enviar null se ausente/zerado
-        $lastVerifiedAt = (!empty($customer->date_upd) && $customer->date_upd !== '0000-00-00 00:00:00')
-            ? date('Y-m-d\TH:i:s\Z', strtotime($customer->date_upd))
-            : null;
+        // Recupera registro persistido de saúde/verificação do cliente conforme RFC-003 / RN-003 / RN-005
+        $healthRecord = QloContactHealthCustomer::getByCustomerId($customer->id);
 
-        $consentExpiresAt = (!empty($customer->date_add) && $customer->date_add !== '0000-00-00 00:00:00')
-            ? date('Y-m-d\TH:i:s\Z', strtotime('+1 year', strtotime($customer->date_add)))
-            : null;
+        $lastVerifiedAt   = self::formatIsoDate($healthRecord['last_verified_at'] ?? null);
+        $consentExpiresAt = self::formatIsoDate($healthRecord['consent_expires_at'] ?? null);
 
         $refDate = date('Y-m-d');
 
@@ -246,6 +263,13 @@ class QloContactHealth extends Module
             $this->context->smarty->assign('contactHealth', null);
             $this->context->smarty->assign('healthWarning', $evaluation['error']);
         }
+
+        $adminLink = $this->context->link->getAdminLink('AdminContactHealth');
+        $this->context->smarty->assign(array(
+            'customerId' => (int) $customerId,
+            'ajaxUrl' => $adminLink,
+            'ajaxToken' => Tools::getAdminTokenLite('AdminContactHealth'),
+        ));
 
         return $this->display(__FILE__, 'views/templates/admin/contact_health_card.tpl');
     }

@@ -67,11 +67,53 @@
                 </table>
 
                 {if isset($contactHealth.recommended_action) && $contactHealth.recommended_action != 'NONE'}
-                    <button type="button" class="btn btn-warning" onclick="alert('{l s='Desafio de revalidação simulado enviado com sucesso!' mod='qlocontacthealth' js=1}');">
-                        <i class="icon-envelope"></i> {l s='Disparar Desafio de Reconfirmação' mod='qlocontacthealth'}
+                    <div id="reconfirmation-alert-container"></div>
+                    <button type="button" class="btn btn-warning" id="btn-simulate-reconfirmation" onclick="simulateContactReconfirmation({$customerId|intval});">
+                        <i class="icon-envelope"></i> {l s='Simular Validação de Contato' mod='qlocontacthealth'}
                     </button>
                 {/if}
             </div>
         </div>
     {/if}
 </div>
+
+<script type="text/javascript">
+function simulateContactReconfirmation(customerId) {
+    if (typeof $ === 'undefined') {
+        return;
+    }
+    var $btn = $('#btn-simulate-reconfirmation');
+    $btn.prop('disabled', true);
+
+    $.ajax({
+        type: 'POST',
+        url: '{$ajaxUrl|escape:'javascript':'UTF-8'}',
+        data: {
+            ajax: 1,
+            action: 'simulateReconfirmation',
+            id_customer: customerId,
+            token: '{$ajaxToken|escape:'javascript':'UTF-8'}'
+        },
+        dataType: 'json',
+        success: function(response) {
+            $btn.prop('disabled', false);
+            if (response && response.success) {
+                var html = '<div class="alert alert-success"><i class="icon-ok-sign"></i> ' + response.message + '</div>';
+                $('#reconfirmation-alert-container').html(html);
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            } else {
+                var msg = (response && response.message) ? response.message : '{l s='Erro ao processar a simulação.' mod='qlocontacthealth' js=1}';
+                var html = '<div class="alert alert-danger"><i class="icon-exclamation-sign"></i> ' + msg + '</div>';
+                $('#reconfirmation-alert-container').html(html);
+            }
+        },
+        error: function() {
+            $btn.prop('disabled', false);
+            var html = '<div class="alert alert-danger"><i class="icon-exclamation-sign"></i> {l s='Erro de comunicação ao simular a validação.' mod='qlocontacthealth' js=1}</div>';
+            $('#reconfirmation-alert-container').html(html);
+        }
+    });
+}
+</script>

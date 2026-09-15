@@ -14,6 +14,12 @@
  * @license   http://opensource.org/licenses/afl-3.0.php Academic Free License (AFL 3.0)
  */
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
+require_once dirname(__FILE__) . '/../../classes/QloContactHealthCustomer.php';
+
 class AdminContactHealthController extends ModuleAdminController
 {
     public function __construct()
@@ -91,5 +97,49 @@ class AdminContactHealthController extends ModuleAdminController
             . '</a></div>';
 
         return $this->module->renderContactHealthCard($customerId) . $backButton;
+    }
+
+    /**
+     * AJAX action to simulate contact reconfirmation challenge and create an audit event.
+     */
+    public function ajaxProcessSimulateReconfirmation()
+    {
+        $customerId = (int) Tools::getValue('id_customer');
+        if (!$customerId) {
+            die(json_encode(array(
+                'success' => false,
+                'message' => $this->l('ID do cliente não informado.'),
+            )));
+        }
+
+        $customer = new Customer($customerId);
+        if (!Validate::isLoadedObject($customer)) {
+            die(json_encode(array(
+                'success' => false,
+                'message' => $this->l('Cliente não encontrado.'),
+            )));
+        }
+
+        // 1. Log audit event in QloApps Logger
+        Logger::addLog(
+            sprintf('[qlocontacthealth] Simulação de desafio de reconfirmação de contato gerada para o cliente ID: %d', $customerId),
+            1,
+            null,
+            'Customer',
+            $customerId,
+            true
+        );
+
+        // 2. Update persistent verification date in DB
+        QloContactHealthCustomer::recordVerification($customerId);
+
+        // 3. Return JSON response
+        die(json_encode(array(
+            'success' => true,
+            'message' => sprintf(
+                $this->l('Evento auditável de envio de token de verificação registrado com sucesso para o cliente ID #%d (sem disparo de mensagens de rede reais em ambiente local).'),
+                $customerId
+            ),
+        )));
     }
 }
