@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import Dict, Any, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -34,12 +35,22 @@ class OverbookingLimitFacts(BaseModel):
 
 class PolicyEvaluationRequest(BaseModel):
     policy: PolicyType = Field(..., description="Nome da política a ser avaliada")
-    facts: Dict[str, Any] = Field(..., description="Dicionário de fatos contextuais")
+    facts: dict[str, Any] = Field(..., description="Dicionário de fatos contextuais")
 
 
 class PolicyEvaluationResponse(BaseModel):
-    correlation_id: Optional[str] = Field(None, description="Identificador único da requisição")
+    correlation_id: str | None = Field(None, description="Identificador único da requisição")
     policy: str = Field(..., description="Nome da política avaliada")
     decision: PolicyDecision = Field(..., description="Decisão da política: ALLOW ou DENY")
     reason_code: str = Field(..., description="Código de motivo padronizado")
-    explanation: str = Field(..., description="Justificativa em linguagem natural")
+    explanation: str = Field(..., description="Justificativa legível da decisão")
+
+
+class ProblemDetails(BaseModel):
+    type: str | None = Field(
+        default="https://hotel.local/errors/invalid-policy-facts", description="URI de referência do tipo de erro"
+    )
+    title: str | None = Field(default="Fatos de Política Inválidos", description="Resumo legível do erro")
+    status: int = Field(default=400, description="Código de status HTTP")
+    detail: str = Field(..., description="Explicação detalhada do erro")
+    instance: str | None = Field(default=None, description="URI da requisição que originou o erro")

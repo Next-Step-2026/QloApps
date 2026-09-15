@@ -1,11 +1,12 @@
 """
 Unit and integration tests for the Reservation Policy Engine
 """
-import pytest
+
 from fastapi.testclient import TestClient
-from app.main import app
-from app.schemas import PolicyType, PolicyDecision
+
 from app.engine import evaluate_policy
+from app.main import app
+from app.schemas import PolicyDecision, PolicyType
 
 client = TestClient(app)
 
@@ -19,11 +20,12 @@ def test_healthz():
 
 # --- Testes de Unidade das Regras Determinísticas ---
 
+
 def test_minimum_stay_allowed():
     """RN-001: Estadia dentro ou acima do mínimo exigido é autorizada"""
     decision, reason_code, explanation = evaluate_policy(
         PolicyType.MINIMUM_STAY,
-        {"requested_nights": 3, "required_minimum_nights": 2, "room_type": "standard"}
+        {"requested_nights": 3, "required_minimum_nights": 2, "room_type": "standard"},
     )
     assert decision == PolicyDecision.ALLOW
     assert reason_code == "MINIMUM_STAY_MET"
@@ -34,7 +36,7 @@ def test_minimum_stay_denied():
     """RN-002: Estadia abaixo do mínimo exigido é negada"""
     decision, reason_code, explanation = evaluate_policy(
         PolicyType.MINIMUM_STAY,
-        {"requested_nights": 1, "required_minimum_nights": 2, "room_type": "deluxe"}
+        {"requested_nights": 1, "required_minimum_nights": 2, "room_type": "deluxe"},
     )
     assert decision == PolicyDecision.DENY
     assert reason_code == "NIGHTS_BELOW_MINIMUM"
@@ -44,8 +46,7 @@ def test_minimum_stay_denied():
 def test_advance_booking_allowed():
     """RN-003: Antecedência atendida é autorizada"""
     decision, reason_code, explanation = evaluate_policy(
-        PolicyType.ADVANCE_BOOKING,
-        {"days_in_advance": 5, "min_advance_days": 3}
+        PolicyType.ADVANCE_BOOKING, {"days_in_advance": 5, "min_advance_days": 3}
     )
     assert decision == PolicyDecision.ALLOW
     assert reason_code == "ADVANCE_WINDOW_MET"
@@ -55,8 +56,7 @@ def test_advance_booking_allowed():
 def test_advance_booking_denied():
     """RN-004: Antecedência violada (ex: same-day) é negada"""
     decision, reason_code, explanation = evaluate_policy(
-        PolicyType.ADVANCE_BOOKING,
-        {"days_in_advance": 0, "min_advance_days": 3}
+        PolicyType.ADVANCE_BOOKING, {"days_in_advance": 0, "min_advance_days": 3}
     )
     assert decision == PolicyDecision.DENY
     assert reason_code == "ADVANCE_WINDOW_VIOLATED"
@@ -68,7 +68,12 @@ def test_overbooking_allowed():
     # 50 * 1.05 = 52.5 -> floor = 52. 51 ocupados + 1 pedido = 52 <= 52 (ALLOW)
     decision, reason_code, explanation = evaluate_policy(
         PolicyType.OVERBOOKING_LIMIT,
-        {"total_capacity": 50, "current_occupied": 51, "requested_units": 1, "max_overbooking_rate": 0.05}
+        {
+            "total_capacity": 50,
+            "current_occupied": 51,
+            "requested_units": 1,
+            "max_overbooking_rate": 0.05,
+        },
     )
     assert decision == PolicyDecision.ALLOW
     assert reason_code == "WITHIN_OVERBOOKING_BUFFER"
@@ -80,7 +85,12 @@ def test_overbooking_denied():
     # 50 * 1.05 = 52 vagas max. 52 ocupados + 1 pedido = 53 > 52 (DENY)
     decision, reason_code, explanation = evaluate_policy(
         PolicyType.OVERBOOKING_LIMIT,
-        {"total_capacity": 50, "current_occupied": 52, "requested_units": 1, "max_overbooking_rate": 0.05}
+        {
+            "total_capacity": 50,
+            "current_occupied": 52,
+            "requested_units": 1,
+            "max_overbooking_rate": 0.05,
+        },
     )
     assert decision == PolicyDecision.DENY
     assert reason_code == "OVERBOOKING_CAPACITY_EXCEEDED"
@@ -89,14 +99,11 @@ def test_overbooking_denied():
 
 # --- Testes de Integração via API FastAPI (POST /v1/policy-evaluations) ---
 
+
 def test_api_minimum_stay():
     payload = {
         "policy": "MINIMUM_STAY",
-        "facts": {
-            "requested_nights": 1,
-            "required_minimum_nights": 2,
-            "room_type": "deluxe"
-        }
+        "facts": {"requested_nights": 1, "required_minimum_nights": 2, "room_type": "deluxe"},
     }
     headers = {"X-Correlation-ID": "test-corr-001"}
     response = client.post("/v1/policy-evaluations", json=payload, headers=headers)
@@ -109,13 +116,7 @@ def test_api_minimum_stay():
 
 
 def test_api_advance_booking():
-    payload = {
-        "policy": "ADVANCE_BOOKING",
-        "facts": {
-            "days_in_advance": 0,
-            "min_advance_days": 3
-        }
-    }
+    payload = {"policy": "ADVANCE_BOOKING", "facts": {"days_in_advance": 0, "min_advance_days": 3}}
     headers = {"X-Correlation-ID": "test-corr-002"}
     response = client.post("/v1/policy-evaluations", json=payload, headers=headers)
     assert response.status_code == 200
@@ -133,8 +134,8 @@ def test_api_overbooking():
             "total_capacity": 50,
             "current_occupied": 51,
             "requested_units": 1,
-            "max_overbooking_rate": 0.05
-        }
+            "max_overbooking_rate": 0.05,
+        },
     }
     headers = {"X-Correlation-ID": "test-corr-003"}
     response = client.post("/v1/policy-evaluations", json=payload, headers=headers)
@@ -147,10 +148,7 @@ def test_api_overbooking():
 
 
 def test_api_invalid_policy():
-    payload = {
-        "policy": "NON_EXISTING_POLICY",
-        "facts": {}
-    }
+    payload = {"policy": "NON_EXISTING_POLICY", "facts": {}}
     response = client.post("/v1/policy-evaluations", json=payload)
     assert response.status_code == 422
 
@@ -159,10 +157,7 @@ def test_api_invalid_facts_negative_value():
     """Valida rejeição de valores negativos e formato de erro RFC 7807"""
     payload = {
         "policy": "MINIMUM_STAY",
-        "facts": {
-            "requested_nights": -1,
-            "required_minimum_nights": 2
-        }
+        "facts": {"requested_nights": -1, "required_minimum_nights": 2},
     }
     response = client.post("/v1/policy-evaluations", json=payload)
     assert response.status_code == 400
@@ -171,19 +166,17 @@ def test_api_invalid_facts_negative_value():
     assert data["type"] == "https://hotel.local/errors/invalid-policy-facts"
     assert data["title"] == "Fatos de Política Inválidos"
     assert data["instance"] == "/v1/policy-evaluations"
-    assert "greater than or equal to 1" in data["detail"] or "Input should be greater than or equal to 1" in data["detail"]
+    assert (
+        "greater than or equal to 1" in data["detail"] or "Input should be greater than or equal to 1" in data["detail"]
+    )
 
 
 def test_api_missing_required_facts():
     """Valida rejeição de campos obrigatórios ausentes e formato RFC 7807"""
-    payload = {
-        "policy": "ADVANCE_BOOKING",
-        "facts": {}
-    }
+    payload = {"policy": "ADVANCE_BOOKING", "facts": {}}
     response = client.post("/v1/policy-evaluations", json=payload)
     assert response.status_code == 400
     data = response.json()
     assert data["status"] == 400
     assert data["title"] == "Fatos de Política Inválidos"
     assert "Field required" in data["detail"]
-

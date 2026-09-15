@@ -92,6 +92,21 @@ class AdminReservationPolicyController extends ModuleAdminController
                     } else {
                         $errorMessage = $this->l('Requisição inválida (HTTP 400).');
                     }
+                } elseif ($httpCode === 422 && $response) {
+                    $decodedErr = json_decode($response, true);
+                    $detail = isset($decodedErr['detail']) ? $decodedErr['detail'] : '';
+                    $errorMsgs = array();
+                    if (is_array($detail)) {
+                        foreach ($detail as $err) {
+                            if (is_array($err) && isset($err['msg'])) {
+                                $loc = isset($err['loc']) && is_array($err['loc']) ? end($err['loc']) : '';
+                                $errorMsgs[] = ($loc ? $loc . ': ' : '') . $err['msg'];
+                            }
+                        }
+                    }
+                    $errorMessage = !empty($errorMsgs)
+                        ? $this->l('Erro de validação (HTTP 422): ') . implode('; ', $errorMsgs)
+                        : $this->l('Política ou parâmetro inválido (HTTP 422).');
                 } else {
                     $errorMessage = sprintf(
                         $this->l('Serviço de políticas local offline ou indisponível (HTTP %d). Verifique se o servidor Python está ativo na porta 8105.'),

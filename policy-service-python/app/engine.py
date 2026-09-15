@@ -1,19 +1,21 @@
 """
 Deterministic Policy Evaluation Engine
 """
-from typing import Dict, Any, Tuple, Union
+
+from typing import Any
+
 from app.schemas import (
-    PolicyType,
-    PolicyDecision,
-    MinimumStayFacts,
     AdvanceBookingFacts,
+    MinimumStayFacts,
     OverbookingLimitFacts,
+    PolicyDecision,
+    PolicyType,
 )
 
 
 def evaluate_minimum_stay(
-    facts: Union[Dict[str, Any], MinimumStayFacts]
-) -> Tuple[PolicyDecision, str, str]:
+    facts: dict[str, Any] | MinimumStayFacts,
+) -> tuple[PolicyDecision, str, str]:
     """
     Avalia a política MINIMUM_STAY
     """
@@ -42,8 +44,8 @@ def evaluate_minimum_stay(
 
 
 def evaluate_advance_booking(
-    facts: Union[Dict[str, Any], AdvanceBookingFacts]
-) -> Tuple[PolicyDecision, str, str]:
+    facts: dict[str, Any] | AdvanceBookingFacts,
+) -> tuple[PolicyDecision, str, str]:
     """
     Avalia a política ADVANCE_BOOKING
     """
@@ -56,23 +58,21 @@ def evaluate_advance_booking(
         decision = PolicyDecision.ALLOW
         reason_code = "ADVANCE_WINDOW_MET"
         explanation = (
-            f"Antecedência de {days_in_advance} dia(s) atende ao requisito mínimo "
-            f"de {min_advance_days} dia(s)."
+            f"Antecedência de {days_in_advance} dia(s) atende ao requisito mínimo de {min_advance_days} dia(s)."
         )
     else:
         decision = PolicyDecision.DENY
         reason_code = "ADVANCE_WINDOW_VIOLATED"
         explanation = (
-            f"Antecedência de {days_in_advance} dia(s) é insuficiente frente "
-            f"ao requisito de {min_advance_days} dia(s)."
+            f"Antecedência de {days_in_advance} dia(s) é insuficiente frente ao requisito de {min_advance_days} dia(s)."
         )
 
     return decision, reason_code, explanation
 
 
 def evaluate_overbooking_limit(
-    facts: Union[Dict[str, Any], OverbookingLimitFacts]
-) -> Tuple[PolicyDecision, str, str]:
+    facts: dict[str, Any] | OverbookingLimitFacts,
+) -> tuple[PolicyDecision, str, str]:
     """
     Avalia a política OVERBOOKING_LIMIT
     """
@@ -108,7 +108,7 @@ def evaluate_overbooking_limit(
     return decision, reason_code, explanation
 
 
-def evaluate_policy(policy: PolicyType, facts: Dict[str, Any]) -> Tuple[PolicyDecision, str, str]:
+def evaluate_policy(policy: PolicyType, facts: dict[str, Any]) -> tuple[PolicyDecision, str, str]:
     """
     Roteador determinístico de avaliação de políticas
     """
