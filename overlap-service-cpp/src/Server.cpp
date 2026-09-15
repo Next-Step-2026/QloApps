@@ -4,6 +4,7 @@
 #include "OverlapDetector.hpp"
 #include <vector>
 #include <string>
+#include <iostream>
 
 using json = nlohmann::json;
 
@@ -14,6 +15,9 @@ void setupServerRoutes(httplib::Server& svr) {
 
     svr.Post("/v1/inventory-audits/overlaps", [](const httplib::Request& req, httplib::Response& res) {
         auto sendProblemResponse = [&res, &req](int status, const std::string& type, const std::string& title, const std::string& detail) {
+            std::clog << "[QLO-FEAT-007][DEBUG] Problem response (" << status << ") on instance '"
+                      << req.path << "': " << detail << std::endl;
+
             json error;
             error["type"] = type;
             error["title"] = title;

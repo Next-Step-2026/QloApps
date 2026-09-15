@@ -43,17 +43,20 @@ deps: $(DEPS_HEADERS)
 $(HTTPLIB_H):
 	@mkdir -p $(INC_DIR)
 	@echo "Downloading httplib.h..."
-	@curl -sSL "$(HTTPLIB_URL)" -o "$@" || wget -q -O "$@" "$(HTTPLIB_URL)"
+	@(curl -sSfL "$(HTTPLIB_URL)" -o "$@" || wget -q -O "$@" "$(HTTPLIB_URL)") && test -s "$@" || \
+		(rm -f "$@" && echo "Erro: falha ao baixar httplib.h de $(HTTPLIB_URL)" >&2 && exit 1)
 
 $(JSON_HPP):
 	@mkdir -p $(INC_DIR)
 	@echo "Downloading json.hpp..."
-	@curl -sSL "$(JSON_URL)" -o "$@" || wget -q -O "$@" "$(JSON_URL)"
+	@(curl -sSfL "$(JSON_URL)" -o "$@" || wget -q -O "$@" "$(JSON_URL)") && test -s "$@" || \
+		(rm -f "$@" && echo "Erro: falha ao baixar json.hpp de $(JSON_URL)" >&2 && exit 1)
 
 $(DOCTEST_H):
 	@mkdir -p $(INC_DIR)
 	@echo "Downloading doctest.h..."
-	@curl -sSL "$(DOCTEST_URL)" -o "$@" || wget -q -O "$@" "$(DOCTEST_URL)"
+	@(curl -sSfL "$(DOCTEST_URL)" -o "$@" || wget -q -O "$@" "$(DOCTEST_URL)") && test -s "$@" || \
+		(rm -f "$@" && echo "Erro: falha ao baixar doctest.h de $(DOCTEST_URL)" >&2 && exit 1)
 
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(LDFLAGS) $(LDLIBS) -o $@
