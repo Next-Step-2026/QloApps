@@ -122,4 +122,29 @@ class QloContactHealthCustomer extends ObjectModel
 
         return Db::getInstance()->execute($sql);
     }
+
+    /**
+     * Updates consent expiration timestamp for a customer (or null to clear/expire).
+     *
+     * @param int $idCustomer
+     * @param string|null $dateStr
+     * @return bool
+     */
+    public static function updateConsentExpiration($idCustomer, $dateStr = null)
+    {
+        $idCustomer = (int) $idCustomer;
+        if (!$idCustomer) {
+            return false;
+        }
+
+        self::createTable();
+        $now = date('Y-m-d H:i:s');
+        $val = (!empty($dateStr) && $dateStr !== '0000-00-00 00:00:00') ? '\'' . pSQL($dateStr) . '\'' : 'NULL';
+
+        $sql = 'INSERT INTO `' . _DB_PREFIX_ . 'qlocontacthealth_customer` (`id_customer`, `consent_expires_at`, `date_add`, `date_upd`)
+                VALUES (' . $idCustomer . ', ' . $val . ', \'' . pSQL($now) . '\', \'' . pSQL($now) . '\')
+                ON DUPLICATE KEY UPDATE `consent_expires_at` = ' . $val . ', `date_upd` = \'' . pSQL($now) . '\'';
+
+        return Db::getInstance()->execute($sql);
+    }
 }
