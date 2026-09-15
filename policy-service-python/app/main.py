@@ -30,6 +30,7 @@ class PolicyValidationException(Exception):
     """
     @brief Exceção customizada para erros de validação semântica de regras.
     """
+
     def __init__(self, detail: str):
         self.detail = detail
 
