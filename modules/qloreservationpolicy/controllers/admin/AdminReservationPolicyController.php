@@ -20,6 +20,7 @@ class AdminReservationPolicyController extends ModuleAdminController
     {
         $this->bootstrap = true;
         parent::__construct();
+        $this->override_folder = '';
     }
 
     /**
@@ -134,7 +135,12 @@ class AdminReservationPolicyController extends ModuleAdminController
         ));
 
         // Renderiza o template do simulador no painel administrativo
-        $this->content = $this->createTemplate('policy_simulator.tpl')->fetch();
+        $templatePath = _PS_MODULE_DIR_ . $this->module->name . '/views/templates/admin/policy_simulator.tpl';
+        if (file_exists($templatePath)) {
+            $this->content = $this->context->smarty->createTemplate($templatePath, $this->context->smarty)->fetch();
+        } else {
+            $this->content = $this->createTemplate('policy_simulator.tpl')->fetch();
+        }
         $this->context->smarty->assign('content', $this->content);
     }
 }
