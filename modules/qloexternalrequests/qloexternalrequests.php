@@ -28,8 +28,8 @@ class QloExternalRequests extends Module
 
         parent::__construct();
 
-        $this->displayName = $this->l('Conversor de Canais Externos');
-        $this->description = $this->l('Normalização e conversão de solicitações de reserva para modelo canônico.');
+        $this->displayName = $this->l('External Channel Converter');
+        $this->description = $this->l('Normalize and convert external reservation requests into the canonical format.');
     }
 
     /**
@@ -58,7 +58,7 @@ class QloExternalRequests extends Module
         $tab->class_name = 'AdminExternalRequests';
         $tab->name = [];
         foreach (Language::getLanguages(true) as $lang) {
-            $tab->name[$lang['id_lang']] = $this->l('Conversor de Canais');
+            $tab->name[$lang['id_lang']] = $this->l('Channel Converter');
         }
         $tab->id_parent = (int) Tab::getIdFromClassName('AdminParentOrders');
         $tab->module = $this->name;

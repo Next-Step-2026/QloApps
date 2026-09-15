@@ -21,7 +21,7 @@ class AdminExternalRequestsController extends ModuleAdminController
     {
         $this->bootstrap = true;
         parent::__construct();
-        $this->toolbar_title = $this->l('Conversor de Canais Externos');
+        $this->toolbar_title = $this->l('External Channel Converter');
     }
 
     /**
@@ -40,6 +40,9 @@ class AdminExternalRequestsController extends ModuleAdminController
             'actionUrl' => self::$currentIndex . '&token=' . $this->token,
         ]);
 
-        $this->setTemplate('request_converter.tpl');
+        $this->content .= $this->context->smarty->fetch(
+            _PS_MODULE_DIR_ . 'qloexternalrequests/views/templates/admin/request_converter.tpl'
+        );
+        $this->context->smarty->assign('content', $this->content);
     }
 }
