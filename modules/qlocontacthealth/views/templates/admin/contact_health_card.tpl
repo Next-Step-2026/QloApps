@@ -30,9 +30,32 @@
                     {if $contactHealth.consent_valid}
                         <span class="badge badge-success">{l s='VIGENTE' mod='qlocontacthealth'}</span>
                     {else}
-                        <span class="badge badge-danger">{l s='EXPIRADO' mod='qlocontacthealth'}</span>
+                        <span class="badge badge-danger">{l s='EXPIRADO / AUSENTE' mod='qlocontacthealth'}</span>
                     {/if}
                 </p>
+
+                <div class="well well-sm" style="margin-top: 15px; background-color: #f9f9f9;">
+                    <label for="input-consent-expires-at-{$customerId|intval}" style="font-weight: 600;">
+                        <i class="icon-calendar"></i> {l s='Validade do Consentimento' mod='qlocontacthealth'}
+                    </label>
+                    <div id="consent-alert-container-{$customerId|intval}"></div>
+                    <div class="input-group" style="margin-bottom: 8px;">
+                        <input type="date" id="input-consent-expires-at-{$customerId|intval}" class="form-control" value="{$consentExpiresAtDate|escape:'html':'UTF-8'}" placeholder="AAAA-MM-DD" />
+                        <span class="input-group-btn">
+                            <button type="button" class="btn btn-default" onclick="setConsentPlusOneYear({$customerId|intval});" title="{l s='Preencher para 1 ano a partir de hoje' mod='qlocontacthealth'}">
+                                +1 {l s='Ano' mod='qlocontacthealth'}
+                            </button>
+                        </span>
+                    </div>
+                    <div class="clearfix">
+                        <button type="button" class="btn btn-xs btn-primary" onclick="updateLgpdConsent({$customerId|intval});">
+                            <i class="icon-save"></i> {l s='Salvar' mod='qlocontacthealth'}
+                        </button>
+                        <button type="button" class="btn btn-xs btn-danger pull-right" onclick="revokeLgpdConsent({$customerId|intval});">
+                            <i class="icon-trash"></i> {l s='Revogar' mod='qlocontacthealth'}
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="col-lg-8">
@@ -78,6 +101,64 @@
 </div>
 
 <script type="text/javascript">
+function setConsentPlusOneYear(customerId) {
+    var nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    var yyyy = nextYear.getFullYear();
+    var mm = String(nextYear.getMonth() + 1).padStart(2, '0');
+    var dd = String(nextYear.getDate()).padStart(2, '0');
+    $('#input-consent-expires-at-' + customerId).val(yyyy + '-' + mm + '-' + dd);
+}
+
+function updateLgpdConsent(customerId) {
+    var dateVal = $('#input-consent-expires-at-' + customerId).val();
+    sendConsentAjax(customerId, dateVal);
+}
+
+function revokeLgpdConsent(customerId) {
+    if (confirm('{l s='Tem certeza de que deseja revogar o consentimento LGPD deste cliente?' mod='qlocontacthealth' js=1}')) {
+        $('#input-consent-expires-at-' + customerId).val('');
+        sendConsentAjax(customerId, '');
+    }
+}
+
+function sendConsentAjax(customerId, dateVal) {
+    if (typeof $ === 'undefined') {
+        return;
+    }
+    $.ajax({
+        type: 'POST',
+        url: '{$ajaxUrl|escape:'javascript':'UTF-8'}',
+        data: {
+            ajax: 1,
+            action: 'updateConsent',
+            id_customer: customerId,
+            consent_expires_at: dateVal,
+            token: '{$ajaxToken|escape:'javascript':'UTF-8'}'
+        },
+        dataType: 'json',
+        success: function(response) {
+            var containerId = '#consent-alert-container-' + customerId;
+            if (response && response.success) {
+                var html = '<div class="alert alert-success" style="margin-top:5px; padding:5px;"><i class="icon-ok-sign"></i> ' + response.message + '</div>';
+                $(containerId).html(html);
+                setTimeout(function() {
+                    location.reload();
+                }, 1200);
+            } else {
+                var msg = (response && response.message) ? response.message : '{l s='Erro ao atualizar consentimento.' mod='qlocontacthealth' js=1}';
+                var html = '<div class="alert alert-danger" style="margin-top:5px; padding:5px;"><i class="icon-exclamation-sign"></i> ' + msg + '</div>';
+                $(containerId).html(html);
+            }
+        },
+        error: function() {
+            var containerId = '#consent-alert-container-' + customerId;
+            var html = '<div class="alert alert-danger" style="margin-top:5px; padding:5px;"><i class="icon-exclamation-sign"></i> {l s='Erro de comunicação ao atualizar consentimento.' mod='qlocontacthealth' js=1}</div>';
+            $(containerId).html(html);
+        }
+    });
+}
+
 function simulateContactReconfirmation(customerId) {
     if (typeof $ === 'undefined') {
         return;
