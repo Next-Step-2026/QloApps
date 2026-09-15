@@ -28,9 +28,14 @@ pip install -r requirements.txt
 python tests/generate_fixtures.py
 ```
 
-### 3. Execução dos Testes Automatizados (Unitários, API e BDD)
+### 3. Execução dos Testes Automatizados com Cobertura (pytest-cov)
 ```bash
-PYTHONPATH=. pytest tests/ -v
+PYTHONPATH=. pytest
+```
+Para visualizar o relatório HTML gerado pelo `pytest-cov`:
+```bash
+# O relatório interativo é gerado em htmlcov/index.html
+xdg-open htmlcov/index.html # ou abra no seu navegador
 ```
 
 ### 4. Inicialização do Servidor HTTP (Porta 8102)
@@ -55,3 +60,55 @@ curl -s -X POST http://127.0.0.1:8102/v1/visual-inspections \
   -F "room_id=room-101" \
   -F "inspection_id=INSP-2026-001" | jq .
 ```
+
+---
+
+## Testes de Mutação (Mutation Testing com `mutmut`)
+
+O projeto está configurado via `setup.cfg` para rodar testes de mutação direcionados ao módulo `app/analyzer.py`:
+
+### 1. Executar os testes de mutação
+```bash
+./.venv/bin/mutmut run
+```
+
+### 2. Ver o resumo dos mutantes sobreviventes
+```bash
+./.venv/bin/mutmut results
+```
+
+### 3. Visualizar o diff das mutações sobreviventes no terminal
+```bash
+# Exibir o diff de todos os mutantes sobreviventes
+./.venv/bin/mutmut show survived
+
+# Exibir o diff de um mutante específico
+./.venv/bin/mutmut show app.analyzer.x_validate_dimensions__mutmut_2
+```
+
+### 4. Navegar interativamente via terminal (TUI)
+Para navegar visualmente pelos mutantes em um terminal interativo:
+```bash
+./.venv/bin/mutmut browse
+```
+*(Use as setas para navegar, `Enter` para inspecionar e `q` para sair)*
+
+---
+
+## Testes de Fuzzing (Fuzz Testing no `analyzer.py` e Pipeline)
+
+O projeto conta com duas camadas complementares de Fuzzing:
+
+### 1. Fuzzing Baseado em Propriedades e Invariantes (`pytest -m fuzz`)
+Testa exaustivamente o `analyzer.py` sob espaços de cores exóticos (`RGB`, `RGBA`, `L`, `1`, `P`, `CMYK`, `YCbCr`, `HSV`), geometrias extremas/limítrofes (1x1, 2x2, cortes de 1px), ruídos arbitrários de bytes e números de ponto flutuante extremos:
+```bash
+./.venv/bin/pytest -m fuzz -v
+```
+
+### 2. Harness de Mutação de Bytes (`tests/fuzz_harness.py`)
+Gera mutações aleatórias em streams binários JPEG/PNG (bit flips, deleção/inserção de bytes, truncamento) para garantir que decodificadores e avaliadores não causem memory leaks, crashes não tratados ou exceções inesperadas:
+```bash
+# Executa 2.000 iterações de fuzzing com semente reproduzível
+./.venv/bin/python tests/fuzz_harness.py --iterations 2000 --seed 42
+```
+
