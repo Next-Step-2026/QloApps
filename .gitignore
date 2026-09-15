@@ -267,3 +267,7 @@ RFC-006-conversor-solicitacao-reserva.md
 # Gradle / Kotlin Build & Cache
 **/.gradle/
 **/build/
+
+# Composer & Static Analysis
+/vendor/
+.php-cs-fixer.cache

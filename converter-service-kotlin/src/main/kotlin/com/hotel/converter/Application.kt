@@ -110,7 +110,7 @@ private suspend fun handleConversion(
                 ValidationError(
                     field = "provider",
                     errorCode = "UNSUPPORTED_PROVIDER",
-                    message = "Provedor não suportado: ${conversionRequest.provider}",
+                    message = "Unsupported provider: ${conversionRequest.provider}",
                 ),
         )
         return
@@ -128,13 +128,13 @@ private suspend fun handleConversion(
 internal fun Exception.toValidationError(): ValidationError =
     when (this) {
         is SerializationException ->
-            ValidationError("payload", "INVALID_SCHEMA", "JSON malformatado: ${message ?: ""}".trim())
+            ValidationError("payload", "INVALID_SCHEMA", "Malformed JSON: ${message ?: ""}".trim())
         is IllegalStateException ->
-            ValidationError("payload", "INVALID_SCHEMA", message ?: "Estado inválido")
+            ValidationError("payload", "INVALID_SCHEMA", message ?: "Invalid state")
         is IllegalArgumentException ->
-            ValidationError("payload", "INVALID_SCHEMA", message ?: "Argumento inválido")
+            ValidationError("payload", "INVALID_SCHEMA", message ?: "Invalid argument")
         else ->
-            ValidationError("payload", "INVALID_SCHEMA", message ?: "Erro de processamento da requisição")
+            ValidationError("payload", "INVALID_SCHEMA", message ?: "Request processing error")
     }
 
 private suspend fun respondSuccess(

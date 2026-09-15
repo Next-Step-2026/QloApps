@@ -34,7 +34,7 @@ class RequestBodyValidationTest {
         assertEquals(1, failure.errors.size)
         assertEquals("payload", failure.errors[0].field)
         assertEquals("INVALID_SCHEMA", failure.errors[0].errorCode)
-        assertEquals("O corpo da requisição deve ser um objeto JSON.", failure.errors[0].message)
+        assertEquals("Request body must be a JSON object.", failure.errors[0].message)
     }
 
     @Test
@@ -65,7 +65,7 @@ class RequestBodyValidationTest {
         assertEquals(1, failure.errors.size)
         assertEquals("provider", failure.errors[0].field)
         assertEquals("INVALID_SCHEMA", failure.errors[0].errorCode)
-        assertEquals("Campo 'provider' deve ser uma string.", failure.errors[0].message)
+        assertEquals("Field 'provider' must be a string.", failure.errors[0].message)
     }
 
     @Test
@@ -76,7 +76,7 @@ class RequestBodyValidationTest {
         assertEquals(1, failure.errors.size)
         assertEquals("provider", failure.errors[0].field)
         assertEquals("INVALID_SCHEMA", failure.errors[0].errorCode)
-        assertEquals("Campo 'provider' não pode ser vazio.", failure.errors[0].message)
+        assertEquals("Field 'provider' cannot be empty.", failure.errors[0].message)
     }
 
     @Test
@@ -97,7 +97,7 @@ class RequestBodyValidationTest {
         assertEquals(1, failure.errors.size)
         assertEquals("payload", failure.errors[0].field)
         assertEquals("INVALID_SCHEMA", failure.errors[0].errorCode)
-        assertEquals("Campo 'payload' deve ser um objeto JSON.", failure.errors[0].message)
+        assertEquals("Field 'payload' must be a JSON object.", failure.errors[0].message)
     }
 
     @Test

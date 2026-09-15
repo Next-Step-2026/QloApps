@@ -59,7 +59,7 @@ class ProviderBAdapter : ChannelAdapter {
                 ValidationError(
                     "customer",
                     errCode,
-                    "Objeto obrigatório 'customer' não encontrado no payload do PROVIDER_B.",
+                    "Required object 'customer' not found in PROVIDER_B payload.",
                 ),
             )
             return ""
@@ -72,7 +72,7 @@ class ProviderBAdapter : ChannelAdapter {
                 ValidationError(
                     "customer.first_name",
                     "FIELD_REQUIRED",
-                    "Campo obrigatório 'first_name' não encontrado ou vazio.",
+                    "Required field 'first_name' not found or empty.",
                 ),
             )
         }
@@ -81,7 +81,7 @@ class ProviderBAdapter : ChannelAdapter {
                 ValidationError(
                     "customer.last_name",
                     "FIELD_REQUIRED",
-                    "Campo obrigatório 'last_name' não encontrado ou vazio.",
+                    "Required field 'last_name' not found or empty.",
                 ),
             )
         }
@@ -100,7 +100,7 @@ class ProviderBAdapter : ChannelAdapter {
                 ValidationError(
                     field,
                     "INVALID_SCHEMA",
-                    "Formato de data inválido para '$field': ${e.message}",
+                    "Invalid date format for '$field': ${e.message}",
                 ),
             )
             null
@@ -118,7 +118,7 @@ class ProviderBAdapter : ChannelAdapter {
                 ValidationError(
                     "checkin_date",
                     "FIELD_REQUIRED",
-                    "Campo obrigatório 'checkin_date' não encontrado no payload do PROVIDER_B.",
+                    "Required field 'checkin_date' not found in PROVIDER_B payload.",
                 ),
             )
         }
@@ -127,7 +127,7 @@ class ProviderBAdapter : ChannelAdapter {
                 ValidationError(
                     "checkout_date",
                     "FIELD_REQUIRED",
-                    "Campo obrigatório 'checkout_date' não encontrado no payload do PROVIDER_B.",
+                    "Required field 'checkout_date' not found in PROVIDER_B payload.",
                 ),
             )
         }
@@ -142,7 +142,7 @@ class ProviderBAdapter : ChannelAdapter {
                         ValidationError(
                             "checkout_date",
                             "CHECKOUT_BEFORE_CHECKIN",
-                            "Data de check-out ($checkOutStr) deve ser posterior à data de check-in ($checkInStr).",
+                            "Check-out date ($checkOutStr) must be after check-in date ($checkInStr).",
                         ),
                     )
                 } else {
