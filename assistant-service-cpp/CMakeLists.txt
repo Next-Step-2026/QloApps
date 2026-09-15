@@ -8,6 +8,12 @@ add_compile_options(-Wall -Wextra -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-stro
 
 include_directories(include)
 
-add_executable(assistant_service src/main.cpp)
+add_executable(assistant_service
+    src/main.cpp
+    src/app.cpp
+    src/http_server.cpp
+)
 find_package(Threads REQUIRED)
 target_link_libraries(assistant_service PRIVATE Threads::Threads)
+
+add_executable(test_classifier tests/test_classifier.cpp)
