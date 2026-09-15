@@ -3,7 +3,7 @@ CXXFLAGS ?= -std=c++17 -Wall -Wextra -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-s
 INCLUDES = -Iinclude
 TARGET = assistant_service
 
-.PHONY: all clean run
+.PHONY: all clean run test
 
 all: $(TARGET)
 
@@ -12,6 +12,9 @@ $(TARGET): src/main.cpp
 
 run: $(TARGET)
 	./$(TARGET)
+
+test: $(TARGET)
+	@bash tests/test_api.sh
 
 clean:
 	rm -f $(TARGET) test_runner *.o
