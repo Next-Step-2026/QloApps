@@ -159,6 +159,9 @@ class QloContactHealth extends Module
                 $phone = !empty($address->phone_mobile) ? $address->phone_mobile : $address->phone;
             }
         }
+        if (empty($phone) && !empty($customer->phone)) {
+            $phone = $customer->phone;
+        }
         $cleanPhone = trim((string) $phone);
 
         $corrId = self::generateUuidV4();
