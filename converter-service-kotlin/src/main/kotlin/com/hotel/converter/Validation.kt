@@ -20,19 +20,19 @@ fun validateCorrelationId(headerValue: String?): ValidationResult<String> {
                 ValidationError(
                     "X-Correlation-ID",
                     "HEADER_REQUIRED",
-                    "Header obrigatório 'X-Correlation-ID' ausente.",
+                    "Required header 'X-Correlation-ID' is missing.",
                 )
             trimmed.isNullOrEmpty() ->
                 ValidationError(
                     "X-Correlation-ID",
                     "INVALID_HEADER",
-                    "Header 'X-Correlation-ID' não pode ser vazio.",
+                    "Header 'X-Correlation-ID' cannot be empty.",
                 )
             !UUID_V4_REGEX.matches(trimmed) ->
                 ValidationError(
                     "X-Correlation-ID",
                     "INVALID_HEADER",
-                    "Header 'X-Correlation-ID' deve ser um UUID v4 válido.",
+                    "Header 'X-Correlation-ID' must be a valid UUID v4.",
                 )
             else -> null
         }
@@ -50,13 +50,13 @@ fun validateContentType(headerValue: String?): ValidationError? {
             ValidationError(
                 "Content-Type",
                 "HEADER_REQUIRED",
-                "Header obrigatório 'Content-Type' ausente.",
+                "Required header 'Content-Type' is missing.",
             )
         clean != "application/json" ->
             ValidationError(
                 "Content-Type",
                 "UNSUPPORTED_MEDIA_TYPE",
-                "Header 'Content-Type' deve ser 'application/json'.",
+                "Header 'Content-Type' must be 'application/json'.",
             )
         else -> null
     }
@@ -68,7 +68,7 @@ fun validateRequestBody(rawText: String): ValidationResult<ConversionRequest> =
             ValidationResult.Failure(
                 "payload",
                 "INVALID_SCHEMA",
-                "O corpo da requisição não pode ser vazio.",
+                "Request body cannot be empty.",
             )
         else ->
             try {
@@ -77,7 +77,7 @@ fun validateRequestBody(rawText: String): ValidationResult<ConversionRequest> =
                 ValidationResult.Failure(
                     "payload",
                     "INVALID_SCHEMA",
-                    "JSON malformatado: ${e.message}",
+                    "Malformed JSON: ${e.message}",
                 )
             }
     }
@@ -87,7 +87,7 @@ private fun validateParsedJson(jsonElement: JsonElement): ValidationResult<Conve
         return ValidationResult.Failure(
             "payload",
             "INVALID_SCHEMA",
-            "O corpo da requisição deve ser um objeto JSON.",
+            "Request body must be a JSON object.",
         )
     }
 
@@ -113,7 +113,7 @@ private fun validateProviderField(
                 ValidationError(
                     "provider",
                     "FIELD_REQUIRED",
-                    "Campo obrigatório 'provider' não encontrado.",
+                    "Required field 'provider' not found.",
                 ),
             )
             ""
@@ -123,7 +123,7 @@ private fun validateProviderField(
                 ValidationError(
                     "provider",
                     "INVALID_SCHEMA",
-                    "Campo 'provider' deve ser uma string.",
+                    "Field 'provider' must be a string.",
                 ),
             )
             ""
@@ -133,7 +133,7 @@ private fun validateProviderField(
                 ValidationError(
                     "provider",
                     "INVALID_SCHEMA",
-                    "Campo 'provider' não pode ser vazio.",
+                    "Field 'provider' cannot be empty.",
                 ),
             )
             ""
@@ -153,7 +153,7 @@ private fun validatePayloadField(
                 ValidationError(
                     "payload",
                     "FIELD_REQUIRED",
-                    "Campo obrigatório 'payload' não encontrado.",
+                    "Required field 'payload' not found.",
                 ),
             )
             null
@@ -163,7 +163,7 @@ private fun validatePayloadField(
                 ValidationError(
                     "payload",
                     "INVALID_SCHEMA",
-                    "Campo 'payload' deve ser um objeto JSON.",
+                    "Field 'payload' must be a JSON object.",
                 ),
             )
             null
