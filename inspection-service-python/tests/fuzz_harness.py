@@ -13,7 +13,7 @@ import os
 import random
 import sys
 import time
-from typing import List
+from typing import List, Optional, Tuple
 
 from PIL import Image, UnidentifiedImageError
 
@@ -39,36 +39,81 @@ def load_seed_corpus(fixtures_dir: str) -> List[bytes]:
     return corpus
 
 
+def _apply_bit_flip(mutated: bytearray) -> None:
+    idx = random.randint(0, len(mutated) - 1)
+    bit = 1 << random.randint(0, 7)
+    mutated[idx] ^= bit
+
+
+def _apply_byte_replace(mutated: bytearray) -> None:
+    idx = random.randint(0, len(mutated) - 1)
+    mutated[idx] = random.randint(0, 255)
+
+
+def _apply_byte_delete(mutated: bytearray) -> None:
+    if len(mutated) > 10:
+        idx = random.randint(0, len(mutated) - 1)
+        del mutated[idx]
+
+
+def _apply_byte_insert(mutated: bytearray) -> None:
+    idx = random.randint(0, len(mutated))
+    mutated.insert(idx, random.randint(0, 255))
+
+
+def _apply_byte_truncate(mutated: bytearray) -> None:
+    if len(mutated) > 20:
+        cut_idx = random.randint(10, len(mutated) - 1)
+        del mutated[cut_idx:]
+
+
+MUTATION_OPERATORS = [
+    _apply_bit_flip,
+    _apply_byte_replace,
+    _apply_byte_delete,
+    _apply_byte_insert,
+    _apply_byte_truncate,
+]
+
+
 def mutate_bytes(data: bytes, mutation_rate: float = 0.001) -> bytes:
     """Apply random mutations to byte array: bit flips, substitutions, deletions, insertions."""
     mutated = bytearray(data)
-    # Vary mutation rate dynamically: 50% subtle mutations (to test decoder/analyzer), 50% aggressive
     rate = random.choice([0.0001, 0.0005, 0.001, 0.01, 0.05])
     num_mutations = max(1, int(len(mutated) * rate))
 
-    mutation_types = ["flip", "replace", "delete", "insert", "truncate"]
-
     for _ in range(num_mutations):
-        m_type = random.choice(mutation_types)
         if not mutated:
             break
-
-        idx = random.randint(0, len(mutated) - 1)
-
-        if m_type == "flip":
-            bit = 1 << random.randint(0, 7)
-            mutated[idx] ^= bit
-        elif m_type == "replace":
-            mutated[idx] = random.randint(0, 255)
-        elif m_type == "delete" and len(mutated) > 10:
-            del mutated[idx]
-        elif m_type == "insert":
-            mutated.insert(idx, random.randint(0, 255))
-        elif m_type == "truncate" and len(mutated) > 20:
-            cut_idx = random.randint(10, len(mutated) - 1)
-            mutated = mutated[:cut_idx]
+        operator = random.choice(MUTATION_OPERATORS)
+        operator(mutated)
 
     return bytes(mutated)
+
+
+def _fuzz_single_iteration(payload: bytes) -> Tuple[bool, bool, Optional[Exception]]:
+    """Decode and evaluate mutated payload. Returns (decoded, rejected, error)."""
+    try:
+        img = Image.open(io.BytesIO(payload))
+        img.load()
+        analysis = evaluate_image(img)
+        assert analysis["assessment"] in {"EVIDENCE_VALID", "EVIDENCE_REQUIRES_RETAKE"}
+        assert 0.0 <= analysis["metrics"]["luminance"] <= 255.0
+        assert analysis["metrics"]["sharpness_score"] >= 0.0
+        return True, False, None
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+        return False, True, None
+    except Exception as e:
+        return False, False, e
+
+
+def _report_progress(i: int, total: int, start_time: float, counts: Tuple[int, int, int]) -> None:
+    """Print fuzzing throughput and progress if at reporting cadence."""
+    if i % 500 != 0 and i != total:
+        return
+    elapsed = max(time.time() - start_time, 1e-6)
+    decoded, rejected, crashes = counts
+    print(f"Iter {i}/{total} ({i / elapsed:.1f} exec/s) | Decoded: {decoded} | Cleanly Rejected: {rejected} | Crashes: {crashes}")
 
 
 def run_fuzz(iterations: int, fixtures_dir: str, seed: int = None) -> int:
@@ -81,43 +126,27 @@ def run_fuzz(iterations: int, fixtures_dir: str, seed: int = None) -> int:
     print(f"[FUZZ HARNESS] Running {iterations} iterations...")
 
     start_time = time.time()
-    crashes = 0
     decoded_count = 0
     rejected_count = 0
+    crash: Optional[Exception] = None
+    i = 1
 
-    for i in range(1, iterations + 1):
+    while not crash and i <= iterations:
         seed_data = random.choice(corpus)
         mutated_data = mutate_bytes(seed_data)
+        decoded, rejected, crash = _fuzz_single_iteration(mutated_data)
+        decoded_count += int(decoded)
+        rejected_count += int(rejected)
+        _report_progress(i, iterations, start_time, (decoded_count, rejected_count, 0))
+        i += 1
 
-        try:
-            # 1. Image decoding step
-            img = Image.open(io.BytesIO(mutated_data))
-            img.load()
-            decoded_count += 1
-
-            # 2. Analyzer evaluation step
-            analysis = evaluate_image(img)
-            assert analysis["assessment"] in {"EVIDENCE_VALID", "EVIDENCE_REQUIRES_RETAKE"}
-            assert 0.0 <= analysis["metrics"]["luminance"] <= 255.0
-            assert analysis["metrics"]["sharpness_score"] >= 0.0
-
-        except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
-            # Gracefully rejected corrupt/malformed payload
-            rejected_count += 1
-        except Exception as e:
-            # Unexpected crash or invariant violation!
-            crashes += 1
-            print(f"\n[CRASH DETECTED] Iteration #{i}: {type(e).__name__}: {e}")
-            break
-
-        if i % 500 == 0 or i == iterations:
-            elapsed = time.time() - start_time
-            rate = i / elapsed if elapsed > 0 else 0
-            print(f"Iter {i}/{iterations} ({rate:.1f} exec/s) | Decoded: {decoded_count} | Cleanly Rejected: {rejected_count} | Crashes: {crashes}")
+    if crash is not None:
+        print(f"\n[CRASH DETECTED] Iteration #{i - 1}: {type(crash).__name__}: {crash}")
 
     elapsed = time.time() - start_time
+    crashes = int(crash is not None)
     print(f"\n[FUZZ HARNESS COMPLETED] in {elapsed:.2f}s. Total Crashes: {crashes}")
-    return 1 if crashes > 0 else 0
+    return crashes
 
 
 if __name__ == "__main__":
