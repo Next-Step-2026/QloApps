@@ -52,6 +52,77 @@ async def health_check():
     return {"status": "UP"}
 
 
+def _validate_and_open_image(contents: bytes) -> tuple[Optional[Image.Image], Optional[JSONResponse]]:
+    """Validate image payload length and decode integrity."""
+    if not contents:
+        return None, rfc7807_error_response(
+            status_code=400,
+            title="Empty File",
+            detail="The uploaded file is empty.",
+        )
+
+    if len(contents) > MAX_FILE_SIZE_BYTES:
+        return None, rfc7807_error_response(
+            status_code=400,
+            title="File Too Large",
+            detail="The uploaded file exceeds the maximum allowed size of 5 MB.",
+        )
+
+    try:
+        img = Image.open(io.BytesIO(contents))
+        img.load()  # Force decode full image to catch corrupted data
+        return img, None
+    except (UnidentifiedImageError, OSError, ValueError):
+        return None, rfc7807_error_response(
+            status_code=400,
+            title="Invalid Image File",
+            detail="The uploaded file could not be decoded as a valid image.",
+        )
+
+
+def _log_inspection_success(
+    meta: dict,
+    analysis: dict,
+    duration_ms: float,
+) -> None:
+    """Emit structured JSON log for successful image analysis."""
+    log_record = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "level": "INFO",
+        "correlation_id": meta.get("correlation_id"),
+        "event": "IMAGE_INSPECTED",
+        "room_id": meta.get("room_id"),
+        "inspection_id": meta.get("inspection_id"),
+        "width": analysis["metrics"]["width"],
+        "height": analysis["metrics"]["height"],
+        "luminance": analysis["metrics"]["luminance"],
+        "sharpness": analysis["metrics"]["sharpness_score"],
+        "assessment": analysis["assessment"],
+        "duration_ms": duration_ms,
+    }
+    logger.info(json.dumps(log_record))
+
+
+def _log_inspection_failure(
+    meta: dict,
+    error: Exception,
+    duration_ms: float,
+) -> None:
+    """Emit structured JSON log for failed image analysis."""
+    log_record = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "level": "ERROR",
+        "correlation_id": meta.get("correlation_id"),
+        "event": "IMAGE_INSPECTION_FAILED",
+        "room_id": meta.get("room_id"),
+        "inspection_id": meta.get("inspection_id"),
+        "error_type": error.__class__.__name__,
+        "error_message": str(error),
+        "duration_ms": duration_ms,
+    }
+    logger.error(json.dumps(log_record), exc_info=True)
+
+
 @app.post(
     "/v1/visual-inspections",
     response_model=VisualInspectionResponse,
@@ -78,61 +149,24 @@ async def create_visual_inspection(
     and returns assessment verdict with structured logging.
     """
     start_time = time.perf_counter()
-    correlation_id = x_correlation_id or str(uuid.uuid4())
+    meta = {
+        "correlation_id": x_correlation_id or str(uuid.uuid4()),
+        "room_id": room_id,
+        "inspection_id": inspection_id,
+    }
 
     try:
         contents = await file.read()
-        if not contents:
-            return rfc7807_error_response(
-                status_code=400,
-                title="Empty File",
-                detail="The uploaded file is empty.",
-            )
+        img, error_response = _validate_and_open_image(contents)
+        if error_response is not None:
+            return error_response
 
-        if len(contents) > MAX_FILE_SIZE_BYTES:
-            return rfc7807_error_response(
-                status_code=400,
-                title="File Too Large",
-                detail="The uploaded file exceeds the maximum allowed size of 5 MB.",
-            )
-
-        # Attempt to open and verify image integrity
-        try:
-            img = Image.open(io.BytesIO(contents))
-            img.load()  # Force decode full image to catch corrupted data
-        except (UnidentifiedImageError, OSError, ValueError) as exc:
-            return rfc7807_error_response(
-                status_code=400,
-                title="Invalid Image File",
-                detail="The uploaded file could not be decoded as a valid image.",
-            )
-
-        # Evaluate quality metrics
         analysis = evaluate_image(img)
-
         duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
-
-        # Structured JSON log
-        log_record = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "level": "INFO",
-            "correlation_id": correlation_id,
-            "event": "IMAGE_INSPECTED",
-            "room_id": room_id,
-            "inspection_id": inspection_id,
-            "width": analysis["metrics"]["width"],
-            "height": analysis["metrics"]["height"],
-            "luminance": analysis["metrics"]["luminance"],
-            "sharpness": analysis["metrics"]["sharpness_score"],
-            "assessment": analysis["assessment"],
-            "duration_ms": duration_ms,
-        }
-        logger.info(json.dumps(log_record))
+        _log_inspection_success(meta, analysis, duration_ms)
 
         return {
-            "correlation_id": correlation_id,
-            "inspection_id": inspection_id,
-            "room_id": room_id,
+            **meta,
             "metrics": analysis["metrics"],
             "warnings": analysis["warnings"],
             "assessment": analysis["assessment"],
@@ -140,20 +174,7 @@ async def create_visual_inspection(
 
     except Exception as e:
         duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
-        log_record = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "level": "ERROR",
-            "correlation_id": correlation_id,
-            "event": "IMAGE_INSPECTION_FAILED",
-            "room_id": room_id,
-            "inspection_id": inspection_id,
-            "error_type": e.__class__.__name__,
-            "error_message": str(e),
-            "duration_ms": duration_ms,
-        }
-        
-        # exc_info=True captures the traceback
-        logger.error(json.dumps(log_record), exc_info=True)
+        _log_inspection_failure(meta, e, duration_ms)
 
         return rfc7807_error_response(
             status_code=500,
