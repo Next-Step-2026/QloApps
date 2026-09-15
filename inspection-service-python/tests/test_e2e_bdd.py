@@ -87,7 +87,7 @@ class TestVisualInspectionBDDScenarios:
         assert response.headers.get("content-type") == "application/problem+json"
         payload = response.json()
         assert payload["status"] == 400
-        assert payload["title"] == "Arquivo de Imagem Inválido"
+        assert payload["title"] == "Invalid Image File"
         assert payload["instance"] == "/v1/visual-inspections"
 
     def test_scenario_4_blurry_low_res_image_requires_retake(self):

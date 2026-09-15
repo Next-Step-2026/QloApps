@@ -256,3 +256,7 @@ admin/themes/default/css/screen.css
 
 **sitemap.xml
 robots.txt
+
+# Senão as imagens que forem uploadadas vao pro git
+modules/qlovisualinspection/views/img/inspections/*
+!modules/qlovisualinspection/views/img/inspections/.gitkeep

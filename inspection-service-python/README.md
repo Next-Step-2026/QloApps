@@ -7,6 +7,13 @@ Serviço local rápido em Python (FastAPI + Pillow) para avaliação determinís
 - **Luminância Média:** Conversão para escala de cinza (`L`) e média $[0..255]$ (`UNDEREXPOSED` < 40, `OVEREXPOSED` > 220, `OPTIMAL`).
 - **Nitidez:** Variância do filtro de gradiente/Laplaciano (`BLURRY` < 50.0, `SHARP` $\ge$ 50.0).
 
+## Limites e Regras de Upload (Defesa em Profundidade)
+- **Limite Máximo por Foto:** 5 MB (`MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024`).
+- **Sincronização PHP/Python:** Esse limite de 5 MB é validado em duas camadas:
+  1. No PHP (`AdminVisualInspectionController::MAX_FILE_SIZE_BYTES = 5242880`) para *fail-fast* antes da chamada cURL.
+  2. Na API FastAPI (`MAX_FILE_SIZE_BYTES`) para validação de borda em requisições diretas.
+  > Se o limite de tamanho for alterado, ambas as constantes (no PHP e no Python) devem ser atualizadas em conjunto.
+
 ---
 
 ## Como Executar Localmente

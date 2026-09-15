@@ -26,6 +26,10 @@ logger.handlers = [handler]
 app = FastAPI(title="Visual Inspection Quality Evaluator", version="1.0.0")
 
 
+# Maximum payload limit: 5 MB (5 * 1024 * 1024 bytes)
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+
+
 def rfc7807_error_response(status_code: int, title: str, detail: str, instance: str = "/v1/visual-inspections") -> JSONResponse:
     """Format an RFC 7807 compliant Problem Details error response."""
     return JSONResponse(
@@ -67,8 +71,15 @@ async def create_visual_inspection(
         if not contents:
             return rfc7807_error_response(
                 status_code=400,
-                title="Arquivo Vazio",
-                detail="O arquivo enviado está vazio.",
+                title="Empty File",
+                detail="The uploaded file is empty.",
+            )
+
+        if len(contents) > MAX_FILE_SIZE_BYTES:
+            return rfc7807_error_response(
+                status_code=400,
+                title="File Too Large",
+                detail="The uploaded file exceeds the maximum allowed size of 5 MB.",
             )
 
         # Attempt to open and verify image integrity
@@ -78,8 +89,8 @@ async def create_visual_inspection(
         except (UnidentifiedImageError, OSError, ValueError) as exc:
             return rfc7807_error_response(
                 status_code=400,
-                title="Arquivo de Imagem Inválido",
-                detail="O arquivo enviado não pôde ser decodificado como uma imagem válida.",
+                title="Invalid Image File",
+                detail="The uploaded file could not be decoded as a valid image.",
             )
 
         # Evaluate quality metrics
@@ -132,8 +143,8 @@ async def create_visual_inspection(
 
         return rfc7807_error_response(
             status_code=500,
-            title="Erro Interno no Processamento",
-            detail=f"Ocorreu um erro interno ao analisar a imagem. Entre em contato com o suporte",
+            title="Internal Processing Error",
+            detail="An internal error occurred while analyzing the image. Please contact support.",
         )
 
 

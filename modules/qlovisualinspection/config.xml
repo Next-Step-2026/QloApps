@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <module>
     <name>qlovisualinspection</name>
-    <displayName><![CDATA[Inspeção Visual de Quartos]]></displayName>
+    <displayName><![CDATA[Room Visual Inspection]]></displayName>
     <version><![CDATA[1.0.0]]></version>
-    <description><![CDATA[Métricas objetivas de luminância e nitidez para governança hoteleira.]]></description>
+    <description><![CDATA[Objective luminance and sharpness quality assessment metrics for housekeeping governance.]]></description>
     <author><![CDATA[QloApps Engineering]]></author>
     <tab><![CDATA[hotel_reservation]]></tab>
     <is_configurable>0</is_configurable>
