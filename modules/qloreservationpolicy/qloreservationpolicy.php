@@ -1,20 +1,22 @@
 <?php
 /**
- * QloReservationPolicy Module for QloApps
- *
- * @author    QloApps Engineering
- * @copyright QloApps
- * @license   AFL-3.0
+ * @file qloreservationpolicy.php
+ * @brief Módulo QloReservationPolicy para QloApps.
  */
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+/**
+ * @class QloReservationPolicy
+ * @brief Gerencia o ciclo de vida e abas administrativas do Motor de Políticas.
+ * @details Validador determinístico de regras de estadia mínima, antecedência e overbooking.
+ */
 class QloReservationPolicy extends Module
 {
     /**
-     * Constructor for QloReservationPolicy
+     * @brief Construtor do módulo.
      */
     public function __construct()
     {
@@ -32,9 +34,8 @@ class QloReservationPolicy extends Module
     }
 
     /**
-     * Module installation
-     *
-     * @return bool
+     * @brief Instala o módulo e cria a aba no menu do Back-Office.
+     * @return bool True em caso de sucesso, False caso contrário.
      */
     public function install()
     {
@@ -42,9 +43,8 @@ class QloReservationPolicy extends Module
     }
 
     /**
-     * Module uninstallation
-     *
-     * @return bool
+     * @brief Desinstala o módulo e remove a aba do Back-Office.
+     * @return bool True em caso de sucesso, False caso contrário.
      */
     public function uninstall()
     {
@@ -52,9 +52,8 @@ class QloReservationPolicy extends Module
     }
 
     /**
-     * Installs back-office AdminTab for the module
-     *
-     * @return bool
+     * @brief Cria a aba de navegação (AdminTab) no menu de Gerenciamento de Reservas.
+     * @return bool True se criada com sucesso.
      */
     private function installTab()
     {
@@ -72,9 +71,8 @@ class QloReservationPolicy extends Module
     }
 
     /**
-     * Uninstalls back-office AdminTab for the module
-     *
-     * @return bool
+     * @brief Remove a aba de menu do Back-Office durante a desinstalação.
+     * @return bool True se removida ou se já inexistente.
      */
     private function uninstallTab()
     {

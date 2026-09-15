@@ -1,5 +1,8 @@
 """
-FastAPI Server for Reservation Policy Engine
+@file main.py
+@brief Servidor HTTP FastAPI para o Motor de Políticas de Reserva.
+@details Expõe endpoints RESTful para consulta de saúde e avaliação determinística
+         de regras de negócio, com suporte a correlação e tratamento de erros RFC 7807.
 """
 
 import json
@@ -24,12 +27,21 @@ app = FastAPI(
 
 
 class PolicyValidationException(Exception):
+    """
+    @brief Exceção customizada para erros de validação semântica de regras.
+    """
     def __init__(self, detail: str):
         self.detail = detail
 
 
 @app.exception_handler(PolicyValidationException)
 async def policy_validation_exception_handler(request: Request, exc: PolicyValidationException):
+    """
+    @brief Manipulador global que formata erros conforme a RFC 7807.
+    @param request Objeto da requisição HTTP recebida.
+    @param exc Instância da PolicyValidationException capturada.
+    @return JSONResponse com status HTTP 400 e schema ProblemDetails.
+    """
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={
@@ -44,7 +56,10 @@ async def policy_validation_exception_handler(request: Request, exc: PolicyValid
 
 @app.get("/healthz")
 def health_check():
-    """Healthcheck endpoint"""
+    """
+    @brief Endpoint de verificação de integridade.
+    @return dict Dicionário indicando status UP.
+    """
     return {"status": "UP"}
 
 
@@ -61,7 +76,11 @@ def health_check():
 )
 def evaluate(req: PolicyEvaluationRequest, x_correlation_id: str | None = Header(default=None)):
     """
-    Avalia a conformidade de uma reserva com base na política e nos fatos informados.
+    @brief Avalia a conformidade de uma reserva contra a política selecionada.
+    @param req Requisição contendo a política e o dicionário de fatos contextuais.
+    @return PolicyEvaluationResponse Decisão (ALLOW/DENY), reason_code e justificativa.
+    @throws PolicyValidationException Se os fatos forem inválidos para a política.
+    @note O tempo de resposta é logado estruturado em JSON para observabilidade.
     """
     start_time = time.perf_counter()
     correlation_id = x_correlation_id or "corr-generated"
