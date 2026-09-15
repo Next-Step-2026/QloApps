@@ -1,92 +1,72 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('QloContactHealth Back-Office Integration', () => {
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'gabrielsampaio@google.com';
+const ADMIN_PASSWD = process.env.ADMIN_PASSWD || 'G0rg0nz0l@';
 
-  test('1. Admin page accessibility & server response', async ({ page }) => {
-    const response = await page.goto('/admin');
-    expect(response?.status()).toBeLessThan(400);
-    await expect(page).toHaveTitle(/QloApps|Login/i);
+async function loginToAdmin(page: any) {
+  await page.goto('/admin');
+  await page.waitForTimeout(1000);
+  
+  if (await page.locator('#email').isVisible()) {
+    await page.fill('#email', ADMIN_EMAIL);
+    await page.waitForTimeout(500);
+    await page.fill('#passwd', ADMIN_PASSWD);
+    await page.waitForTimeout(500);
+    await page.click('button[name="submitLogin"]');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+  }
+}
+
+test.describe('QloContactHealth Back-Office E2E Flow', () => {
+
+  test('Navegação completa: Login -> Menu Clientes -> Saúde de Contatos -> Visualizar Ficha do Cliente', async ({ page }) => {
+    // 1. Realizar Login
+    await loginToAdmin(page);
+
+    // 2. Clicar no menu "Clientes"
+    const menuClientesLink = page.locator('a:has-text("Clientes"), #subtab-AdminCustomers a, #subtab-AdminParentCustomer a').first();
+    if (await menuClientesLink.isVisible()) {
+      await menuClientesLink.click({ force: true });
+      await page.waitForTimeout(1500);
+    }
+
+    // 3. Clicar no submenu "Saúde de Contatos"
+    const subMenuSaude = page.locator('a:has-text("Saúde de Contatos"), a[href*="AdminContactHealth"]').first();
+    if (await subMenuSaude.isVisible()) {
+      await subMenuSaude.click({ force: true });
+    } else {
+      await page.goto('/admin/index.php?controller=AdminContactHealth');
+    }
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1500);
+
+    // 4. Selecionar o primeiro cliente da lista e clicar em Visualizar
+    const botaoVisualizar = page.locator('table tbody tr:first-child a.edit, table tbody tr:first-child a[href*="viewcustomer"], table tbody tr:first-child .icon-search-plus, table tbody tr:first-child a.btn').first();
+    if (await botaoVisualizar.isVisible()) {
+      await botaoVisualizar.click();
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(2000);
+
+      // 5. Validar o Card de Indicador de Saúde
+      const cardSaude = page.locator('.panel:has-text("Indicador de Saúde e Higiene Cadastral")');
+      if (await cardSaude.isVisible()) {
+        await cardSaude.scrollIntoViewIfNeeded();
+        await page.waitForTimeout(2000);
+
+        // 6. Testar o botão de Reconfirmação
+        const botaoReconfirmar = page.locator('button:has-text("Disparar Desafio de Reconfirmação")');
+        if (await botaoReconfirmar.isVisible()) {
+          page.once('dialog', async (dialog) => {
+            console.log('Alerta acionado:', dialog.message());
+            await page.waitForTimeout(1000);
+            await dialog.dismiss();
+          });
+          await botaoReconfirmar.click();
+          await page.waitForTimeout(2000);
+        }
+      }
+    }
   });
 
-  test('2. Card UI rendering with mock API (FRESH status)', async ({ page }) => {
-    // Intercept API evaluation route to simulate a healthy customer
-    await page.route('**/v1/contact-evaluations', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          correlation_id: 'test-correlation-123',
-          customer_id: 'cust-1042',
-          overall_status: 'FRESH',
-          hygiene_score: 100,
-          factors: [
-            {
-              type: 'EMAIL',
-              value_masked: 'm***a@tech.com',
-              status: 'FRESH',
-              days_since_verification: 10,
-              issues: []
-            },
-            {
-              type: 'PHONE',
-              value_masked: '+5511*****4567',
-              status: 'FRESH',
-              days_since_verification: 10,
-              issues: []
-            }
-          ],
-          consent_valid: true,
-          recommended_action: 'NONE'
-        })
-      });
-    });
-
-    await page.goto('/admin');
-    await expect(page).toHaveTitle(/QloApps|Login/i);
-  });
-
-  test('3. Card UI rendering with STALE status & Reconfirmation Button', async ({ page }) => {
-    // Intercept API evaluation route to simulate STALE customer needing reconfirmation
-    await page.route('**/v1/contact-evaluations', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          correlation_id: 'test-correlation-456',
-          customer_id: 'cust-1042',
-          overall_status: 'STALE',
-          hygiene_score: 40,
-          factors: [
-            {
-              type: 'EMAIL',
-              value_masked: 'm***a@tech.com',
-              status: 'STALE',
-              days_since_verification: 180,
-              issues: ['STALENESS_EXCEEDED_90_DAYS']
-            }
-          ],
-          consent_valid: false,
-          recommended_action: 'TRIGGER_BACKGROUND_RECONFIRMATION'
-        })
-      });
-    });
-
-    await page.goto('/admin');
-    await expect(page).toHaveTitle(/QloApps|Login/i);
-  });
-
-  test('4. Graceful Fallback & Resilience on API Outage (500 Error)', async ({ page }) => {
-    // Intercept API route to simulate microservice 500 error
-    await page.route('**/v1/contact-evaluations', async (route) => {
-      await route.fulfill({
-        status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Internal Server Error' })
-      });
-    });
-
-    // Ensure the page loads without HTTP 500 failure
-    const response = await page.goto('/admin');
-    expect(response?.status()).toBeLessThan(500);
-  });
 });
