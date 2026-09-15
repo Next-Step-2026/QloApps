@@ -49,13 +49,18 @@ class QloContactHealth extends Module
      */
     public function install()
     {
+        if (!parent::install()
+            || !QloContactHealthCustomer::createTable()
+            || !$this->installTab()
+            || !$this->registerHook('displayAdminCustomers')
+        ) {
+            return false;
+        }
+
         Configuration::updateValue(self::CONFIG_API_URL, self::DEFAULT_API_URL);
         Configuration::updateValue(self::CONFIG_API_TIMEOUT, self::DEFAULT_TIMEOUT_MS);
 
-        return parent::install()
-            && QloContactHealthCustomer::createTable()
-            && $this->installTab()
-            && $this->registerHook('displayAdminCustomers');
+        return true;
     }
 
     /**
