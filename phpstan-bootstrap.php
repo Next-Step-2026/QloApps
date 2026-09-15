@@ -12,3 +12,5 @@ if (!defined('_DB_PREFIX_')) {
 
 require_once _PS_ROOT_DIR_ . '/config/defines.inc.php';
 require_once _PS_ROOT_DIR_ . '/config/autoload.php';
+require_once _PS_ROOT_DIR_ . '/tools/smarty/Smarty.class.php';
+

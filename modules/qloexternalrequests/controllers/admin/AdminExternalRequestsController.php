@@ -31,6 +31,15 @@ class AdminExternalRequestsController extends ModuleAdminController
     {
         parent::initContent();
 
+        $selectedProvider = (string) Tools::getValue('provider_code', 'PROVIDER_A');
+        $rawPayloadJson = (string) Tools::getValue('raw_payload_json', '');
+
+        $this->context->smarty->assign([
+            'selectedProvider' => $selectedProvider,
+            'rawPayloadJson' => $rawPayloadJson,
+            'actionUrl' => self::$currentIndex . '&token=' . $this->token,
+        ]);
+
         $this->setTemplate('request_converter.tpl');
     }
 }
