@@ -31,6 +31,7 @@ dependencies {
     // Testes
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktorVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("io.kotest:kotest-property-jvm:5.9.1")
 }
 
 application {
