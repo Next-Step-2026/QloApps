@@ -163,7 +163,10 @@ class QloContactHealth extends Module
 
         $corrId = self::generateUuidV4();
         $apiUrl = Configuration::get(self::CONFIG_API_URL) ?: self::DEFAULT_API_URL;
-        $timeoutMs = (int) (Configuration::get(self::CONFIG_API_TIMEOUT) ?: self::DEFAULT_TIMEOUT_MS);
+        $configuredTimeout = (int) Configuration::get(self::CONFIG_API_TIMEOUT);
+        $timeoutMs = ($configuredTimeout > 0)
+            ? min(max(1, $configuredTimeout), self::DEFAULT_TIMEOUT_MS)
+            : self::DEFAULT_TIMEOUT_MS;
 
         // Dates formatting conforme RN-003 e RN-005: enviar null se ausente/zerado
         $lastVerifiedAt = (!empty($customer->date_upd) && $customer->date_upd !== '0000-00-00 00:00:00')
@@ -185,6 +188,13 @@ class QloContactHealth extends Module
             'reference_date' => $refDate,
         ));
 
+        if ($payload === false) {
+            return array(
+                'success' => false,
+                'error' => $this->l('Indicadores de saúde de contato indisponíveis no momento.'),
+            );
+        }
+
         $ch = curl_init($apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -198,12 +208,11 @@ class QloContactHealth extends Module
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
         curl_close($ch);
 
         if ($response && $httpCode === 200) {
             $data = json_decode($response, true);
-            if (is_array($data) && isset($data['overall_status'])) {
+            if (json_last_error() === JSON_ERROR_NONE && is_array($data) && isset($data['overall_status'])) {
                 return array(
                     'success' => true,
                     'data' => $data,
@@ -214,8 +223,6 @@ class QloContactHealth extends Module
         return array(
             'success' => false,
             'error' => $this->l('Indicadores de saúde de contato indisponíveis no momento.'),
-            'curl_error' => $curlError,
-            'http_code' => $httpCode,
         );
     }
 
