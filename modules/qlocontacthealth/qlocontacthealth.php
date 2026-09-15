@@ -150,19 +150,30 @@ class QloContactHealth extends Module
             );
         }
 
-        $cleanPhone = !empty($customer->phone) ? trim($customer->phone) : '';
+        // Resolver telefone através do endereço principal ativo (ps_address) conforme RFC seção 5.1
+        $phone = '';
+        $idAddress = (int) Address::getFirstCustomerAddressId($customer->id, true);
+        if ($idAddress) {
+            $address = new Address($idAddress);
+            if (Validate::isLoadedObject($address)) {
+                $phone = !empty($address->phone_mobile) ? $address->phone_mobile : $address->phone;
+            }
+        }
+        $cleanPhone = trim((string) $phone);
 
         $corrId = self::generateUuidV4();
         $apiUrl = Configuration::get(self::CONFIG_API_URL) ?: self::DEFAULT_API_URL;
         $timeoutMs = (int) (Configuration::get(self::CONFIG_API_TIMEOUT) ?: self::DEFAULT_TIMEOUT_MS);
 
-        // Dates formatting
-        $lastVerifiedAt = !empty($customer->date_upd)
+        // Dates formatting conforme RN-003 e RN-005: enviar null se ausente/zerado
+        $lastVerifiedAt = (!empty($customer->date_upd) && $customer->date_upd !== '0000-00-00 00:00:00')
             ? date('Y-m-d\TH:i:s\Z', strtotime($customer->date_upd))
-            : date('Y-m-d\TH:i:s\Z');
-        $consentExpiresAt = !empty($customer->date_add)
+            : null;
+
+        $consentExpiresAt = (!empty($customer->date_add) && $customer->date_add !== '0000-00-00 00:00:00')
             ? date('Y-m-d\TH:i:s\Z', strtotime('+1 year', strtotime($customer->date_add)))
-            : date('Y-m-d\TH:i:s\Z', strtotime('+1 year'));
+            : null;
+
         $refDate = date('Y-m-d');
 
         $payload = json_encode(array(
