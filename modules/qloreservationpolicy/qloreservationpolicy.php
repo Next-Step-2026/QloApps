@@ -65,7 +65,7 @@ class QloReservationPolicy extends Module
         foreach (Language::getLanguages(true) as $lang) {
             $tab->name[$lang['id_lang']] = $this->l('Políticas de Reserva');
         }
-        $tab->id_parent = (int) Tab::getIdFromClassName('AdminParentOrders');
+        $tab->id_parent = (int) Tab::getIdFromClassName('AdminHotelReservationSystemManagement');
         $tab->module = $this->name;
 
         return (bool) $tab->add();
