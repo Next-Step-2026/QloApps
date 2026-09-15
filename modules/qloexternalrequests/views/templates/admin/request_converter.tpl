@@ -62,4 +62,54 @@
             </button>
         </div>
     </form>
+
+    {if isset($conversionResult) && $conversionResult}
+        <hr />
+        {if isset($conversionResult.status) && $conversionResult.status == 'SUCCESS'}
+            <div class="alert alert-success">
+                <h4><i class="icon-check"></i> {l s='Generated Canonical Draft:' mod='qloexternalrequests'}</h4>
+                <table class="table table-bordered">
+                    <tr>
+                        <th style="width: 25%;">{l s='Guest Name:' mod='qloexternalrequests'}</th>
+                        <td><strong>{$conversionResult.draft.guest_name|escape:'html':'UTF-8'}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>{l s='Check-in Date:' mod='qloexternalrequests'}</th>
+                        <td>{$conversionResult.draft.check_in|escape:'html':'UTF-8'}</td>
+                    </tr>
+                    <tr>
+                        <th>{l s='Check-out Date:' mod='qloexternalrequests'}</th>
+                        <td>{$conversionResult.draft.check_out|escape:'html':'UTF-8'}</td>
+                    </tr>
+                    <tr>
+                        <th>{l s='Nights:' mod='qloexternalrequests'}</th>
+                        <td>{$conversionResult.draft.nights|intval} {l s='night(s)' mod='qloexternalrequests'}</td>
+                    </tr>
+                    <tr>
+                        <th>{l s='Requested Rooms:' mod='qloexternalrequests'}</th>
+                        <td>{$conversionResult.draft.rooms_requested|intval}</td>
+                    </tr>
+                    <tr>
+                        <th>{l s='Channel Reference:' mod='qloexternalrequests'}</th>
+                        <td><code>{$conversionResult.draft.channel_reference|escape:'html':'UTF-8'}</code></td>
+                    </tr>
+                    <tr>
+                        <th>{l s='Source Channel:' mod='qloexternalrequests'}</th>
+                        <td><span class="badge">{$conversionResult.draft.source_provider|escape:'html':'UTF-8'}</span></td>
+                    </tr>
+                </table>
+            </div>
+        {else}
+            <div class="alert alert-danger">
+                <h4><i class="icon-remove"></i> {l s='Conversion Failed:' mod='qloexternalrequests'}</h4>
+                {if isset($conversionResult.errors) && $conversionResult.errors}
+                    <ul>
+                        {foreach from=$conversionResult.errors item=err}
+                            <li><strong>{$err.field|escape:'html':'UTF-8'}:</strong> {$err.message|escape:'html':'UTF-8'} (<code>{$err.error_code|escape:'html':'UTF-8'}</code>)</li>
+                        {/foreach}
+                    </ul>
+                {/if}
+            </div>
+        {/if}
+    {/if}
 </div>
