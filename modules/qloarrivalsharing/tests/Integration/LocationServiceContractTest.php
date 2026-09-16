@@ -1,6 +1,6 @@
 <?php
 /**
- * Testes de Integração e Contrato cURL com o Serviço de Localização (RFC-004)
+ * Testes de Integração e Contrato cURL com o Serviço de Localização
  * Execução: php modules/qloarrivalsharing/tests/Integration/LocationServiceContractTest.php
  */
 
@@ -132,7 +132,6 @@ class LocationServiceContractTest
         self::assertEquals('NO_CHANGE', $resDistant['data']['transition'], "Transição deve ser 'NO_CHANGE'");
         self::assertTrue(!$resDistant['data']['alert_triggered'], "Alerta não deve ser acionado");
 
-        // 3. Cenário de Erro RFC 7807 (400 Bad Request)
         $payloadInvalid = array(
             'hotel_id'          => 'htl-recife-01',
             'hotel_lat'         => -8.052240,

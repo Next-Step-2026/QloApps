@@ -184,20 +184,13 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
                 'message'         => $msg,
             ));
         } else {
-            ArrivalBookingRepository::saveArrivalTracking(
-                $idOrder,
-                'outside',
-                0.0,
-                $previousState,
-                'NO_CHANGE'
-            );
+            $errorMessage = !empty($response['error'])
+                ? $response['error']
+                : $this->module->l('Serviço de cálculo de proximidade temporariamente indisponível.', 'arrivaltracking');
 
             echo json_encode(array(
-                'success'         => true,
-                'inside_geofence' => false,
-                'contingency'     => true,
-                'distance_meters' => null,
-                'message'         => $this->module->l('Sua aproximação foi comunicada ao hotel. Nossa equipe da recepção aguarda sua chegada!', 'arrivaltracking'),
+                'success' => false,
+                'message' => $errorMessage,
             ));
         }
 

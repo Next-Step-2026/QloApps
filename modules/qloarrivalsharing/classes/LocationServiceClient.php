@@ -39,7 +39,7 @@ class LocationServiceClient
     }
 
     /**
-     * Gera UUID v4 compatível com RFC 4122.
+     * Gera UUID v4.
      *
      * @return string
      */

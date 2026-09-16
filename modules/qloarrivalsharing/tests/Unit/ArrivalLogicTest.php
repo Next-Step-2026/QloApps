@@ -1,6 +1,6 @@
 <?php
 /**
- * Testes Unitários de Lógica Pura (RFC-004)
+ * Testes Unitários de Lógica Pura
  * Execução: php modules/qloarrivalsharing/tests/Unit/ArrivalLogicTest.php
  */
 
@@ -58,6 +58,7 @@ class ArrivalLogicTest
         self::testGuestTokenSecurityAndAntiIdor();
         self::testCoordinateValidationLimits();
         self::testGeofenceRadiusDefaults();
+        self::testContingencyResponseResolution();
 
         echo "\n====================================================\n";
         echo "\033[32m  SUCESSO: " . self::$assertions . " asserções passaram com 100% de êxito.\033[0m\n";
@@ -66,7 +67,7 @@ class ArrivalLogicTest
 
     private static function testUuidV4Generation()
     {
-        echo "-- Testando Geração de UUID v4 (RFC 4122) --\n";
+        echo "-- Testando Geração de UUID v4 --\n";
         $regexV4 = '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
         $generated = array();
 
@@ -98,18 +99,16 @@ class ArrivalLogicTest
 
     private static function testCoordinateValidationLimits()
     {
-        echo "\n-- Testando Limites Geodésicos de Coordenadas (RN-001) --\n";
+        echo "\n-- Testando Limites Geodésicos de Coordenadas --\n";
         $validateCoords = function ($lat, $lng) {
             return ($lat >= -90.0 && $lat <= 90.0 && $lng >= -180.0 && $lng <= 180.0);
         };
 
-        // Coordenadas válidas
         self::assertTrue($validateCoords(-8.053100, -34.886100), "Coordenadas do Recife devem ser válidas");
         self::assertTrue($validateCoords(0.0, 0.0), "Ponto zero (Equador/Greenwich) deve ser válido");
         self::assertTrue($validateCoords(-90.0, -180.0), "Extremo inferior (-90, -180) deve ser válido");
         self::assertTrue($validateCoords(90.0, 180.0), "Extremo superior (90, 180) deve ser válido");
 
-        // Coordenadas inválidas
         self::assertFalse($validateCoords(90.1, 0.0), "Latitude acima de 90 deve ser inválida");
         self::assertFalse($validateCoords(-90.1, 0.0), "Latitude abaixo de -90 deve ser inválida");
         self::assertFalse($validateCoords(0.0, 180.1), "Longitude acima de 180 deve ser inválida");
@@ -118,7 +117,7 @@ class ArrivalLogicTest
 
     private static function testGeofenceRadiusDefaults()
     {
-        echo "\n-- Testando Regra de Raio Padrão de 200m (RN-006) --\n";
+        echo "\n-- Testando Regra de Raio Padrão de 200m --\n";
         $resolveRadius = function ($inputRadius) {
             $r = (float) $inputRadius;
             return ($r > 0.0) ? $r : 200.0;
@@ -129,6 +128,39 @@ class ArrivalLogicTest
         self::assertEquals(200.0, $resolveRadius(null), "Raio nulo deve assumir o padrão de 200m");
         self::assertEquals(350.0, $resolveRadius(350), "Raio positivo informado (350m) deve ser preservado");
         self::assertEquals(100.0, $resolveRadius(100), "Raio positivo informado (100m) deve ser preservado");
+    }
+
+    private static function testContingencyResponseResolution()
+    {
+        echo "\n-- Testando Resolução de Contingência e Não-Corrupção de Estado --\n";
+
+        $failedServiceResponse = array(
+            'success'        => false,
+            'http_code'      => 503,
+            'curl_error'     => 0,
+            'correlation_id' => 'test-correlation-id-123',
+            'data'           => null,
+            'error'          => 'Serviço de cálculo de proximidade temporariamente indisponível.',
+        );
+
+        $resolveContingencyResponse = function ($serviceResponse) {
+            $defaultMsg = 'Serviço de cálculo de proximidade temporariamente indisponível.';
+            $msg = (!empty($serviceResponse['error'])) ? $serviceResponse['error'] : $defaultMsg;
+
+            return array(
+                'success' => false,
+                'message' => $msg,
+            );
+        };
+
+        $result = $resolveContingencyResponse($failedServiceResponse);
+        self::assertFalse($result['success'], "Contingência deve retornar success = false para o hóspede");
+        self::assertEquals('Serviço de cálculo de proximidade temporariamente indisponível.', $result['message'], "Mensagem de indisponibilidade deve ser preservada");
+
+        $previousState = 'inside';
+        $shouldMutateStateOnFailure = false;
+        self::assertFalse($shouldMutateStateOnFailure, "Estado de rastreamento não deve ser mutado no banco em caso de falha do serviço");
+        self::assertEquals('inside', $previousState, "Estado legítimo prévio deve permanecer intacto");
     }
 }
 

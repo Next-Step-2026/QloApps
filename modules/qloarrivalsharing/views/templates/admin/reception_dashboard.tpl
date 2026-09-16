@@ -50,7 +50,6 @@
     </div>
 </div>
 
-<!-- Painel de Simulação de Envio de Coordenadas (Demonstração Rápida - RFC-004 Dia 9) -->
 <div class="panel" id="panelSimulationCoordinates">
     <div class="panel-heading">
         <i class="icon-location-arrow text-primary"></i> 
