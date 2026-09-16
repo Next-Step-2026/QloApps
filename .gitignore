@@ -355,7 +355,22 @@ RFC-006-conversor-solicitacao-reserva.md
 **/.gradle/
 **/build/
 
+# Environment & Credentials
+.env
+.env.*
+!.env.example
+
+# Playwright & E2E Test Artifacts
+node_modules/
+**/node_modules/
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/
+
 # Composer & Static Analysis
 /vendor/
 .php-cs-fixer.cache
 /.htaccess
+
+
