@@ -59,6 +59,7 @@ class ArrivalLogicTest
         self::testCoordinateValidationLimits();
         self::testGeofenceRadiusDefaults();
         self::testContingencyResponseResolution();
+        self::testHotelCoordinatesZeroEvaluation();
 
         echo "\n====================================================\n";
         echo "\033[32m  SUCESSO: " . self::$assertions . " asserções passaram com 100% de êxito.\033[0m\n";
@@ -170,6 +171,39 @@ class ArrivalLogicTest
         $shouldMutateStateOnFailure = false;
         self::assertFalse($shouldMutateStateOnFailure, "Estado de rastreamento não deve ser mutado no banco em caso de falha do serviço");
         self::assertEquals('inside', $previousState, "Estado legítimo prévio deve permanecer intacto");
+    }
+
+    private static function testHotelCoordinatesZeroEvaluation()
+    {
+        echo "\n-- Testando Resolução de Coordenadas do Hotel e Zero Válido --\n";
+
+        $defaultCoords = array('latitude' => -8.052240, 'longitude' => -34.885650);
+
+        $resolveCoords = function ($row) use ($defaultCoords) {
+            if ($row && isset($row['latitude'], $row['longitude']) && ArrivalBookingRepository::validateCoordinates($row['latitude'], $row['longitude'])) {
+                return array(
+                    'latitude'  => (float) $row['latitude'],
+                    'longitude' => (float) $row['longitude'],
+                );
+            }
+            return $defaultCoords;
+        };
+
+        $zeroHotel = $resolveCoords(array('latitude' => 0.0, 'longitude' => 0.0));
+        self::assertEquals(0.0, $zeroHotel['latitude'], "Latitude 0.0 legítima não deve sofrer fallback");
+        self::assertEquals(0.0, $zeroHotel['longitude'], "Longitude 0.0 legítima não deve sofrer fallback");
+
+        $validHotel = $resolveCoords(array('latitude' => -8.052240, 'longitude' => -34.885650));
+        self::assertEquals(-8.052240, $validHotel['latitude'], "Coordenadas reais devem ser preservadas");
+
+        $nullHotel = $resolveCoords(array('latitude' => null, 'longitude' => null));
+        self::assertEquals(-8.052240, $nullHotel['latitude'], "Latitude nula deve acionar fallback padrao");
+
+        $emptyHotel = $resolveCoords(array('latitude' => '', 'longitude' => ''));
+        self::assertEquals(-8.052240, $emptyHotel['latitude'], "Latitude vazia deve acionar fallback padrao");
+
+        $noRow = $resolveCoords(false);
+        self::assertEquals(-8.052240, $noRow['latitude'], "Sem registro deve acionar fallback padrao");
     }
 }
 

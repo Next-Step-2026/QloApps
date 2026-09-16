@@ -99,7 +99,7 @@ class ArrivalBookingRepository
         $sql->where('`id` = ' . (int) $idHotel);
 
         $row = Db::getInstance(_PS_USE_SQL_SLAVE_)->getRow($sql);
-        if ($row && !empty((float) $row['latitude']) && !empty((float) $row['longitude'])) {
+        if ($row && isset($row['latitude'], $row['longitude']) && self::validateCoordinates($row['latitude'], $row['longitude'])) {
             return array(
                 'latitude'  => (float) $row['latitude'],
                 'longitude' => (float) $row['longitude'],
