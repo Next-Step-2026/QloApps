@@ -19,10 +19,20 @@ composer.lock
 # Search service C++ artifacts and vendor dependencies
 search-service-cpp/include/json.hpp
 search-service-cpp/include/httplib.h
+search-service-cpp/vendor/
 search-service-cpp/search_service
 search-service-cpp/test_search
+search-service-cpp/test_properties
+search-service-cpp/test_cov
 search-service-cpp/*.o
 search-service-cpp/src/*.o
+search-service-cpp/*.gcda
+search-service-cpp/*.gcno
+search-service-cpp/callgrind.out
+search-service-cpp/**/__pycache__/
+search-service-cpp/**/.pytest_cache/
+search-service-cpp/.schemathesis/
+.schemathesis/
 
 # Cache and temp files
 /cache/**
