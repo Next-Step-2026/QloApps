@@ -1,6 +1,8 @@
 plugins {
     kotlin("jvm") version "1.9.24"
     kotlin("plugin.serialization") version "1.9.22"
+    id("org.jetbrains.kotlinx.kover") version "0.8.3"
+    id("info.solidsoft.pitest") version "1.15.0"
     application
 }
 
@@ -30,6 +32,8 @@ dependencies {
     // Testes
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktorVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("io.kotest:kotest-property-jvm:5.9.1")
+    testImplementation("com.code-intelligence:jazzer-junit:0.22.1")
 }
 
 application {
@@ -39,3 +43,31 @@ application {
 tasks.test {
     useJUnitPlatform()
 }
+
+kover {
+    reports {
+        total {
+            xml {
+                onCheck = true
+            }
+            html {
+                onCheck = true
+            }
+            verify {
+                rule {
+                    minBound(85)
+                }
+            }
+        }
+    }
+}
+
+configure<info.solidsoft.gradle.pitest.PitestPluginExtension> {
+    junit5PluginVersion.set("1.2.1")
+    targetClasses.set(listOf("com.hotel.contacthealth.domain.*"))
+    targetTests.set(listOf("com.hotel.contacthealth.*Test"))
+    threads.set(4)
+    outputFormats.set(listOf("XML", "HTML"))
+    timestampedReports.set(false)
+}
+
