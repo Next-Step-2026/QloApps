@@ -30,17 +30,22 @@
         <!-- Campos: Estadia Mínima -->
         <div id="fields_min_stay" class="policy-field-group">
             <div class="form-group">
-                <label class="control-label col-lg-3">{l s='Noites Solicitadas / Mínimo:' mod='qloreservationpolicy'}</label>
-                <div class="col-lg-2">
-                    <input type="number" name="requested_nights" value="{$currentValues.requested_nights|escape:'html':'UTF-8'}" min="1" class="form-control" placeholder="{l s='Solicitadas' mod='qloreservationpolicy'}" />
-                </div>
-                <div class="col-lg-2">
-                    <input type="number" name="required_minimum_nights" value="{$currentValues.required_minimum_nights|escape:'html':'UTF-8'}" min="1" class="form-control" placeholder="{l s='Mínimo Exigido' mod='qloreservationpolicy'}" />
+                <div class="col-lg-offset-3 col-lg-5">
+                    <div class="row">
+                        <div class="col-xs-6">
+                            <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">{l s='Noites Solicitadas:' mod='qloreservationpolicy'}</label>
+                            <input type="number" name="requested_nights" value="{$currentValues.requested_nights|escape:'html':'UTF-8'}" min="1" class="form-control" placeholder="{l s='Solicitadas' mod='qloreservationpolicy'}" />
+                        </div>
+                        <div class="col-xs-6">
+                            <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">{l s='Mínimo Exigido:' mod='qloreservationpolicy'}</label>
+                            <input type="number" name="required_minimum_nights" value="{$currentValues.required_minimum_nights|escape:'html':'UTF-8'}" min="1" class="form-control" placeholder="{l s='Mínimo Exigido' mod='qloreservationpolicy'}" />
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="form-group">
                 <label class="control-label col-lg-3">{l s='Tipo de Quarto:' mod='qloreservationpolicy'}</label>
-                <div class="col-lg-3">
+                <div class="col-lg-5">
                     <input type="text" name="room_type" value="{$currentValues.room_type|escape:'html':'UTF-8'}" class="form-control" placeholder="{l s='ex: standard, deluxe' mod='qloreservationpolicy'}" />
                 </div>
             </div>
@@ -49,12 +54,17 @@
         <!-- Campos: Antecedência Mínima -->
         <div id="fields_advance_booking" class="policy-field-group" style="display:none;">
             <div class="form-group">
-                <label class="control-label col-lg-3">{l s='Dias de Antecedência:' mod='qloreservationpolicy'}</label>
-                <div class="col-lg-2">
-                    <input type="number" name="days_in_advance" value="{$currentValues.days_in_advance|escape:'html':'UTF-8'}" min="0" class="form-control" placeholder="{l s='Dias de Antecedência' mod='qloreservationpolicy'}" />
-                </div>
-                <div class="col-lg-2">
-                    <input type="number" name="min_advance_days" value="{$currentValues.min_advance_days|escape:'html':'UTF-8'}" min="0" class="form-control" placeholder="{l s='Mínimo Exigido' mod='qloreservationpolicy'}" />
+                <div class="col-lg-offset-3 col-lg-5">
+                    <div class="row">
+                        <div class="col-xs-6">
+                            <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">{l s='Dias de Antecedência:' mod='qloreservationpolicy'}</label>
+                            <input type="number" name="days_in_advance" value="{$currentValues.days_in_advance|escape:'html':'UTF-8'}" min="0" class="form-control" placeholder="{l s='Dias de Antecedência' mod='qloreservationpolicy'}" />
+                        </div>
+                        <div class="col-xs-6">
+                            <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">{l s='Mínimo Exigido:' mod='qloreservationpolicy'}</label>
+                            <input type="number" name="min_advance_days" value="{$currentValues.min_advance_days|escape:'html':'UTF-8'}" min="0" class="form-control" placeholder="{l s='Mínimo Exigido' mod='qloreservationpolicy'}" />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -62,21 +72,31 @@
         <!-- Campos: Limite de Overbooking -->
         <div id="fields_overbooking" class="policy-field-group" style="display:none;">
             <div class="form-group">
-                <label class="control-label col-lg-3">{l s='Capacidade / Ocupação Atual:' mod='qloreservationpolicy'}</label>
-                <div class="col-lg-2">
-                    <input type="number" name="total_capacity" value="{$currentValues.total_capacity|escape:'html':'UTF-8'}" min="1" class="form-control" placeholder="{l s='Capacidade Total' mod='qloreservationpolicy'}" />
-                </div>
-                <div class="col-lg-2">
-                    <input type="number" name="current_occupied" value="{$currentValues.current_occupied|escape:'html':'UTF-8'}" min="0" class="form-control" placeholder="{l s='Ocupação Atual' mod='qloreservationpolicy'}" />
+                <div class="col-lg-offset-3 col-lg-5">
+                    <div class="row">
+                        <div class="col-xs-6">
+                            <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">{l s='Capacidade Total:' mod='qloreservationpolicy'}</label>
+                            <input type="number" name="total_capacity" value="{$currentValues.total_capacity|escape:'html':'UTF-8'}" min="1" class="form-control" placeholder="{l s='Capacidade Total' mod='qloreservationpolicy'}" />
+                        </div>
+                        <div class="col-xs-6">
+                            <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">{l s='Ocupação Atual:' mod='qloreservationpolicy'}</label>
+                            <input type="number" name="current_occupied" value="{$currentValues.current_occupied|escape:'html':'UTF-8'}" min="0" class="form-control" placeholder="{l s='Ocupação Atual' mod='qloreservationpolicy'}" />
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="form-group">
-                <label class="control-label col-lg-3">{l s='Quartos Solicitados / Taxa Máx Overbooking:' mod='qloreservationpolicy'}</label>
-                <div class="col-lg-2">
-                    <input type="number" name="requested_units" value="{$currentValues.requested_units|escape:'html':'UTF-8'}" min="1" class="form-control" placeholder="{l s='Solicitados' mod='qloreservationpolicy'}" />
-                </div>
-                <div class="col-lg-2">
-                    <input type="number" step="0.01" name="max_overbooking_rate" value="{$currentValues.max_overbooking_rate|escape:'html':'UTF-8'}" min="0" max="1" class="form-control" placeholder="{l s='ex: 0.05 (5%)' mod='qloreservationpolicy'}" />
+                <div class="col-lg-offset-3 col-lg-5">
+                    <div class="row">
+                        <div class="col-xs-6">
+                            <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">{l s='Quartos Solicitados:' mod='qloreservationpolicy'}</label>
+                            <input type="number" name="requested_units" value="{$currentValues.requested_units|escape:'html':'UTF-8'}" min="1" class="form-control" placeholder="{l s='Solicitados' mod='qloreservationpolicy'}" />
+                        </div>
+                        <div class="col-xs-6">
+                            <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">{l s='Taxa Máx. de Overbooking:' mod='qloreservationpolicy'}</label>
+                            <input type="number" step="0.01" name="max_overbooking_rate" value="{$currentValues.max_overbooking_rate|escape:'html':'UTF-8'}" min="0" max="1" class="form-control" placeholder="{l s='ex: 0.05 (5%)' mod='qloreservationpolicy'}" />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
