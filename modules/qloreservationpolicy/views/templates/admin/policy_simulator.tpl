@@ -79,7 +79,12 @@
                             <input type="number" name="total_capacity" value="{$currentValues.total_capacity|escape:'html':'UTF-8'}" min="1" class="form-control" placeholder="{l s='Total Capacity' mod='qloreservationpolicy'}" />
                         </div>
                         <div class="col-xs-6">
-                            <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">{l s='Current Occupancy:' mod='qloreservationpolicy'}</label>
+                            <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">
+                                {l s='Current Occupancy:' mod='qloreservationpolicy'}
+                                <span class="label-tooltip" data-toggle="tooltip" data-placement="top" data-html="true" data-original-title="{l s='Total confirmed room bookings, not physical guests. It may exceed physical capacity if the hotel is already operating in overbooking.' mod='qloreservationpolicy'}" style="cursor: pointer; color: #5bc0de; margin-left: 4px;">
+                                    <i class="icon-question-sign"></i>
+                                </span>
+                            </label>
                             <input type="number" name="current_occupied" value="{$currentValues.current_occupied|escape:'html':'UTF-8'}" min="0" class="form-control" placeholder="{l s='Current Occupancy' mod='qloreservationpolicy'}" />
                         </div>
                     </div>
@@ -158,6 +163,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var select = document.getElementById('policy_type_select');
     if (select) {
         togglePolicyFields(select.value);
+    }
+    if (typeof $ !== 'undefined' && typeof $.fn.tooltip === 'function') {
+        $('[data-toggle="tooltip"]').tooltip();
     }
 });
 </script>
