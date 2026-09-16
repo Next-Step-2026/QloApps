@@ -1,20 +1,23 @@
 <?php
 /**
- * AdminReservationPolicyController
- *
- * @author    QloApps Engineering
- * @copyright QloApps
- * @license   AFL-3.0
+ * @file AdminReservationPolicyController.php
+ * @brief Controlador administrativo do simulador do Motor de Políticas de Reserva.
  */
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+/**
+ * @class AdminReservationPolicyController
+ * @brief Controlador de Back-Office para simulação e teste de políticas de reserva.
+ * @details Estende ModuleAdminController. Atua como cliente HTTP resiliente (com timeout
+ *          de 600ms e tratamento de erros RFC 7807) para o serviço Python auxiliar local na porta 8105.
+ */
 class AdminReservationPolicyController extends ModuleAdminController
 {
     /**
-     * Constructor
+     * @brief Construtor do controlador administrativo.
      */
     public function __construct()
     {
@@ -24,7 +27,13 @@ class AdminReservationPolicyController extends ModuleAdminController
     }
 
     /**
-     * Initializes controller content and handles policy evaluation simulation
+     * @brief Inicializa o conteúdo da página e processa a simulação de avaliação de políticas.
+     * @details Captura os parâmetros do formulário administrativo, despacha requisição síncrona
+     *          via cURL com correlation ID para o serviço Python e encaminha o resultado
+     *          ou mensagem de contingência para o template Smarty.
+     * @return void
+     * @warning Se o serviço Python na porta 8105 estiver inativo, uma mensagem de contingência é
+     *          exibida sem interromper a execução do Back-Office.
      */
     public function initContent()
     {

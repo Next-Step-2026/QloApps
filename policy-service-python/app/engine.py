@@ -1,5 +1,7 @@
 """
-Deterministic Policy Evaluation Engine
+@file engine.py
+@brief Motor Determinístico de Avaliação de Regras de Reserva.
+@details Implementa políticas de reserva sem efeitos colaterais ou dependências externas.
 """
 
 from typing import Any
@@ -17,7 +19,11 @@ def evaluate_minimum_stay(
     facts: dict[str, Any] | MinimumStayFacts,
 ) -> tuple[PolicyDecision, str, str]:
     """
-    Avalia a política MINIMUM_STAY
+    @brief Avalia o cumprimento da regra de estadia mínima (MINIMUM_STAY).
+    @param facts Dicionário com dados brutos ou instância de MinimumStayFacts.
+    @return tuple[PolicyDecision, str, str] Decisão (ALLOW/DENY), reason_code e justificativa.
+    @throws ValidationError Se os dados informados violarem os limites do schema.
+    @note Thread-safe: Função pura, sem dependência ou alteração de estado global.
     """
     data = facts if isinstance(facts, MinimumStayFacts) else MinimumStayFacts(**facts)
 
@@ -47,7 +53,10 @@ def evaluate_advance_booking(
     facts: dict[str, Any] | AdvanceBookingFacts,
 ) -> tuple[PolicyDecision, str, str]:
     """
-    Avalia a política ADVANCE_BOOKING
+    @brief Avalia o cumprimento da antecedência mínima de compra (ADVANCE_BOOKING).
+    @param facts Dicionário com dados brutos ou instância de AdvanceBookingFacts.
+    @return tuple[PolicyDecision, str, str] Decisão (ALLOW/DENY), reason_code e justificativa.
+    @throws ValidationError se os dias informados forem negativos.
     """
     data = facts if isinstance(facts, AdvanceBookingFacts) else AdvanceBookingFacts(**facts)
 
@@ -74,7 +83,11 @@ def evaluate_overbooking_limit(
     facts: dict[str, Any] | OverbookingLimitFacts,
 ) -> tuple[PolicyDecision, str, str]:
     """
-    Avalia a política OVERBOOKING_LIMIT
+    @brief Avalia a conformidade com o limite máximo de overbooking (OVERBOOKING_LIMIT).
+    @param facts Dicionário com dados brutos ou instância de OverbookingLimitFacts.
+    @return tuple[PolicyDecision, str, str] Decisão (ALLOW/DENY), reason_code e justificativa.
+    @throws ValidationError Se total_capacity <= 0 ou taxas forem negativas.
+    @warning A capacidade autorizada é truncada para baixo (int), evitando frações de quartos.
     """
     data = facts if isinstance(facts, OverbookingLimitFacts) else OverbookingLimitFacts(**facts)
 
@@ -110,7 +123,11 @@ def evaluate_overbooking_limit(
 
 def evaluate_policy(policy: PolicyType, facts: dict[str, Any]) -> tuple[PolicyDecision, str, str]:
     """
-    Roteador determinístico de avaliação de políticas
+    @brief Roteador determinístico que despacha a avaliação para a estratégia correspondente.
+    @param policy Tipo enumerado da política a ser executada.
+    @param facts Dicionário de fatos contextuais a serem validados.
+    @return tuple[PolicyDecision, str, str] Decisão, reason_code e justificativa.
+    @throws ValueError Se uma política desconhecida for fornecida.
     """
     if policy == PolicyType.MINIMUM_STAY:
         return evaluate_minimum_stay(facts)
