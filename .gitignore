@@ -15,6 +15,10 @@ config.codekit
 nbproject
 bower_components
 composer.lock
+.env
+.env.*
+!.env.example
+tests/e2e/.auth/
 
 # Search service C++ artifacts and vendor dependencies
 search-service-cpp/include/json.hpp
