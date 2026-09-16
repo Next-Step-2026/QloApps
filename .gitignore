@@ -149,6 +149,13 @@ img/**
 /admin/themes/*/cache/*
 !/admin/themes/*/cache/index.php
 
+# Dynamic Admin folders
+/admin*
+!/admin/
+!/admin-dev/
+!/admin-dev/**
+/admin[0-9]*
+
 # Config
 
 /config/settings.inc.php
@@ -265,3 +272,21 @@ admin/themes/default/css/screen.css
 
 **sitemap.xml
 robots.txt
+
+# Python & Tooling
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.hypothesis/
+.ruff_cache/
+policy-service-python/venv/
+.venv/
+
+# Coverage
+.coverage
+*.coverage
+coverage.xml
+htmlcov/
+.schemathesis/
+mutants/
