@@ -236,6 +236,66 @@ class ArrivalBookingRepository
     }
 
     /**
+     * Normaliza a transição para evitar disparos duplicados sob concorrência.
+     *
+     * @param string $existingState
+     * @param string $incomingState
+     * @param string $incomingTransition
+     * @return string
+     */
+    public static function resolveSafeTransition($existingState, $incomingState, $incomingTransition)
+    {
+        if ($existingState === 'inside' && $incomingState === 'inside' && $incomingTransition === 'ENTERED') {
+            return 'NO_CHANGE';
+        }
+        if ($existingState === 'outside' && $incomingState === 'outside' && $incomingTransition === 'EXITED') {
+            return 'NO_CHANGE';
+        }
+
+        return in_array($incomingTransition, array('ENTERED', 'EXITED', 'NO_CHANGE')) ? $incomingTransition : 'NO_CHANGE';
+    }
+
+    /**
+     * Adquire lock exclusivo para processamento concorrente da reserva.
+     *
+     * @param int $idOrder
+     * @param int $timeout
+     * @return bool
+     */
+    public static function acquireOrderLock($idOrder, $timeout = 3)
+    {
+        $idOrder = (int) $idOrder;
+        if ($idOrder <= 0) {
+            return false;
+        }
+
+        $timeout = max(0, (int) $timeout);
+        $lockName = 'qlo_arrival_order_' . $idOrder;
+        $sql = 'SELECT GET_LOCK(\'' . pSQL($lockName) . '\', ' . $timeout . ')';
+
+        return (int) Db::getInstance()->getValue($sql, false) === 1;
+    }
+
+    /**
+     * Libera o lock exclusivo da reserva.
+     *
+     * @param int $idOrder
+     * @return bool
+     */
+    public static function releaseOrderLock($idOrder)
+    {
+        $idOrder = (int) $idOrder;
+        if ($idOrder <= 0) {
+            return false;
+        }
+
+        $lockName = 'qlo_arrival_order_' . $idOrder;
+        $sql = 'SELECT RELEASE_LOCK(\'' . pSQL($lockName) . '\')';
+
+        return (int) Db::getInstance()->getValue($sql, false) === 1;
+    }
+
+    /**
      * Salva ou atualiza o estado de aproximação de uma reserva no banco.
      *
      * @return bool
@@ -254,9 +314,15 @@ class ArrivalBookingRepository
         $transition = in_array($transition, array('ENTERED', 'EXITED', 'NO_CHANGE')) ? $transition : 'NO_CHANGE';
         $distance = (float) $distance;
 
-        $sql = 'REPLACE INTO `' . _DB_PREFIX_ . 'qlo_arrival_tracking`
+        $sql = 'INSERT INTO `' . _DB_PREFIX_ . 'qlo_arrival_tracking`
                 (`id_order`, `previous_state`, `current_state`, `transition`, `distance_meters`, `date_upd`)
-                VALUES (' . $idOrder . ', \'' . pSQL($previousState) . '\', \'' . pSQL($currentState) . '\', \'' . pSQL($transition) . '\', ' . $distance . ', NOW())';
+                VALUES (' . $idOrder . ', \'' . pSQL($previousState) . '\', \'' . pSQL($currentState) . '\', \'' . pSQL($transition) . '\', ' . $distance . ', NOW())
+                ON DUPLICATE KEY UPDATE
+                    `previous_state` = IF(`current_state` = \'inside\' AND VALUES(`current_state`) = \'inside\', \'inside\', VALUES(`previous_state`)),
+                    `transition` = IF(`current_state` = \'inside\' AND VALUES(`current_state`) = \'inside\', \'NO_CHANGE\', VALUES(`transition`)),
+                    `current_state` = VALUES(`current_state`),
+                    `distance_meters` = VALUES(`distance_meters`),
+                    `date_upd` = NOW()';
 
         return Db::getInstance()->execute($sql);
     }

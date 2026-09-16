@@ -131,72 +131,87 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
         $guestLat = (float) $rawLat;
         $guestLng = (float) $rawLng;
 
-        $hotelCoords = ArrivalBookingRepository::getHotelCoordinates($booking['id_hotel']);
-        $geofenceRadius = (float) Configuration::get('QLO_ARRIVAL_GEOFENCE_RADIUS');
-        if ($geofenceRadius <= 0) {
-            $geofenceRadius = 200.0;
-        }
-
-        $tracking = ArrivalBookingRepository::getArrivalTrackingState($idOrder);
-        $previousState = (!empty($tracking) && !empty($tracking['current_state'])) ? $tracking['current_state'] : 'outside';
-
-        $payload = array(
-            'hotel_id'          => 'htl-' . (int) $booking['id_hotel'],
-            'hotel_lat'         => (float) $hotelCoords['latitude'],
-            'hotel_lng'         => (float) $hotelCoords['longitude'],
-            'guest_lat'         => $guestLat,
-            'guest_lng'         => $guestLng,
-            'geofence_radius_m' => $geofenceRadius,
-            'previous_state'    => $previousState,
-        );
-
-        $response = $this->locationClient->sendLocationEvent($payload);
-
-        if ($response['success']) {
-            $data = $response['data'];
-            $isInside = ($data['current_state'] === 'inside');
-            $distance = round($data['distance_meters'], 1);
-
-            ArrivalBookingRepository::saveArrivalTracking(
-                $idOrder,
-                $data['current_state'],
-                $data['distance_meters'],
-                $previousState,
-                isset($data['transition']) ? $data['transition'] : 'NO_CHANGE'
-            );
-
-            if ($isInside) {
-                $msg = sprintf(
-                    $this->module->l('Você chegou às imediações do hotel (aproximadamente %s metros)! Nossa equipe da recepção foi notificada para recebê-lo.', 'arrivaltracking'),
-                    $distance
-                );
-            } else {
-                $msg = sprintf(
-                    $this->module->l('Sua posição foi recebida! Você está a cerca de %s metros do hotel. Quando estiver mais próximo (%s m), você pode avisar novamente.', 'arrivaltracking'),
-                    $distance,
-                    (int) $geofenceRadius
-                );
-            }
-
-            echo json_encode(array(
-                'success'         => true,
-                'inside_geofence' => $isInside,
-                'transition'      => $data['transition'],
-                'distance_meters' => $distance,
-                'alert_triggered' => !empty($data['alert_triggered']),
-                'message'         => $msg,
-            ));
-        } else {
-            $errorMessage = !empty($response['error'])
-                ? $response['error']
-                : $this->module->l('Serviço de cálculo de proximidade temporariamente indisponível.', 'arrivaltracking');
-
+        if (!ArrivalBookingRepository::acquireOrderLock($idOrder, 3)) {
             echo json_encode(array(
                 'success' => false,
-                'message' => $errorMessage,
+                'message' => $this->module->l('Já existe uma leitura de localização em processamento para esta reserva. Tente novamente em instantes.', 'arrivaltracking'),
             ));
+            exit;
         }
 
+        try {
+            $hotelCoords = ArrivalBookingRepository::getHotelCoordinates($booking['id_hotel']);
+            $geofenceRadius = (float) Configuration::get('QLO_ARRIVAL_GEOFENCE_RADIUS');
+            if ($geofenceRadius <= 0) {
+                $geofenceRadius = 200.0;
+            }
+
+            $tracking = ArrivalBookingRepository::getArrivalTrackingState($idOrder);
+            $previousState = (!empty($tracking) && !empty($tracking['current_state'])) ? $tracking['current_state'] : 'outside';
+
+            $payload = array(
+                'hotel_id'          => 'htl-' . (int) $booking['id_hotel'],
+                'hotel_lat'         => (float) $hotelCoords['latitude'],
+                'hotel_lng'         => (float) $hotelCoords['longitude'],
+                'guest_lat'         => $guestLat,
+                'guest_lng'         => $guestLng,
+                'geofence_radius_m' => $geofenceRadius,
+                'previous_state'    => $previousState,
+            );
+
+            $response = $this->locationClient->sendLocationEvent($payload);
+
+            if ($response['success']) {
+                $data = $response['data'];
+                $isInside = ($data['current_state'] === 'inside');
+                $distance = round($data['distance_meters'], 1);
+                $rawTransition = isset($data['transition']) ? $data['transition'] : 'NO_CHANGE';
+                $safeTransition = ArrivalBookingRepository::resolveSafeTransition($previousState, $data['current_state'], $rawTransition);
+
+                ArrivalBookingRepository::saveArrivalTracking(
+                    $idOrder,
+                    $data['current_state'],
+                    $data['distance_meters'],
+                    $previousState,
+                    $safeTransition
+                );
+
+                if ($isInside) {
+                    $msg = sprintf(
+                        $this->module->l('Você chegou às imediações do hotel (aproximadamente %s metros)! Nossa equipe da recepção foi notificada para recebê-lo.', 'arrivaltracking'),
+                        $distance
+                    );
+                } else {
+                    $msg = sprintf(
+                        $this->module->l('Sua posição foi recebida! Você está a cerca de %s metros do hotel. Quando estiver mais próximo (%s m), você pode avisar novamente.', 'arrivaltracking'),
+                        $distance,
+                        (int) $geofenceRadius
+                    );
+                }
+
+                $output = array(
+                    'success'         => true,
+                    'inside_geofence' => $isInside,
+                    'transition'      => $safeTransition,
+                    'distance_meters' => $distance,
+                    'alert_triggered' => ($safeTransition === 'ENTERED'),
+                    'message'         => $msg,
+                );
+            } else {
+                $errorMessage = !empty($response['error'])
+                    ? $response['error']
+                    : $this->module->l('Serviço de cálculo de proximidade temporariamente indisponível.', 'arrivaltracking');
+
+                $output = array(
+                    'success' => false,
+                    'message' => $errorMessage,
+                );
+            }
+        } finally {
+            ArrivalBookingRepository::releaseOrderLock($idOrder);
+        }
+
+        echo json_encode($output);
         exit;
     }
 }

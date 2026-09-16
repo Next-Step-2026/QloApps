@@ -10,6 +10,19 @@ if (!defined('_PS_VERSION_')) {
 if (!defined('_COOKIE_KEY_')) {
     define('_COOKIE_KEY_', 'test_secret_cookie_key_for_unit_testing_12345');
 }
+if (!defined('_DB_PREFIX_')) {
+    define('_DB_PREFIX_', 'qlo_');
+}
+if (!defined('_PS_USE_SQL_SLAVE_')) {
+    define('_PS_USE_SQL_SLAVE_', false);
+}
+
+if (!function_exists('pSQL')) {
+    function pSQL($string, $htmlOK = false)
+    {
+        return addslashes($string);
+    }
+}
 
 if (!class_exists('Configuration')) {
     class Configuration
@@ -17,6 +30,50 @@ if (!class_exists('Configuration')) {
         public static function get($key)
         {
             return null;
+        }
+    }
+}
+
+if (!class_exists('Db')) {
+    class Db
+    {
+        public static $mockInstance = null;
+
+        public static function getInstance($use_slave = false)
+        {
+            if (self::$mockInstance === null) {
+                self::$mockInstance = new self();
+            }
+            return self::$mockInstance;
+        }
+
+        public $lastQuery = null;
+        public $mockValue = 1;
+        public $mockExecuteResult = true;
+
+        public function getValue($sql, $use_cache = true)
+        {
+            $this->lastQuery = $sql;
+            return $this->mockValue;
+        }
+
+        public function execute($sql)
+        {
+            $this->lastQuery = $sql;
+            return $this->mockExecuteResult;
+        }
+
+        public function executeS($sql)
+        {
+            $this->lastQuery = $sql;
+            return array(
+                array('Field' => 'id_order'),
+                array('Field' => 'previous_state'),
+                array('Field' => 'current_state'),
+                array('Field' => 'transition'),
+                array('Field' => 'distance_meters'),
+                array('Field' => 'date_upd'),
+            );
         }
     }
 }
@@ -60,6 +117,8 @@ class ArrivalLogicTest
         self::testGeofenceRadiusDefaults();
         self::testContingencyResponseResolution();
         self::testHotelCoordinatesZeroEvaluation();
+        self::testTransitionResolutionAndConcurrencyDeduplication();
+        self::testOrderLockAndSafeUpsertMechanics();
 
         echo "\n====================================================\n";
         echo "\033[32m  SUCESSO: " . self::$assertions . " asserções passaram com 100% de êxito.\033[0m\n";
@@ -204,6 +263,95 @@ class ArrivalLogicTest
 
         $noRow = $resolveCoords(false);
         self::assertEquals(-8.052240, $noRow['latitude'], "Sem registro deve acionar fallback padrao");
+    }
+
+    private static function testTransitionResolutionAndConcurrencyDeduplication()
+    {
+        echo "\n-- Testando Normalização de Transição e Idempotência de Concorrência --\n";
+
+        // Caso crítico: Requisição concorrente quando o hóspede já estava dentro
+        $res = ArrivalBookingRepository::resolveSafeTransition('inside', 'inside', 'ENTERED');
+        self::assertEquals('NO_CHANGE', $res, 'Transição ENTERED duplicada com estado já inside deve ser convertida para NO_CHANGE');
+
+        // Caso de borda: Requisição duplicada quando o hóspede já estava fora
+        $res = ArrivalBookingRepository::resolveSafeTransition('outside', 'outside', 'EXITED');
+        self::assertEquals('NO_CHANGE', $res, 'Transição EXITED duplicada com estado já outside deve ser convertida para NO_CHANGE');
+
+        // Transição legítima de entrada
+        $res = ArrivalBookingRepository::resolveSafeTransition('outside', 'inside', 'ENTERED');
+        self::assertEquals('ENTERED', $res, 'Transição legítima de outside para inside deve ser preservada como ENTERED');
+
+        // Transição legítima de saída
+        $res = ArrivalBookingRepository::resolveSafeTransition('inside', 'outside', 'EXITED');
+        self::assertEquals('EXITED', $res, 'Transição legítima de inside para outside deve ser preservada como EXITED');
+
+        // Movimento sem mudança de estado
+        $res = ArrivalBookingRepository::resolveSafeTransition('inside', 'inside', 'NO_CHANGE');
+        self::assertEquals('NO_CHANGE', $res, 'Movimento contínuo dentro do geofence deve manter NO_CHANGE');
+
+        $res = ArrivalBookingRepository::resolveSafeTransition('outside', 'outside', 'NO_CHANGE');
+        self::assertEquals('NO_CHANGE', $res, 'Movimento contínuo fora do geofence deve manter NO_CHANGE');
+
+        // Casos atípicos: valores nulos, inválidos ou corrompidos
+        $res = ArrivalBookingRepository::resolveSafeTransition('inside', 'inside', 'CORRUPTED');
+        self::assertEquals('NO_CHANGE', $res, 'Valor de transição desconhecido deve sofrer fallback seguro para NO_CHANGE');
+
+        $res = ArrivalBookingRepository::resolveSafeTransition('outside', 'inside', null);
+        self::assertEquals('NO_CHANGE', $res, 'Transição nula deve sofrer fallback seguro para NO_CHANGE');
+
+        // Garantia de disparo de alerta apenas em ENTERED legítimo
+        $triggerAlert = function ($transition) {
+            return ($transition === 'ENTERED');
+        };
+
+        self::assertTrue($triggerAlert('ENTERED'), 'Alerta deve ser disparado em transição legítima ENTERED');
+        self::assertFalse($triggerAlert('NO_CHANGE'), 'Alerta NÃO deve ser disparado em NO_CHANGE');
+        self::assertFalse($triggerAlert('EXITED'), 'Alerta NÃO deve ser disparado em EXITED');
+        self::assertFalse($triggerAlert(ArrivalBookingRepository::resolveSafeTransition('inside', 'inside', 'ENTERED')), 'Alerta NÃO deve ser disparado em transição duplicada');
+    }
+
+    private static function testOrderLockAndSafeUpsertMechanics()
+    {
+        echo "\n-- Testando Mecânica de Lock Concorrente e Upsert Seguro --\n";
+
+        $db = Db::getInstance();
+
+        // 1. Lock com sucesso
+        $db->mockValue = 1;
+        $locked = ArrivalBookingRepository::acquireOrderLock(1234, 3);
+        self::assertTrue($locked, 'Lock com sucesso deve retornar true');
+        self::assertTrue(strpos($db->lastQuery, "GET_LOCK('qlo_arrival_order_1234', 3)") !== false, 'Query deve conter GET_LOCK com chave e timeout corretos');
+
+        // 2. Lock com falha (rejeição de concorrência ou timeout atingido)
+        $db->mockValue = 0;
+        $busyLock = ArrivalBookingRepository::acquireOrderLock(1234, 0);
+        self::assertFalse($busyLock, 'Tentativa de lock ocupado deve retornar false sem travar o processo');
+        self::assertTrue(strpos($db->lastQuery, "GET_LOCK('qlo_arrival_order_1234', 0)") !== false, 'Query de lock sem espera deve ter timeout 0');
+
+        // 3. Liberação de lock
+        $db->mockValue = 1;
+        $released = ArrivalBookingRepository::releaseOrderLock(1234);
+        self::assertTrue($released, 'Liberação de lock bem-sucedida deve retornar true');
+        self::assertTrue(strpos($db->lastQuery, "RELEASE_LOCK('qlo_arrival_order_1234')") !== false, 'Query deve conter RELEASE_LOCK com chave correta');
+
+        // 4. Casos atípicos de lock com IDs inválidos
+        self::assertFalse(ArrivalBookingRepository::acquireOrderLock(0), 'Lock com ID 0 deve ser rejeitado imediatamente');
+        self::assertFalse(ArrivalBookingRepository::acquireOrderLock(-10), 'Lock com ID negativo deve ser rejeitado imediatamente');
+        self::assertFalse(ArrivalBookingRepository::releaseOrderLock(0), 'Liberação com ID 0 deve ser rejeitada imediatamente');
+        self::assertFalse(ArrivalBookingRepository::releaseOrderLock(-5), 'Liberação com ID negativo deve ser rejeitada imediatamente');
+
+        // 5. Verificação de SQL do Upsert Seguro (evitar REPLACE INTO)
+        $db->mockExecuteResult = true;
+        $saved = ArrivalBookingRepository::saveArrivalTracking(1234, 'inside', 45.5, 'outside', 'ENTERED');
+        self::assertTrue($saved, 'Gravação do tracking deve retornar sucesso');
+        self::assertTrue(strpos($db->lastQuery, 'INSERT INTO `' . _DB_PREFIX_ . 'qlo_arrival_tracking`') !== false, 'Query deve usar INSERT INTO');
+        self::assertTrue(strpos($db->lastQuery, 'ON DUPLICATE KEY UPDATE') !== false, 'Query deve conter cláusula ON DUPLICATE KEY UPDATE');
+        self::assertFalse(strpos($db->lastQuery, 'REPLACE INTO'), 'Query JAMAIS deve utilizar REPLACE INTO');
+        self::assertTrue(strpos($db->lastQuery, "IF(`current_state` = 'inside' AND VALUES(`current_state`) = 'inside', 'NO_CHANGE', VALUES(`transition`))") !== false, 'Query deve conter proteção atômica contra duplicidade de ENTERED');
+
+        // 6. Caso atípico no save com ID inválido
+        self::assertFalse(ArrivalBookingRepository::saveArrivalTracking(0, 'inside', 50.0), 'Tentativa de salvar tracking com ID 0 deve retornar false');
+        self::assertFalse(ArrivalBookingRepository::saveArrivalTracking(-99, 'inside', 50.0), 'Tentativa de salvar tracking com ID negativo deve retornar false');
     }
 }
 
