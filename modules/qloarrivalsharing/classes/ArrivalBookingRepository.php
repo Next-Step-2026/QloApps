@@ -226,15 +226,6 @@ class ArrivalBookingRepository
         return Db::getInstance()->execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'qlo_arrival_tracking`');
     }
 
-    /**
-     * Alias de retrocompatibilidade para inicialização da tabela.
-     *
-     * @return bool
-     */
-    public static function initTrackingTable()
-    {
-        return self::createTrackingTable();
-    }
 
     /**
      * Normaliza a transição para evitar disparos duplicados sob concorrência.
