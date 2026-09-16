@@ -4,6 +4,8 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/classes/ArrivalBookingRepository.php';
+
 /**
  * Módulo de monitoramento e compartilhamento de chegada de hóspedes.
  */
@@ -28,23 +30,27 @@ class QloArrivalSharing extends Module
     }
 
     /**
-     * Instala o módulo e registra a aba administrativa.
+     * Instala o módulo, tabela de dados e aba administrativa.
      *
      * @return bool
      */
     public function install()
     {
-        return parent::install() && $this->installTab();
+        return parent::install()
+            && ArrivalBookingRepository::createTrackingTable()
+            && $this->installTab();
     }
 
     /**
-     * Desinstala o módulo e remove a aba administrativa.
+     * Desinstala o módulo, aba administrativa e tabela de dados.
      *
      * @return bool
      */
     public function uninstall()
     {
-        return $this->uninstallTab() && parent::uninstall();
+        return $this->uninstallTab()
+            && ArrivalBookingRepository::dropTrackingTable()
+            && parent::uninstall();
     }
 
     /**

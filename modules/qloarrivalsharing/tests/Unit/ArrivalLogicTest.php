@@ -48,24 +48,28 @@ if (!class_exists('Db')) {
         }
 
         public $lastQuery = null;
+        public $executedQueries = array();
         public $mockValue = 1;
         public $mockExecuteResult = true;
 
         public function getValue($sql, $use_cache = true)
         {
             $this->lastQuery = $sql;
+            $this->executedQueries[] = $sql;
             return $this->mockValue;
         }
 
         public function execute($sql)
         {
             $this->lastQuery = $sql;
+            $this->executedQueries[] = $sql;
             return $this->mockExecuteResult;
         }
 
         public function executeS($sql)
         {
             $this->lastQuery = $sql;
+            $this->executedQueries[] = $sql;
             return array(
                 array('Field' => 'id_order'),
                 array('Field' => 'previous_state'),
@@ -73,6 +77,19 @@ if (!class_exists('Db')) {
                 array('Field' => 'transition'),
                 array('Field' => 'distance_meters'),
                 array('Field' => 'date_upd'),
+            );
+        }
+
+        public function getRow($sql, $use_cache = true)
+        {
+            $this->lastQuery = $sql;
+            $this->executedQueries[] = $sql;
+            return array(
+                'previous_state'  => 'outside',
+                'current_state'   => 'outside',
+                'transition'      => 'NO_CHANGE',
+                'distance_meters' => 250.0,
+                'date_upd'        => '2026-09-16 00:00:00',
             );
         }
     }
@@ -119,6 +136,7 @@ class ArrivalLogicTest
         self::testHotelCoordinatesZeroEvaluation();
         self::testTransitionResolutionAndConcurrencyDeduplication();
         self::testOrderLockAndSafeUpsertMechanics();
+        self::testSchemaManagementLifecycle();
 
         echo "\n====================================================\n";
         echo "\033[32m  SUCESSO: " . self::$assertions . " asserções passaram com 100% de êxito.\033[0m\n";
@@ -352,6 +370,57 @@ class ArrivalLogicTest
         // 6. Caso atípico no save com ID inválido
         self::assertFalse(ArrivalBookingRepository::saveArrivalTracking(0, 'inside', 50.0), 'Tentativa de salvar tracking com ID 0 deve retornar false');
         self::assertFalse(ArrivalBookingRepository::saveArrivalTracking(-99, 'inside', 50.0), 'Tentativa de salvar tracking com ID negativo deve retornar false');
+    }
+
+    private static function testSchemaManagementLifecycle()
+    {
+        echo "\n-- Testando Ciclo de Vida de Esquema e Ausência de DDL em Runtime --\n";
+
+        $db = Db::getInstance();
+
+        // 1. Criação da tabela (chamado no install do módulo)
+        $db->mockExecuteResult = true;
+        $created = ArrivalBookingRepository::createTrackingTable();
+        self::assertTrue($created, 'Criação da tabela deve retornar true');
+        self::assertTrue(strpos($db->lastQuery, 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'qlo_arrival_tracking`') !== false, 'Query deve conter CREATE TABLE IF NOT EXISTS');
+        self::assertTrue(strpos($db->lastQuery, '`previous_state`') !== false, 'Definição da tabela deve incluir previous_state');
+        self::assertTrue(strpos($db->lastQuery, '`transition`') !== false, 'Definição da tabela deve incluir transition');
+
+        // 2. Remoção da tabela (chamado no uninstall do módulo)
+        $dropped = ArrivalBookingRepository::dropTrackingTable();
+        self::assertTrue($dropped, 'Remoção da tabela deve retornar true');
+        self::assertTrue(strpos($db->lastQuery, 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'qlo_arrival_tracking`') !== false, 'Query deve conter DROP TABLE IF EXISTS');
+
+        // 3. Alias initTrackingTable para retrocompatibilidade
+        $inited = ArrivalBookingRepository::initTrackingTable();
+        self::assertTrue($inited, 'Alias initTrackingTable deve retornar true');
+
+        // 4. Garantia de que consultas em runtime NÃO disparam DDL (SRP)
+        $db->executedQueries = array();
+        ArrivalBookingRepository::saveArrivalTracking(999, 'inside', 10.0, 'outside', 'ENTERED');
+        $saveQueries = $db->executedQueries;
+
+        $hasDdlInSave = false;
+        foreach ($saveQueries as $q) {
+            if (stripos($q, 'CREATE TABLE') !== false || stripos($q, 'SHOW COLUMNS') !== false || stripos($q, 'ALTER TABLE') !== false) {
+                $hasDdlInSave = true;
+                break;
+            }
+        }
+        self::assertFalse($hasDdlInSave, 'saveArrivalTracking NÃO deve executar DDL (CREATE, ALTER, SHOW COLUMNS)');
+
+        $db->executedQueries = array();
+        ArrivalBookingRepository::getArrivalTrackingState(999);
+        $readQueries = $db->executedQueries;
+
+        $hasDdlInRead = false;
+        foreach ($readQueries as $q) {
+            if (stripos($q, 'CREATE TABLE') !== false || stripos($q, 'SHOW COLUMNS') !== false || stripos($q, 'ALTER TABLE') !== false) {
+                $hasDdlInRead = true;
+                break;
+            }
+        }
+        self::assertFalse($hasDdlInRead, 'getArrivalTrackingState NÃO deve executar DDL (CREATE, ALTER, SHOW COLUMNS)');
     }
 }
 

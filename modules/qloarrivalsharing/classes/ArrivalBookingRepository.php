@@ -16,8 +16,6 @@ class ArrivalBookingRepository
      */
     public static function getTodayArrivals($date = null, $idHotel = null)
     {
-        self::initTrackingTable();
-
         $targetDate = $date ? pSQL($date) : date('Y-m-d');
 
         $sql = new DbQuery();
@@ -199,11 +197,11 @@ class ArrivalBookingRepository
     }
 
     /**
-     * Garante a existência da tabela de rastreamento de chegadas e colunas necessárias.
+     * Cria a tabela de rastreamento de chegadas na instalação do módulo.
      *
      * @return bool
      */
-    public static function initTrackingTable()
+    public static function createTrackingTable()
     {
         $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'qlo_arrival_tracking` (
             `id_order` INT(10) UNSIGNED NOT NULL,
@@ -215,24 +213,27 @@ class ArrivalBookingRepository
             PRIMARY KEY (`id_order`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8';
 
-        Db::getInstance()->execute($sql);
+        return Db::getInstance()->execute($sql);
+    }
 
-        $columns = Db::getInstance()->executeS('SHOW COLUMNS FROM `' . _DB_PREFIX_ . 'qlo_arrival_tracking`');
-        $existingCols = array();
-        if (!empty($columns)) {
-            foreach ($columns as $col) {
-                $existingCols[] = $col['Field'];
-            }
-        }
+    /**
+     * Remove a tabela de rastreamento de chegadas na desinstalação do módulo.
+     *
+     * @return bool
+     */
+    public static function dropTrackingTable()
+    {
+        return Db::getInstance()->execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'qlo_arrival_tracking`');
+    }
 
-        if (!in_array('previous_state', $existingCols)) {
-            Db::getInstance()->execute('ALTER TABLE `' . _DB_PREFIX_ . 'qlo_arrival_tracking` ADD `previous_state` VARCHAR(16) NOT NULL DEFAULT "outside" AFTER `id_order`');
-        }
-        if (!in_array('transition', $existingCols)) {
-            Db::getInstance()->execute('ALTER TABLE `' . _DB_PREFIX_ . 'qlo_arrival_tracking` ADD `transition` VARCHAR(16) NOT NULL DEFAULT "NO_CHANGE" AFTER `current_state`');
-        }
-
-        return true;
+    /**
+     * Alias de retrocompatibilidade para inicialização da tabela.
+     *
+     * @return bool
+     */
+    public static function initTrackingTable()
+    {
+        return self::createTrackingTable();
     }
 
     /**
@@ -307,8 +308,6 @@ class ArrivalBookingRepository
             return false;
         }
 
-        self::initTrackingTable();
-
         $currentState = in_array($currentState, array('inside', 'outside')) ? $currentState : 'outside';
         $previousState = in_array($previousState, array('inside', 'outside')) ? $previousState : 'outside';
         $transition = in_array($transition, array('ENTERED', 'EXITED', 'NO_CHANGE')) ? $transition : 'NO_CHANGE';
@@ -338,8 +337,6 @@ class ArrivalBookingRepository
         if ($idOrder <= 0) {
             return false;
         }
-
-        self::initTrackingTable();
 
         $sql = 'SELECT `previous_state`, `current_state`, `transition`, `distance_meters`, `date_upd`
                 FROM `' . _DB_PREFIX_ . 'qlo_arrival_tracking`
