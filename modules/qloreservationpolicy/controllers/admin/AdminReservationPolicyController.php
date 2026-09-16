@@ -27,6 +27,36 @@ class AdminReservationPolicyController extends ModuleAdminController
     }
 
     /**
+     * @brief Processa ações administrativas de exportação e manutenção de auditoria.
+     * @return void
+     */
+    public function postProcess()
+    {
+        if (Tools::isSubmit('downloadAuditLog')) {
+            $logFile = _PS_MODULE_DIR_ . $this->module->name . '/data/audit_log.json';
+            $content = file_exists($logFile) ? file_get_contents($logFile) : json_encode(array(), JSON_PRETTY_PRINT);
+
+            header('Content-Type: application/json; charset=utf-8');
+            header('Content-Disposition: attachment; filename="policy_audit_log_' . date('Ymd_His') . '.json"');
+            header('Content-Length: ' . strlen($content));
+            header('Pragma: no-cache');
+            header('Expires: 0');
+            echo $content;
+            exit;
+        }
+
+        if (Tools::isSubmit('clearAuditLog')) {
+            $logFile = _PS_MODULE_DIR_ . $this->module->name . '/data/audit_log.json';
+            if (file_exists($logFile)) {
+                file_put_contents($logFile, json_encode(array(), JSON_PRETTY_PRINT));
+            }
+            $this->confirmations[] = $this->l('Policy audit log cleared successfully.');
+        }
+
+        parent::postProcess();
+    }
+
+    /**
      * @brief Inicializa o conteúdo da página e processa a simulação de avaliação de políticas.
      * @details Captura os parâmetros do formulário administrativo, despacha requisição síncrona
      *          via cURL com correlation ID para o serviço Python e encaminha o resultado
@@ -100,6 +130,7 @@ class AdminReservationPolicyController extends ModuleAdminController
 
             if ($response && $httpCode === 200) {
                 $evalData = json_decode($response, true);
+                $this->saveAuditLog($policyType, $facts, $evalData, $corrId);
             } else {
                 if ($httpCode === 400 && $response) {
                     $decodedErr = json_decode($response, true);
@@ -144,10 +175,30 @@ class AdminReservationPolicyController extends ModuleAdminController
             $displayOverbookingRate = 5;
         }
 
+        $logFile = _PS_MODULE_DIR_ . $this->module->name . '/data/audit_log.json';
+        $auditLogs = array();
+        if (file_exists($logFile)) {
+            $rawContent = file_get_contents($logFile);
+            $decoded = json_decode($rawContent, true);
+            if (is_array($decoded)) {
+                $auditLogs = $decoded;
+            }
+        }
+
+        $formattedRecentLogs = array();
+        $recentLogs = array_slice($auditLogs, 0, 5);
+        foreach ($recentLogs as $log) {
+            $logCopy = $log;
+            $logCopy['facts_json'] = json_encode(isset($log['facts']) ? $log['facts'] : array(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            $formattedRecentLogs[] = $logCopy;
+        }
+
         $this->context->smarty->assign(array(
             'policyEvaluation' => $evalData,
             'policyError'      => $errorMessage,
             'selectedPolicy'   => $selectedPolicy,
+            'auditLogs'        => $formattedRecentLogs,
+            'totalAuditLogs'   => count($auditLogs),
             'currentValues'    => array(
                 'requested_nights'        => (int) Tools::getValue('requested_nights', 1),
                 'required_minimum_nights' => (int) Tools::getValue('required_minimum_nights', 2),
@@ -169,5 +220,55 @@ class AdminReservationPolicyController extends ModuleAdminController
             $this->content = $this->createTemplate('policy_simulator.tpl')->fetch();
         }
         $this->context->smarty->assign('content', $this->content);
+    }
+
+    /**
+     * @brief Registra um evento de avaliação de política no arquivo audit_log.json.
+     * @param string $policyType Identificador da política avaliada
+     * @param array $facts Conjunto de fatos contextuais enviados ao motor
+     * @param array $evalData Resposta retornada pelo serviço de políticas
+     * @param string $corrId Identificador de correlação da requisição
+     * @return void
+     */
+    protected function saveAuditLog($policyType, array $facts, array $evalData, $corrId)
+    {
+        $dataDir = _PS_MODULE_DIR_ . $this->module->name . '/data';
+        if (!is_dir($dataDir)) {
+            @mkdir($dataDir, 0755, true);
+            @file_put_contents(
+                $dataDir . '/index.php',
+                "<?php\nheader('Expires: Mon, 26 Jul 1997 05:00:00 GMT');\nheader('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');\nheader('Cache-Control: no-store, no-cache, must-revalidate');\nheader('Location: ../');\nexit;\n"
+            );
+        }
+
+        $logFile = $dataDir . '/audit_log.json';
+        $auditLogs = array();
+
+        if (file_exists($logFile)) {
+            $raw = file_get_contents($logFile);
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $auditLogs = $decoded;
+            }
+        }
+
+        $entry = array(
+            'timestamp'      => date('Y-m-d H:i:s'),
+            'correlation_id' => isset($evalData['correlation_id']) ? $evalData['correlation_id'] : $corrId,
+            'policy'         => $policyType,
+            'facts'          => $facts,
+            'decision'       => isset($evalData['decision']) ? $evalData['decision'] : '',
+            'reason_code'    => isset($evalData['reason_code']) ? $evalData['reason_code'] : '',
+            'explanation'    => isset($evalData['explanation']) ? $evalData['explanation'] : '',
+        );
+
+        array_unshift($auditLogs, $entry);
+
+        // Limita o histórico persistido em arquivo aos últimos 100 registros
+        if (count($auditLogs) > 100) {
+            $auditLogs = array_slice($auditLogs, 0, 100);
+        }
+
+        file_put_contents($logFile, json_encode($auditLogs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 }

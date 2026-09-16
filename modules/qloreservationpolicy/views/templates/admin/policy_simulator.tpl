@@ -143,6 +143,77 @@
     {/if}
 </div>
 
+<div class="panel">
+    <div class="panel-heading">
+        <i class="icon-list-alt"></i> {l s='Policy Audit Log (JSON)' mod='qloreservationpolicy'}
+        <span class="badge">{$totalAuditLogs|intval}</span>
+        <span class="panel-heading-action pull-right">
+            <form method="post" action="" style="display: inline-block; margin: 0;">
+                <button type="submit" name="downloadAuditLog" class="btn btn-default btn-xs" {if $totalAuditLogs == 0}disabled="disabled"{/if}>
+                    <i class="icon-download"></i> {l s='Download JSON' mod='qloreservationpolicy'}
+                </button>
+                <button type="submit" name="clearAuditLog" class="btn btn-default btn-xs" {if $totalAuditLogs == 0}disabled="disabled"{/if} onclick="return confirm('{l s='Are you sure you want to clear the audit log?' mod='qloreservationpolicy'}');">
+                    <i class="icon-trash"></i> {l s='Clear Log' mod='qloreservationpolicy'}
+                </button>
+            </form>
+        </span>
+    </div>
+    <div class="panel-body" style="padding: 0;">
+        {if $auditLogs && count($auditLogs) > 0}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" style="margin-bottom: 0;">
+                    <thead>
+                        <tr>
+                            <th style="width: 170px;">{l s='Timestamp' mod='qloreservationpolicy'}</th>
+                            <th style="width: 160px;">{l s='Correlation ID' mod='qloreservationpolicy'}</th>
+                            <th style="width: 160px;">{l s='Policy' mod='qloreservationpolicy'}</th>
+                            <th style="width: 100px; text-align: center;">{l s='Verdict' mod='qloreservationpolicy'}</th>
+                            <th>{l s='Reason & Explanation' mod='qloreservationpolicy'}</th>
+                            <th style="width: 250px;">{l s='Facts Evaluated' mod='qloreservationpolicy'}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {foreach from=$auditLogs item=log}
+                            <tr>
+                                <td><code>{$log.timestamp|escape:'html':'UTF-8'}</code></td>
+                                <td><small class="text-muted">{$log.correlation_id|escape:'html':'UTF-8'}</small></td>
+                                <td><span class="label label-info">{$log.policy|escape:'html':'UTF-8'}</span></td>
+                                <td style="text-align: center;">
+                                    {if $log.decision == 'ALLOW'}
+                                        <span class="label label-success">{l s='ALLOW' mod='qloreservationpolicy'}</span>
+                                    {else}
+                                        <span class="label label-danger">{l s='DENY' mod='qloreservationpolicy'}</span>
+                                    {/if}
+                                </td>
+                                <td>
+                                    <strong><code>{$log.reason_code|escape:'html':'UTF-8'}</code></strong><br />
+                                    <small>{$log.explanation|escape:'html':'UTF-8'}</small>
+                                </td>
+                                <td>
+                                    <pre style="font-size: 11px; margin: 0; padding: 4px; max-height: 85px; overflow-y: auto; background-color: #f8f8f8;">{$log.facts_json|escape:'html':'UTF-8'}</pre>
+                                </td>
+                            </tr>
+                        {/foreach}
+                    </tbody>
+                </table>
+            </div>
+            {if $totalAuditLogs > 5}
+                <div style="padding: 10px 15px;">
+                    <p class="text-muted" style="margin: 0;">
+                        <i class="icon-info-sign"></i> {l s='Showing the 5 most recent evaluations. Download the JSON file to inspect the complete history (%d total records).' sprintf=[$totalAuditLogs] mod='qloreservationpolicy'}
+                    </p>
+                </div>
+            {/if}
+        {else}
+            <div style="padding: 20px;">
+                <div class="alert alert-info" style="margin-bottom: 0;">
+                    <i class="icon-info-circle"></i> {l s='No evaluations logged yet. Run a simulation using the form above to generate audit entries.' mod='qloreservationpolicy'}
+                </div>
+            </div>
+        {/if}
+    </div>
+</div>
+
 <script type="text/javascript">
 function togglePolicyFields(selectedPolicy) {
     var minStayGroup = document.getElementById('fields_min_stay');
