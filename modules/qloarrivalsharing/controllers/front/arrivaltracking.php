@@ -117,8 +117,19 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
             exit;
         }
 
-        $guestLat = (float) Tools::getValue('lat');
-        $guestLng = (float) Tools::getValue('lng');
+        $rawLat = Tools::getValue('lat');
+        $rawLng = Tools::getValue('lng');
+
+        if ($rawLat === false || $rawLng === false || !is_numeric($rawLat) || !is_numeric($rawLng)) {
+            echo json_encode(array(
+                'success' => false,
+                'message' => $this->module->l('Coordenadas geográficas ausentes ou em formato inválido.', 'arrivaltracking'),
+            ));
+            exit;
+        }
+
+        $guestLat = (float) $rawLat;
+        $guestLng = (float) $rawLng;
 
         if ($guestLat < -90.0 || $guestLat > 90.0 || $guestLng < -180.0 || $guestLng > 180.0) {
             echo json_encode(array(

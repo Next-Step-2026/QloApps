@@ -99,15 +99,32 @@ class ArrivalLogicTest
 
     private static function testCoordinateValidationLimits()
     {
-        echo "\n-- Testando Limites Geodésicos de Coordenadas --\n";
-        $validateCoords = function ($lat, $lng) {
+        echo "\n-- Testando Limites Geodésicos e Formato de Coordenadas --\n";
+        $validateCoords = function ($rawLat, $rawLng) {
+            if ($rawLat === false || $rawLng === false || !is_numeric($rawLat) || !is_numeric($rawLng)) {
+                return false;
+            }
+
+            $lat = (float) $rawLat;
+            $lng = (float) $rawLng;
+
             return ($lat >= -90.0 && $lat <= 90.0 && $lng >= -180.0 && $lng <= 180.0);
         };
 
         self::assertTrue($validateCoords(-8.053100, -34.886100), "Coordenadas do Recife devem ser válidas");
-        self::assertTrue($validateCoords(0.0, 0.0), "Ponto zero (Equador/Greenwich) deve ser válido");
+        self::assertTrue($validateCoords("-8.053100", "-34.886100"), "Coordenadas em string numérica devem ser válidas");
+        self::assertTrue($validateCoords(0.0, 0.0), "Ponto zero numérico legítimo deve ser válido");
+        self::assertTrue($validateCoords("0.0", "0.0"), "Ponto zero em string numérica legítima deve ser válido");
         self::assertTrue($validateCoords(-90.0, -180.0), "Extremo inferior (-90, -180) deve ser válido");
         self::assertTrue($validateCoords(90.0, 180.0), "Extremo superior (90, 180) deve ser válido");
+
+        self::assertFalse($validateCoords(false, -34.886100), "Latitude ausente (false) deve ser rejeitada");
+        self::assertFalse($validateCoords(-8.053100, false), "Longitude ausente (false) deve ser rejeitada");
+        self::assertFalse($validateCoords(null, -34.886100), "Latitude nula deve ser rejeitada");
+        self::assertFalse($validateCoords("", ""), "Coordenadas vazias devem ser rejeitadas");
+        self::assertFalse($validateCoords("abc", "-34.886100"), "Latitude em texto não numérico deve ser rejeitada");
+        self::assertFalse($validateCoords("-8.053100", "undefined"), "Longitude 'undefined' deve ser rejeitada");
+        self::assertFalse($validateCoords("NaN", "NaN"), "Coordenadas 'NaN' devem ser rejeitadas");
 
         self::assertFalse($validateCoords(90.1, 0.0), "Latitude acima de 90 deve ser inválida");
         self::assertFalse($validateCoords(-90.1, 0.0), "Latitude abaixo de -90 deve ser inválida");
