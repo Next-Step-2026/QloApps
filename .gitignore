@@ -57,6 +57,8 @@ replay_pid*
 **/.gradle/
 build/
 **/build/
+bin/
+**/bin/
 
 # Preservar o Gradle Wrapper em qualquer profundidade
 !**/gradle/wrapper/gradle-wrapper.jar
