@@ -5,7 +5,6 @@ if (!defined('_PS_VERSION_')) {
 }
 
 /**
- * Class ArrivalBookingRepository
  * Repositório para consulta de reservas de chegada no hotel.
  */
 class ArrivalBookingRepository
@@ -13,9 +12,7 @@ class ArrivalBookingRepository
     /**
      * Retorna a lista de chegadas previstas para a data e hotel informados.
      *
-     * @param string|null $date Data no formato Y-m-d (padrão: hoje se null)
-     * @param int|null $idHotel ID do hotel para filtragem (opcional)
-     * @return array Lista de reservas de chegada
+     * @return array
      */
     public static function getTodayArrivals($date = null, $idHotel = null)
     {
@@ -81,10 +78,9 @@ class ArrivalBookingRepository
     }
 
     /**
-     * Retorna as coordenadas geográficas (latitude e longitude) do hotel.
+     * Retorna as coordenadas geográficas do hotel com fallback padrão.
      *
-     * @param int|null $idHotel ID do hotel (opcional)
-     * @return array Coordenadas com latitude e longitude (com fallback RFC-004)
+     * @return array
      */
     public static function getHotelCoordinates($idHotel = null)
     {
@@ -114,11 +110,9 @@ class ArrivalBookingRepository
     }
 
     /**
-     * Gera o token de segurança para acesso exclusivo à tela do hóspede.
-     * Utiliza chave criptográfica privada do sistema (_COOKIE_KEY_) para impedir IDOR.
+     * Gera o token de acesso à tela do hóspede.
      *
-     * @param int $idOrder ID da reserva/pedido
-     * @return string Token com 16 caracteres hexadecimais
+     * @return string
      */
     public static function generateGuestToken($idOrder)
     {
@@ -126,10 +120,8 @@ class ArrivalBookingRepository
     }
 
     /**
-     * Valida de forma segura contra timing attacks o token de acesso do hóspede.
+     * Valida o token de acesso do hóspede contra timing attacks.
      *
-     * @param int $idOrder ID do pedido
-     * @param string $token Token informado na requisição
      * @return bool
      */
     public static function validateGuestToken($idOrder, $token)
@@ -142,11 +134,9 @@ class ArrivalBookingRepository
     }
 
     /**
-     * Obtém informações públicas e seguras de uma reserva para a tela do hóspede.
-     * Mascara e restringe dados sensíveis para proteger a privacidade (LGPD).
+     * Obtém informações públicas da reserva para a tela do hóspede.
      *
-     * @param int $idOrder ID do pedido
-     * @return array|false Dados resumidos da reserva ou false se inválida/cancelada
+     * @return array|false
      */
     public static function getBookingForGuest($idOrder)
     {
@@ -181,7 +171,6 @@ class ArrivalBookingRepository
             return false;
         }
 
-        // Anonimização / proteção de PII (Primeiro nome + inicial do sobrenome)
         $lastNameInitial = !empty($row['lastname']) ? mb_substr(trim($row['lastname']), 0, 1, 'UTF-8') . '.' : '';
         $row['guest_display_name'] = trim($row['firstname'] . ' ' . $lastNameInitial);
 
@@ -189,7 +178,7 @@ class ArrivalBookingRepository
     }
 
     /**
-     * Garante a existência da tabela de rastreamento de chegadas do módulo e colunas necessárias.
+     * Garante a existência da tabela de rastreamento de chegadas e colunas necessárias.
      *
      * @return bool
      */
@@ -207,7 +196,6 @@ class ArrivalBookingRepository
 
         Db::getInstance()->execute($sql);
 
-        // Migração idempotente caso a tabela tenha sido criada em versão anterior sem as colunas
         $columns = Db::getInstance()->executeS('SHOW COLUMNS FROM `' . _DB_PREFIX_ . 'qlo_arrival_tracking`');
         $existingCols = array();
         if (!empty($columns)) {
@@ -229,11 +217,6 @@ class ArrivalBookingRepository
     /**
      * Salva ou atualiza o estado de aproximação de uma reserva no banco.
      *
-     * @param int $idOrder ID do pedido
-     * @param string $currentState Estado retornado pelo motor (inside ou outside)
-     * @param float $distance Distância em metros calculada
-     * @param string $previousState Estado anterior (inside ou outside)
-     * @param string $transition Transição calculada (ENTERED, EXITED, NO_CHANGE)
      * @return bool
      */
     public static function saveArrivalTracking($idOrder, $currentState, $distance, $previousState = 'outside', $transition = 'NO_CHANGE')
@@ -260,7 +243,6 @@ class ArrivalBookingRepository
     /**
      * Retorna o último estado registrado de aproximação de uma reserva.
      *
-     * @param int $idOrder ID do pedido
      * @return array|false
      */
     public static function getArrivalTrackingState($idOrder)

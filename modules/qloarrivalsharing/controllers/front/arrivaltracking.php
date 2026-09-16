@@ -1,8 +1,4 @@
 <?php
-/**
- * Class QloArrivalSharingArrivalTrackingModuleFrontController
- * Controller Front-Office para acompanhamento e aviso de chegada do hóspede.
- */
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -11,13 +7,16 @@ if (!defined('_PS_VERSION_')) {
 require_once _PS_MODULE_DIR_ . 'qloarrivalsharing/classes/ArrivalBookingRepository.php';
 require_once _PS_MODULE_DIR_ . 'qloarrivalsharing/classes/LocationServiceClient.php';
 
+/**
+ * Acompanhamento de chegada do hóspede.
+ */
 class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontController
 {
     /** @var LocationServiceClient */
     protected $locationClient;
 
     /**
-     * Inicializa dependências do controller.
+     * Inicializa o cliente de localização.
      */
     public function __construct()
     {
@@ -26,7 +25,7 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
     }
 
     /**
-     * Intercepta requisições AJAX antes da renderização HTML.
+     * Processa as requisições AJAX do controller.
      */
     public function postProcess()
     {
@@ -38,7 +37,7 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
     }
 
     /**
-     * Prepara e renderiza a view Smarty do hóspede.
+     * Renderiza a tela do hóspede.
      */
     public function initContent()
     {
@@ -47,7 +46,6 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
         $idOrder = (int) Tools::getValue('id_order');
         $token = Tools::getValue('token');
 
-        // Validação de token contra IDOR
         if (!ArrivalBookingRepository::validateGuestToken($idOrder, $token)) {
             $this->context->smarty->assign(array(
                 'hasError'     => true,
@@ -93,7 +91,7 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
     }
 
     /**
-     * Endpoint AJAX invocado pelo navegador para enviar as coordenadas pontuais lidas via GPS.
+     * Recebe e processa a localização enviada pelo hóspede via AJAX.
      */
     public function displayAjaxSendLocation()
     {
@@ -122,7 +120,6 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
         $guestLat = (float) Tools::getValue('lat');
         $guestLng = (float) Tools::getValue('lng');
 
-        // Validação estrita de limites geográficos
         if ($guestLat < -90.0 || $guestLat > 90.0 || $guestLng < -180.0 || $guestLng > 180.0) {
             echo json_encode(array(
                 'success' => false,
@@ -157,7 +154,6 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
             $isInside = ($data['current_state'] === 'inside');
             $distance = round($data['distance_meters'], 1);
 
-            // Persiste o estado de aproximação para atualizar o painel da recepção em tempo real
             ArrivalBookingRepository::saveArrivalTracking(
                 $idOrder,
                 $data['current_state'],
@@ -188,7 +184,6 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
                 'message'         => $msg,
             ));
         } else {
-            // Modo de contingência transparente (persiste sinal básico)
             ArrivalBookingRepository::saveArrivalTracking(
                 $idOrder,
                 'outside',

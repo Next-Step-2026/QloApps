@@ -8,7 +8,6 @@ require_once dirname(__FILE__) . '/../../classes/ArrivalBookingRepository.php';
 require_once dirname(__FILE__) . '/../../classes/LocationServiceClient.php';
 
 /**
- * Class AdminArrivalSharingController
  * Controlador de administração para recepção e monitoramento de chegadas/traslados.
  */
 class AdminArrivalSharingController extends ModuleAdminController
@@ -32,8 +31,6 @@ class AdminArrivalSharingController extends ModuleAdminController
 
     /**
      * Processa requisições de formulários submetidos no módulo.
-     *
-     * @return void
      */
     public function postProcess()
     {
@@ -52,8 +49,6 @@ class AdminArrivalSharingController extends ModuleAdminController
 
     /**
      * Inicializa e renderiza o conteúdo da página do painel de recepção.
-     *
-     * @return void
      */
     public function initContent()
     {
@@ -149,9 +144,7 @@ class AdminArrivalSharingController extends ModuleAdminController
     }
 
     /**
-     * Endpoint AJAX para polling de status em tempo real do painel da recepção.
-     *
-     * @return void
+     * Endpoint AJAX para polling de status das chegadas.
      */
     public function ajaxProcessRefreshArrivalStatus()
     {
@@ -179,9 +172,8 @@ class AdminArrivalSharingController extends ModuleAdminController
     }
 
     /**
-     * Cria e retorna o objeto de template Smarty para visualização.
+     * Carrega o template Smarty da visão administrativa do módulo.
      *
-     * @param string $tpl_name Nome do arquivo de template
      * @return Smarty_Internal_Template
      */
     public function createTemplate($tpl_name)

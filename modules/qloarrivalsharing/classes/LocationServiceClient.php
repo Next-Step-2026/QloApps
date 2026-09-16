@@ -5,8 +5,7 @@ if (!defined('_PS_VERSION_')) {
 }
 
 /**
- * Class LocationServiceClient
- * Cliente HTTP cURL para integração com o microserviço de geofencing (RFC-004).
+ * Cliente HTTP para integração com o serviço de geofencing.
  */
 class LocationServiceClient
 {
@@ -26,10 +25,7 @@ class LocationServiceClient
     protected $timeoutMs;
 
     /**
-     * LocationServiceClient constructor.
-     *
-     * @param string|null $serviceUrl URL base do serviço de localização
-     * @param int|null $timeoutMs Timeout total da requisição em milissegundos
+     * Inicializa a URL do serviço e o timeout padrão.
      */
     public function __construct($serviceUrl = null, $timeoutMs = null)
     {
@@ -43,9 +39,9 @@ class LocationServiceClient
     }
 
     /**
-     * Gera um identificador único universal (UUID v4) estritamente compatível com RFC 4122.
+     * Gera UUID v4 compatível com RFC 4122.
      *
-     * @return string UUID v4 (ex: a1b2c3d4-e5f6-4a8b-9c0d-1e2f3a4b5c6d)
+     * @return string
      */
     public static function generateUuidV4()
     {
@@ -57,9 +53,9 @@ class LocationServiceClient
     }
 
     /**
-     * Verifica se o serviço de geofencing está acessível via rota /healthz.
+     * Verifica se o serviço de geofencing está acessível via /healthz.
      *
-     * @return bool Retorna true se responder HTTP 200, false caso contrário
+     * @return bool
      */
     public function isServiceAvailable()
     {
@@ -78,11 +74,9 @@ class LocationServiceClient
     }
 
     /**
-     * Envia um evento de localização para avaliação de geofence no serviço backend.
+     * Envia evento de localização para avaliação de geofence.
      *
-     * @param array $payload Dados da requisição conforme contrato OpenAPI da RFC-004
-     * @param string|null $correlationId UUID v4 para rastreabilidade (gerado se ausente)
-     * @return array Resposta estruturada com status, dados e mensagem amigável de erro
+     * @return array
      */
     public function sendLocationEvent(array $payload, $correlationId = null)
     {
@@ -110,7 +104,6 @@ class LocationServiceClient
         $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        // Tratamento de falha de conexão de rede ou timeout
         if ($curlError !== 0 || $rawResponse === false) {
             $errorMessage = 'Serviço de cálculo de proximidade temporariamente indisponível.';
             if ($curlError === CURLE_OPERATION_TIMEDOUT) {
@@ -129,7 +122,6 @@ class LocationServiceClient
 
         $decodedResponse = json_decode($rawResponse, true);
 
-        // Sucesso 200 OK
         if ($httpCode === 200 && is_array($decodedResponse)) {
             return array(
                 'success'        => true,
@@ -141,7 +133,6 @@ class LocationServiceClient
             );
         }
 
-        // Resposta de erro estruturado RFC 7807 (ex: 400 Bad Request ou 503)
         $detailError = 'Erro na resposta do serviço de localização (HTTP ' . $httpCode . ').';
         if (is_array($decodedResponse)) {
             if (!empty($decodedResponse['detail'])) {

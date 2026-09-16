@@ -11,7 +11,6 @@ if (!defined('_COOKIE_KEY_')) {
     define('_COOKIE_KEY_', 'test_secret_cookie_key_for_unit_testing_12345');
 }
 
-// Stub leve para isolar o teste sem necessidade de banco de dados
 if (!class_exists('Configuration')) {
     class Configuration
     {
