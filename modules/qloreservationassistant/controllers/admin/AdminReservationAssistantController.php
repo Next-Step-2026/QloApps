@@ -113,6 +113,7 @@ class AdminReservationAssistantController extends ModuleAdminController
             'queryHistory' => $history
         ));
 
+        $this->content = $this->createTemplate('assistant_view.tpl')->fetch();
         $this->setTemplate('assistant_view.tpl');
     }
 }
