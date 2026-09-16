@@ -1,0 +1,7 @@
+assistant_service
+test_runner
+test_classifier
+build/
+*.o
+*.a
+*.so
