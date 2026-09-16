@@ -50,7 +50,7 @@ internal fun resolveRoomCount(
             ValidationError(
                 field = "room_count",
                 errorCode = "INVALID_SCHEMA",
-                message = "Campo 'room_count' deve ser um número inteiro maior ou igual a 1.",
+                message = "Field 'room_count' must be an integer greater than or equal to 1.",
             ),
         )
         DEFAULT_ROOMS_REQUESTED

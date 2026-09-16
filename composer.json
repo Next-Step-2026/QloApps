@@ -47,6 +47,30 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "platform": {
+            "ext-mcrypt": "1.0.4"
+        }
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "phpmd/phpmd": "^2.15",
+        "phpstan/phpstan": "^2.2"
+    },
+    "scripts": {
+        "cs-check": "php-cs-fixer fix --dry-run --diff",
+        "cs-fix": "php-cs-fixer fix",
+        "phpstan": "phpstan analyse",
+        "phpmd": "phpmd modules/qloexternalrequests text phpmd.xml",
+        "check": [
+            "@cs-check",
+            "@phpstan",
+            "@phpmd"
+        ],
+        "static-analysis": [
+            "@cs-check",
+            "@phpstan",
+            "@phpmd"
+        ]
     }
 }

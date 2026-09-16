@@ -33,7 +33,7 @@ class ProviderAAdapter : ChannelAdapter {
                 ValidationError(
                     "guest_full_name",
                     "FIELD_REQUIRED",
-                    "Campo obrigatório 'guest_full_name' não encontrado no payload do PROVIDER_A.",
+                    "Required field 'guest_full_name' not found in PROVIDER_A payload.",
                 ),
             )
         } else if (guestName.isEmpty()) {
@@ -41,7 +41,7 @@ class ProviderAAdapter : ChannelAdapter {
                 ValidationError(
                     "guest_full_name",
                     "INVALID_SCHEMA",
-                    "Nome do hóspede não pode ser vazio.",
+                    "Guest name cannot be empty.",
                 ),
             )
         }
@@ -78,7 +78,7 @@ class ProviderAAdapter : ChannelAdapter {
                 ValidationError(
                     "arrival",
                     "FIELD_REQUIRED",
-                    "Campo obrigatório 'arrival' não encontrado no payload do PROVIDER_A.",
+                    "Required field 'arrival' not found in PROVIDER_A payload.",
                 ),
             )
             return null
@@ -90,7 +90,7 @@ class ProviderAAdapter : ChannelAdapter {
                 ValidationError(
                     "arrival",
                     "INVALID_SCHEMA",
-                    "Formato de data inválido para 'arrival': ${e.message}",
+                    "Invalid date format for 'arrival': ${e.message}",
                 ),
             )
             null
@@ -108,7 +108,7 @@ class ProviderAAdapter : ChannelAdapter {
                 ValidationError(
                     "nights",
                     "FIELD_REQUIRED",
-                    "Campo obrigatório 'nights' não encontrado no payload do PROVIDER_A.",
+                    "Required field 'nights' not found in PROVIDER_A payload.",
                 ),
             )
         } else if (nightsRaw == null) {
@@ -116,7 +116,7 @@ class ProviderAAdapter : ChannelAdapter {
                 ValidationError(
                     "nights",
                     "INVALID_SCHEMA",
-                    "Campo 'nights' deve ser um número inteiro.",
+                    "Field 'nights' must be an integer.",
                 ),
             )
         } else if (nightsRaw <= 0) {
@@ -124,7 +124,7 @@ class ProviderAAdapter : ChannelAdapter {
                 ValidationError(
                     "nights",
                     "CHECKOUT_BEFORE_CHECKIN",
-                    "A quantidade de noites deve ser maior ou igual a 1.",
+                    "The number of nights must be greater than or equal to 1.",
                 ),
             )
         } else {

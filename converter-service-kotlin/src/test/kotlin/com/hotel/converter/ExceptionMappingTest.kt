@@ -12,56 +12,56 @@ class ExceptionMappingTest {
 
         assertEquals("payload", error.field)
         assertEquals("INVALID_SCHEMA", error.errorCode)
-        assertEquals("JSON malformatado: Unexpected token", error.message)
+        assertEquals("Malformed JSON: Unexpected token", error.message)
     }
 
     @Test
     fun `IllegalStateException with message preserves message`() {
-        val ex = IllegalStateException("Canal desativado temporariamente")
+        val ex = IllegalStateException("Channel temporarily disabled")
         val error = ex.toValidationError()
 
         assertEquals("payload", error.field)
         assertEquals("INVALID_SCHEMA", error.errorCode)
-        assertEquals("Canal desativado temporariamente", error.message)
+        assertEquals("Channel temporarily disabled", error.message)
     }
 
     @Test
-    fun `IllegalStateException without message falls back to Estado invalido`() {
+    fun `IllegalStateException without message falls back to Invalid state`() {
         val ex = IllegalStateException()
         val error = ex.toValidationError()
 
         assertEquals("payload", error.field)
         assertEquals("INVALID_SCHEMA", error.errorCode)
-        assertEquals("Estado inválido", error.message)
+        assertEquals("Invalid state", error.message)
     }
 
     @Test
     fun `IllegalArgumentException with message preserves message`() {
-        val ex = IllegalArgumentException("Parâmetro inválido")
+        val ex = IllegalArgumentException("Invalid parameter")
         val error = ex.toValidationError()
 
         assertEquals("payload", error.field)
         assertEquals("INVALID_SCHEMA", error.errorCode)
-        assertEquals("Parâmetro inválido", error.message)
+        assertEquals("Invalid parameter", error.message)
     }
 
     @Test
-    fun `IllegalArgumentException without message falls back to Argumento invalido`() {
+    fun `IllegalArgumentException without message falls back to Invalid argument`() {
         val ex = IllegalArgumentException()
         val error = ex.toValidationError()
 
         assertEquals("payload", error.field)
         assertEquals("INVALID_SCHEMA", error.errorCode)
-        assertEquals("Argumento inválido", error.message)
+        assertEquals("Invalid argument", error.message)
     }
 
     @Test
-    fun `generic Exception without message falls back to Erro de processamento da requisicao`() {
+    fun `generic Exception without message falls back to Request processing error`() {
         val ex = RuntimeException()
         val error = ex.toValidationError()
 
         assertEquals("payload", error.field)
         assertEquals("INVALID_SCHEMA", error.errorCode)
-        assertEquals("Erro de processamento da requisição", error.message)
+        assertEquals("Request processing error", error.message)
     }
 }
