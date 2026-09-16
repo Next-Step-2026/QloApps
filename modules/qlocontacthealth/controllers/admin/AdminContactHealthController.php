@@ -184,7 +184,13 @@ class AdminContactHealthController extends ModuleAdminController
         }
 
         // 1. Update persistent consent expiration in DB
-        QloContactHealthCustomer::updateConsentExpiration($customerId, $dateStr);
+        $saved = QloContactHealthCustomer::updateConsentExpiration($customerId, $dateStr);
+        if (!$saved) {
+            die(json_encode(array(
+                'success' => false,
+                'message' => $this->l('Falha ao atualizar o consentimento no banco de dados.'),
+            )));
+        }
 
         // 2. Audit event generation via QloApps Logger
         $auditMsg = $dateStr
