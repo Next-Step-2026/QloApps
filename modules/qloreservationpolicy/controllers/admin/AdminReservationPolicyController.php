@@ -94,13 +94,13 @@ class AdminReservationPolicyController extends ModuleAdminController
                 if ($httpCode === 400 && $response) {
                     $decodedErr = json_decode($response, true);
                     $detail = isset($decodedErr['detail']) ? $decodedErr['detail'] : '';
-                    $title  = isset($decodedErr['title']) ? $decodedErr['title'] : $this->l('Fatos Inválidos');
+                    $title  = isset($decodedErr['title']) ? $decodedErr['title'] : $this->l('Invalid Facts');
                     if (is_array($detail)) {
                         $errorMessage = $title . ': ' . json_encode($detail);
                     } elseif ($detail) {
                         $errorMessage = $title . ': ' . $detail;
                     } else {
-                        $errorMessage = $this->l('Requisição inválida (HTTP 400).');
+                        $errorMessage = $this->l('Invalid request (HTTP 400).');
                     }
                 } elseif ($httpCode === 422 && $response) {
                     $decodedErr = json_decode($response, true);
@@ -115,11 +115,11 @@ class AdminReservationPolicyController extends ModuleAdminController
                         }
                     }
                     $errorMessage = !empty($errorMsgs)
-                        ? $this->l('Erro de validação (HTTP 422): ') . implode('; ', $errorMsgs)
-                        : $this->l('Política ou parâmetro inválido (HTTP 422).');
+                        ? $this->l('Validation error (HTTP 422): ') . implode('; ', $errorMsgs)
+                        : $this->l('Invalid policy or parameter (HTTP 422).');
                 } else {
                     $errorMessage = sprintf(
-                        $this->l('Serviço de políticas local offline ou indisponível (HTTP %d). Verifique se o servidor Python está ativo na porta 8105.'),
+                        $this->l('Local policy service offline or unavailable (HTTP %d). Ensure the Python server is running on port 8105.'),
                         (int) $httpCode
                     );
                 }

@@ -29,7 +29,7 @@ def test_minimum_stay_allowed():
     )
     assert decision == PolicyDecision.ALLOW
     assert reason_code == "MINIMUM_STAY_MET"
-    assert "atende ao mínimo obrigatório" in explanation
+    assert "meets the mandatory minimum" in explanation
 
 
 def test_minimum_stay_denied():
@@ -40,7 +40,7 @@ def test_minimum_stay_denied():
     )
     assert decision == PolicyDecision.DENY
     assert reason_code == "NIGHTS_BELOW_MINIMUM"
-    assert "é inferior ao mínimo obrigatório" in explanation
+    assert "is below the mandatory minimum" in explanation
 
 
 def test_advance_booking_allowed():
@@ -50,7 +50,7 @@ def test_advance_booking_allowed():
     )
     assert decision == PolicyDecision.ALLOW
     assert reason_code == "ADVANCE_WINDOW_MET"
-    assert "atende ao requisito mínimo" in explanation
+    assert "meets the minimum requirement" in explanation
 
 
 def test_advance_booking_denied():
@@ -60,7 +60,7 @@ def test_advance_booking_denied():
     )
     assert decision == PolicyDecision.DENY
     assert reason_code == "ADVANCE_WINDOW_VIOLATED"
-    assert "é insuficiente frente" in explanation
+    assert "is insufficient against the requirement" in explanation
 
 
 def test_overbooking_allowed():
@@ -77,7 +77,7 @@ def test_overbooking_allowed():
     )
     assert decision == PolicyDecision.ALLOW
     assert reason_code == "WITHIN_OVERBOOKING_BUFFER"
-    assert "dentro do limite máximo permitido" in explanation
+    assert "is within the maximum allowed limit" in explanation
 
 
 def test_overbooking_denied():
@@ -94,7 +94,7 @@ def test_overbooking_denied():
     )
     assert decision == PolicyDecision.DENY
     assert reason_code == "OVERBOOKING_CAPACITY_EXCEEDED"
-    assert "excede o teto máximo permitido" in explanation
+    assert "exceeds the maximum allowed limit" in explanation
 
 
 # --- Testes de Integração via API FastAPI (POST /v1/policy-evaluations) ---
@@ -164,7 +164,7 @@ def test_api_invalid_facts_negative_value():
     data = response.json()
     assert data["status"] == 400
     assert data["type"] == "https://hotel.local/errors/invalid-policy-facts"
-    assert data["title"] == "Fatos de Política Inválidos"
+    assert data["title"] == "Invalid Policy Facts"
     assert data["instance"] == "/v1/policy-evaluations"
     assert (
         "greater than or equal to 1" in data["detail"] or "Input should be greater than or equal to 1" in data["detail"]
@@ -178,5 +178,5 @@ def test_api_missing_required_facts():
     assert response.status_code == 400
     data = response.json()
     assert data["status"] == 400
-    assert data["title"] == "Fatos de Política Inválidos"
+    assert data["title"] == "Invalid Policy Facts"
     assert "Field required" in data["detail"]

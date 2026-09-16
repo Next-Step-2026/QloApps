@@ -39,7 +39,7 @@ class TestReservationPolicyEngineUnittest(unittest.TestCase):
         decision, reason_code, explanation = evaluate_minimum_stay(facts)
         self.assertEqual(decision, PolicyDecision.ALLOW)
         self.assertEqual(reason_code, "MINIMUM_STAY_MET")
-        self.assertIn("atende ao mínimo obrigatório", explanation)
+        self.assertIn("meets the mandatory minimum", explanation)
 
     def test_minimum_stay_below_minimum_denied(self):
         """Valida que estadia inferior ao mínimo exigido é negada (DENY)"""
@@ -51,7 +51,7 @@ class TestReservationPolicyEngineUnittest(unittest.TestCase):
         decision, reason_code, explanation = evaluate_minimum_stay(facts)
         self.assertEqual(decision, PolicyDecision.DENY)
         self.assertEqual(reason_code, "NIGHTS_BELOW_MINIMUM")
-        self.assertIn("inferior ao mínimo obrigatório", explanation)
+        self.assertIn("below the mandatory minimum", explanation)
 
     # --- Testes de Antecedência de Reserva (ADVANCE_BOOKING) ---
 
