@@ -1,0 +1,177 @@
+openapi: 3.0.3
+info:
+  title: QloApps Actionable Search Engine (C++ Microservice)
+  version: 1.0.0
+  description: >
+    Microsserviço de alta performance em C++17 para parsing em linguagem natural,
+    extração semântica de entidades de hotelaria e busca conjuntiva em memória (QLO-FEAT-008 / RFC-008).
+servers:
+  - url: http://127.0.0.1:8108
+    description: Servidor Local do Microsserviço C++
+
+paths:
+  /healthz:
+    get:
+      summary: Health check e readiness probe
+      description: Retorna o status de disponibilidade do microsserviço C++.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Serviço online e operacional
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: "UP"
+
+  /v1/search/parse:
+    post:
+      summary: Parse de busca lexical e casamento de entidades
+      description: >
+        Recebe a consulta textual do usuário em linguagem natural e o catálogo de quartos,
+        normalizando o texto, extraindo contagem de adultos e comodidades, e executando
+        a busca conjuntiva no índice invertido.
+      operationId: parseSearch
+      parameters:
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          schema:
+            type: string
+            example: "corr-1726064284000"
+          description: Identificador único da requisição para rastreabilidade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+                - catalog
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                  description: Consulta de busca em linguagem natural
+                  example: "suite para 2 adultos com vista mar"
+                catalog_version:
+                  type: string
+                  description: Versão ou hash do catálogo utilizado
+                  example: "v1-demo"
+                catalog:
+                  type: array
+                  maxItems: 100
+                  description: Lista de entidades de quartos a serem indexadas (limite maximo de 100)
+                  items:
+                    type: object
+                    required:
+                      - id
+                      - title
+                    properties:
+                      id:
+                        type: string
+                        example: "room-suite-01"
+                      type:
+                        type: string
+                        default: "ROOM_TYPE"
+                        example: "ROOM_TYPE"
+                      title:
+                        type: string
+                        example: "Suíte Master Vista Mar"
+                      capacity_adults:
+                        type: integer
+                        minimum: 1
+                        default: 1
+                        example: 2
+                      amenities:
+                        type: array
+                        items:
+                          type: string
+                        example: ["vista_mar", "ar_condicionado", "banheira"]
+                      aliases:
+                        type: array
+                        items:
+                          type: string
+                        example: ["suite", "suite master", "vista mar"]
+      responses:
+        '200':
+          description: Sucesso no processamento e casamento de entidades
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - correlation_id
+                  - tokens_matched
+                  - extracted_filters
+                  - matching_entity_ids
+                  - total_matches
+                properties:
+                  correlation_id:
+                    type: string
+                    example: "corr-1726064284000"
+                  tokens_matched:
+                    type: array
+                    items:
+                      type: string
+                    example: ["suite", "vista", "mar"]
+                  extracted_filters:
+                    type: object
+                    required:
+                      - adults
+                      - amenities
+                    properties:
+                      adults:
+                        type: integer
+                        nullable: true
+                        example: 2
+                      amenities:
+                        type: array
+                        items:
+                          type: string
+                        example: ["vista_mar"]
+                  matching_entity_ids:
+                    type: array
+                    items:
+                      type: string
+                    example: ["room-suite-01"]
+                  total_matches:
+                    type: integer
+                    minimum: 0
+                    example: 1
+
+        '400':
+          description: Erro de validação ou payload malformado (RFC 7807)
+          content:
+            application/problem+json:
+              schema:
+                type: object
+                required:
+                  - type
+                  - title
+                  - status
+                  - detail
+                  - instance
+                properties:
+                  type:
+                    type: string
+                    format: uri
+                    example: "https://hotel.local/errors/invalid-query"
+                  title:
+                    type: string
+                    example: "Consulta de Busca Invalida"
+                  status:
+                    type: integer
+                    example: 400
+                  detail:
+                    type: string
+                    example: "O campo 'query' excede o limite de 256 caracteres."
+                  instance:
+                    type: string
+                    example: "/v1/search/parse"
