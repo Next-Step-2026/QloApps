@@ -72,7 +72,7 @@ class AdminOrdersControllerCore extends AdminController
         ) FROM `'._DB_PREFIX_.'htl_booking_detail` hbd WHERE hbd.`id_order` = a.`id_order`) as total_guests,
         (SELECT SUM(DATEDIFF(hbd.`date_to`, hbd.`date_from`)) FROM `'._DB_PREFIX_.'htl_booking_detail` hbd WHERE hbd.`id_order` = a.`id_order`) as los,
         hbd.`id_room` AS id_room_information,
-        (SELECT GROUP_CONCAT(CONCAT(ps.period, \'~\', ps.cnt) ORDER BY ps.period SEPARATOR \'::\') FROM (SELECT CONCAT(hbd.`date_from`, \'|\', hbd.`date_to`) AS period, COUNT(*) AS cnt FROM `'._DB_PREFIX_.'htl_booking_detail` hbd WHERE hbd.`id_order` = a.`id_order` GROUP BY hbd.`date_from`, hbd.`date_to`) AS ps) AS stay_periods,
+        order_stays.stay_periods AS stay_periods,
         (SELECT COUNT(spod.`id_service_product_order_detail`) FROM `'._DB_PREFIX_.'service_product_order_detail` spod WHERE spod.`id_order` = a.`id_order` AND spod.`id_htl_booking_detail`=0) as num_products';
 
         $this->_join = '
@@ -82,7 +82,16 @@ class AdminOrdersControllerCore extends AdminController
         LEFT JOIN `'._DB_PREFIX_.'order_state_lang` osl ON (os.`id_order_state` = osl.`id_order_state` AND osl.`id_lang` = '.(int) $this->context->language->id.')
         LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = a.`id_order`)
         LEFT JOIN `'._DB_PREFIX_.'service_product_order_detail` spod ON (spod.`id_order` = a.`id_order`)
-        LEFT JOIN `'._DB_PREFIX_.'htl_branch_info_lang` hbil ON (IF(hbd.`id_hotel`, (hbil.`id` = hbd.`id_hotel`), (hbil.`id` = spod.`id_hotel`)))';
+        LEFT JOIN `'._DB_PREFIX_.'htl_branch_info_lang` hbil ON (IF(hbd.`id_hotel`, (hbil.`id` = hbd.`id_hotel`), (hbil.`id` = spod.`id_hotel`)))
+        LEFT JOIN (
+            SELECT id_order, GROUP_CONCAT(CONCAT(period, \'~\', cnt) ORDER BY period SEPARATOR \'::\') AS stay_periods
+            FROM (
+                SELECT id_order, CONCAT(date_from, \'|\', date_to) AS period, COUNT(*) AS cnt
+                FROM `'._DB_PREFIX_.'htl_booking_detail`
+                GROUP BY id_order, date_from, date_to
+            ) AS ps
+            GROUP BY id_order
+        ) AS order_stays ON (order_stays.id_order = a.id_order)';
 
         $this->_orderBy = 'id_order';
         $this->_orderWay = 'DESC';
