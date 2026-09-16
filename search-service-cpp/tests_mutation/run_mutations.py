@@ -37,46 +37,67 @@ def main():
     mutants_killed = 0
     mutants_survived = 0
     
-    for src in src_files:
-        original_code = src.read_text(encoding="utf-8")
-        lines = original_code.splitlines()
-        
-        for idx, line in enumerate(lines):
-            for orig_op, mut_op in MUTATION_OPERATORS:
-                if orig_op in line and not line.strip().startswith("//"):
-                    mutated_line = line.replace(orig_op, mut_op, 1)
-                    if mutated_line == line:
-                        continue
-                    
-                    # Aplica mutacao
-                    mutants_tested += 1
-                    mutated_lines = list(lines)
-                    mutated_lines[idx] = mutated_line
-                    src.write_text("\n".join(mutated_lines), encoding="utf-8")
-                    
-                    # Recompila e roda testes
-                    build_res = subprocess.run(["make", "test"], cwd="search-service-cpp", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    
-                    # Se falhou o teste (returncode != 0), o mutante foi MORTO com sucesso!
-                    if build_res.returncode != 0:
-                        mutants_killed += 1
-                        status = "KILLED (Aprovado)"
-                    else:
-                        mutants_survived += 1
-                        status = "SURVIVED (Alerta)"
+    # Guarda cópia de segurança de todos os fontes para restauração garantida em caso de interrupção
+    original_contents = {src: src.read_text(encoding="utf-8") for src in src_files}
+    
+    try:
+        for src in src_files:
+            original_code = original_contents[src]
+            lines = original_code.splitlines()
+            
+            for idx, line in enumerate(lines):
+                for orig_op, mut_op in MUTATION_OPERATORS:
+                    if orig_op in line and not line.strip().startswith("//"):
+                        mutated_line = line.replace(orig_op, mut_op, 1)
+                        if mutated_line == line:
+                            continue
                         
-                    print(f"[{status}] {src.name}:{idx+1} '{orig_op}' -> '{mut_op}'")
-                    
-                    # Restaura arquivo imediatamente
-                    src.write_text(original_code, encoding="utf-8")
-                    
-                    if mutants_tested >= 10: # Amostra significativa de 10 mutantes representativos
-                        break
+                        # Aplica mutacao com salvaguarda estrita
+                        mutants_tested += 1
+                        mutated_lines = list(lines)
+                        mutated_lines[idx] = mutated_line
+                        
+                        try:
+                            src.write_text("\n".join(mutated_lines), encoding="utf-8")
+                            
+                            # Recompila e roda testes com timeout de protecao contra loops infinitos
+                            build_res = subprocess.run(
+                                ["make", "test"],
+                                cwd="search-service-cpp",
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                timeout=15
+                            )
+                            
+                            # Se falhou o teste (returncode != 0), o mutante foi MORTO com sucesso!
+                            if build_res.returncode != 0:
+                                mutants_killed += 1
+                                status = "KILLED (Aprovado)"
+                            else:
+                                mutants_survived += 1
+                                status = "SURVIVED (Alerta)"
+                                
+                        except subprocess.TimeoutExpired:
+                            # Mutação causou loop infinito ou hang -> mutante MORTO por timeout
+                            mutants_killed += 1
+                            status = "KILLED (Timeout/Loop Infinito)"
+                        finally:
+                            # Garante o restore imediato do arquivo mesmo sob timeout ou erro
+                            src.write_text(original_code, encoding="utf-8")
+                            
+                        print(f"[{status}] {src.name}:{idx+1} '{orig_op}' -> '{mut_op}'")
+                        
+                        if mutants_tested >= 10: # Amostra significativa de 10 mutantes representativos
+                            break
+                if mutants_tested >= 10:
+                    break
             if mutants_tested >= 10:
                 break
-        if mutants_tested >= 10:
-            break
-            
+    finally:
+        # Salvaguarda final: garante que nenhum fonte permaneça modificado em disco
+        for src, original_code in original_contents.items():
+            src.write_text(original_code, encoding="utf-8")
+                
     # Restaura compilação limpa
     subprocess.run(["make", "test"], cwd="search-service-cpp", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
