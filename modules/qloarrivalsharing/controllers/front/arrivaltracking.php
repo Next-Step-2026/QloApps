@@ -120,7 +120,7 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
         $rawLat = Tools::getValue('lat');
         $rawLng = Tools::getValue('lng');
 
-        if ($rawLat === false || $rawLng === false || !is_numeric($rawLat) || !is_numeric($rawLng)) {
+        if (!ArrivalBookingRepository::validateCoordinates($rawLat, $rawLng)) {
             echo json_encode(array(
                 'success' => false,
                 'message' => $this->module->l('Coordenadas geográficas ausentes ou em formato inválido.', 'arrivaltracking'),
@@ -130,14 +130,6 @@ class QloArrivalSharingArrivalTrackingModuleFrontController extends ModuleFrontC
 
         $guestLat = (float) $rawLat;
         $guestLng = (float) $rawLng;
-
-        if ($guestLat < -90.0 || $guestLat > 90.0 || $guestLng < -180.0 || $guestLng > 180.0) {
-            echo json_encode(array(
-                'success' => false,
-                'message' => $this->module->l('Coordenadas geográficas fora dos limites válidos.', 'arrivaltracking'),
-            ));
-            exit;
-        }
 
         $hotelCoords = ArrivalBookingRepository::getHotelCoordinates($booking['id_hotel']);
         $geofenceRadius = (float) Configuration::get('QLO_ARRIVAL_GEOFENCE_RADIUS');

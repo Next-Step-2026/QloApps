@@ -134,6 +134,27 @@ class ArrivalBookingRepository
     }
 
     /**
+     * Valida presença, formato numérico, finitude e limites geodésicos de coordenadas.
+     *
+     * @return bool
+     */
+    public static function validateCoordinates($rawLat, $rawLng)
+    {
+        if ($rawLat === false || $rawLng === false || $rawLat === null || $rawLat === '' || $rawLng === null || $rawLng === '') {
+            return false;
+        }
+
+        if (!is_numeric($rawLat) || !is_numeric($rawLng)) {
+            return false;
+        }
+
+        $lat = (float) $rawLat;
+        $lng = (float) $rawLng;
+
+        return (is_finite($lat) && is_finite($lng) && $lat >= -90.0 && $lat <= 90.0 && $lng >= -180.0 && $lng <= 180.0);
+    }
+
+    /**
      * Obtém informações públicas da reserva para a tela do hóspede.
      *
      * @return array|false

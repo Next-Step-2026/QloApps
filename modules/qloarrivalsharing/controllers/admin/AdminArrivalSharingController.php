@@ -88,35 +88,42 @@ class AdminArrivalSharingController extends ModuleAdminController
         $arrivalError = null;
 
         if (Tools::isSubmit('submitCheckLocation')) {
-            $inputHotelLat = (float) Tools::getValue('hotel_lat', $hotelLat);
-            $inputHotelLng = (float) Tools::getValue('hotel_lng', $hotelLng);
-            $guestLat = (float) Tools::getValue('guest_lat');
-            $guestLng = (float) Tools::getValue('guest_lng');
-            $prevState = Tools::getValue('previous_state', 'outside');
-            $radius = (float) Tools::getValue('radius', $geofenceRadius);
-            $hotelId = Tools::getValue('hotel_id', 'htl-prime-01');
+            $rawGuestLat = Tools::getValue('guest_lat');
+            $rawGuestLng = Tools::getValue('guest_lng');
 
-            $payload = array(
-                'hotel_id'          => $hotelId,
-                'hotel_lat'         => $inputHotelLat,
-                'hotel_lng'         => $inputHotelLng,
-                'guest_lat'         => $guestLat,
-                'guest_lng'         => $guestLng,
-                'geofence_radius_m' => $radius,
-                'previous_state'    => in_array($prevState, array('inside', 'outside')) ? $prevState : 'outside',
-            );
-
-            $response = $this->locationClient->sendLocationEvent($payload);
-            if ($response['success']) {
-                $arrivalResult = $response['data'];
-                if (!isset($arrivalResult['previous_state'])) {
-                    $arrivalResult['previous_state'] = $payload['previous_state'];
-                }
-                if (!isset($arrivalResult['geofence_radius_m'])) {
-                    $arrivalResult['geofence_radius_m'] = $payload['geofence_radius_m'];
-                }
+            if (!ArrivalBookingRepository::validateCoordinates($rawGuestLat, $rawGuestLng)) {
+                $arrivalError = $this->l('Coordenadas do hóspede ausentes, não numéricas, infinitas ou fora dos limites válidos.');
             } else {
-                $arrivalError = $response['error'];
+                $inputHotelLat = (float) Tools::getValue('hotel_lat', $hotelLat);
+                $inputHotelLng = (float) Tools::getValue('hotel_lng', $hotelLng);
+                $guestLat = (float) $rawGuestLat;
+                $guestLng = (float) $rawGuestLng;
+                $prevState = Tools::getValue('previous_state', 'outside');
+                $radius = (float) Tools::getValue('radius', $geofenceRadius);
+                $hotelId = Tools::getValue('hotel_id', 'htl-prime-01');
+
+                $payload = array(
+                    'hotel_id'          => $hotelId,
+                    'hotel_lat'         => $inputHotelLat,
+                    'hotel_lng'         => $inputHotelLng,
+                    'guest_lat'         => $guestLat,
+                    'guest_lng'         => $guestLng,
+                    'geofence_radius_m' => $radius,
+                    'previous_state'    => in_array($prevState, array('inside', 'outside')) ? $prevState : 'outside',
+                );
+
+                $response = $this->locationClient->sendLocationEvent($payload);
+                if ($response['success']) {
+                    $arrivalResult = $response['data'];
+                    if (!isset($arrivalResult['previous_state'])) {
+                        $arrivalResult['previous_state'] = $payload['previous_state'];
+                    }
+                    if (!isset($arrivalResult['geofence_radius_m'])) {
+                        $arrivalResult['geofence_radius_m'] = $payload['geofence_radius_m'];
+                    }
+                } else {
+                    $arrivalError = $response['error'];
+                }
             }
         }
 
