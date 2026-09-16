@@ -1,0 +1,24 @@
+---
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-throwing-static-initialization,
+  -bugprone-exception-escape,
+  performance-*,
+  readability-*,
+  -readability-magic-numbers,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-simplify-boolean-expr,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-use-nodiscard,
+  google-*,
+  -google-build-using-namespace,
+  -google-readability-todo
+
+WarningsAsErrors: ''
+HeaderFilterRegex: 'search-service-cpp/include/(Extractor|InvertedIndex|Normalizer)\.hpp'
+FormatStyle: 'file'
+...
