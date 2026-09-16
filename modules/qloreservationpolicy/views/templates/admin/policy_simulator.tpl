@@ -99,7 +99,10 @@
                         </div>
                         <div class="col-xs-6">
                             <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">{l s='Max Overbooking Rate:' mod='qloreservationpolicy'}</label>
-                            <input type="number" step="0.01" name="max_overbooking_rate" value="{$currentValues.max_overbooking_rate|escape:'html':'UTF-8'}" min="0" max="1" class="form-control" placeholder="{l s='e.g. 0.05 (5%)' mod='qloreservationpolicy'}" />
+                            <div class="input-group">
+                                <input type="number" step="0.1" name="max_overbooking_rate" value="{$currentValues.max_overbooking_rate|escape:'html':'UTF-8'}" min="0" max="100" class="form-control" placeholder="5" />
+                                <span class="input-group-addon">%</span>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -47,6 +47,16 @@ class AdminReservationPolicyController extends ModuleAdminController
             $policyType = Tools::getValue('policy_type');
             $corrId     = Tools::passwdGen(16, 'ALPHANUMERIC');
 
+            $rawOverbookingRate = Tools::getValue('max_overbooking_rate');
+            if ($rawOverbookingRate !== false && $rawOverbookingRate !== '') {
+                $parsedRate = (float) $rawOverbookingRate;
+                $normalizedOverbookingRate = ($parsedRate > 1.0) ? ($parsedRate / 100.0) : $parsedRate;
+                $displayOverbookingRate = ($parsedRate <= 1.0 && $parsedRate > 0.0) ? ($parsedRate * 100.0) : $parsedRate;
+            } else {
+                $normalizedOverbookingRate = 0.05;
+                $displayOverbookingRate = 5;
+            }
+
             $facts = array();
             if ($policyType === 'MINIMUM_STAY') {
                 $facts = array(
@@ -64,7 +74,7 @@ class AdminReservationPolicyController extends ModuleAdminController
                     'total_capacity'       => (int) Tools::getValue('total_capacity', 50),
                     'current_occupied'     => (int) Tools::getValue('current_occupied', 0),
                     'requested_units'      => (int) Tools::getValue('requested_units', 1),
-                    'max_overbooking_rate' => (float) Tools::getValue('max_overbooking_rate', 0.05),
+                    'max_overbooking_rate' => $normalizedOverbookingRate,
                 );
             }
 
@@ -126,6 +136,14 @@ class AdminReservationPolicyController extends ModuleAdminController
             }
         }
 
+        $rawOverbookingRate = Tools::getValue('max_overbooking_rate');
+        if ($rawOverbookingRate !== false && $rawOverbookingRate !== '') {
+            $parsedRate = (float) $rawOverbookingRate;
+            $displayOverbookingRate = ($parsedRate <= 1.0 && $parsedRate > 0.0) ? ($parsedRate * 100.0) : $parsedRate;
+        } else {
+            $displayOverbookingRate = 5;
+        }
+
         $this->context->smarty->assign(array(
             'policyEvaluation' => $evalData,
             'policyError'      => $errorMessage,
@@ -139,7 +157,7 @@ class AdminReservationPolicyController extends ModuleAdminController
                 'total_capacity'          => (int) Tools::getValue('total_capacity', 50),
                 'current_occupied'        => (int) Tools::getValue('current_occupied', 0),
                 'requested_units'         => (int) Tools::getValue('requested_units', 1),
-                'max_overbooking_rate'    => (float) Tools::getValue('max_overbooking_rate', 0.05),
+                'max_overbooking_rate'    => $displayOverbookingRate,
             ),
         ));
 
