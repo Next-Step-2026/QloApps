@@ -47,7 +47,7 @@ async def policy_validation_exception_handler(request: Request, exc: PolicyValid
         status_code=status.HTTP_400_BAD_REQUEST,
         content={
             "type": "https://hotel.local/errors/invalid-policy-facts",
-            "title": "Fatos de Política Inválidos",
+            "title": "Invalid Policy Facts",
             "status": 400,
             "detail": exc.detail,
             "instance": request.url.path,

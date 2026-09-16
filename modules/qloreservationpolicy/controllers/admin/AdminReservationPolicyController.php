@@ -27,6 +27,36 @@ class AdminReservationPolicyController extends ModuleAdminController
     }
 
     /**
+     * @brief Processa ações administrativas de exportação e manutenção de auditoria.
+     * @return void
+     */
+    public function postProcess()
+    {
+        if (Tools::isSubmit('downloadAuditLog')) {
+            $logFile = _PS_MODULE_DIR_ . $this->module->name . '/data/audit_log.json';
+            $content = file_exists($logFile) ? file_get_contents($logFile) : json_encode(array(), JSON_PRETTY_PRINT);
+
+            header('Content-Type: application/json; charset=utf-8');
+            header('Content-Disposition: attachment; filename="policy_audit_log_' . date('Ymd_His') . '.json"');
+            header('Content-Length: ' . strlen($content));
+            header('Pragma: no-cache');
+            header('Expires: 0');
+            echo $content;
+            exit;
+        }
+
+        if (Tools::isSubmit('clearAuditLog')) {
+            $logFile = _PS_MODULE_DIR_ . $this->module->name . '/data/audit_log.json';
+            if (file_exists($logFile)) {
+                file_put_contents($logFile, json_encode(array(), JSON_PRETTY_PRINT));
+            }
+            $this->confirmations[] = $this->l('Policy audit log cleared successfully.');
+        }
+
+        parent::postProcess();
+    }
+
+    /**
      * @brief Inicializa o conteúdo da página e processa a simulação de avaliação de políticas.
      * @details Captura os parâmetros do formulário administrativo, despacha requisição síncrona
      *          via cURL com correlation ID para o serviço Python e encaminha o resultado
@@ -47,6 +77,16 @@ class AdminReservationPolicyController extends ModuleAdminController
             $policyType = Tools::getValue('policy_type');
             $corrId     = Tools::passwdGen(16, 'ALPHANUMERIC');
 
+            $rawOverbookingRate = Tools::getValue('max_overbooking_rate');
+            if ($rawOverbookingRate !== false && $rawOverbookingRate !== '') {
+                $parsedRate = (float) $rawOverbookingRate;
+                $normalizedOverbookingRate = ($parsedRate > 1.0) ? ($parsedRate / 100.0) : $parsedRate;
+                $displayOverbookingRate = ($parsedRate <= 1.0 && $parsedRate > 0.0) ? ($parsedRate * 100.0) : $parsedRate;
+            } else {
+                $normalizedOverbookingRate = 0.05;
+                $displayOverbookingRate = 5;
+            }
+
             $facts = array();
             if ($policyType === 'MINIMUM_STAY') {
                 $facts = array(
@@ -64,7 +104,7 @@ class AdminReservationPolicyController extends ModuleAdminController
                     'total_capacity'       => (int) Tools::getValue('total_capacity', 50),
                     'current_occupied'     => (int) Tools::getValue('current_occupied', 0),
                     'requested_units'      => (int) Tools::getValue('requested_units', 1),
-                    'max_overbooking_rate' => (float) Tools::getValue('max_overbooking_rate', 0.05),
+                    'max_overbooking_rate' => $normalizedOverbookingRate,
                 );
             }
 
@@ -90,17 +130,18 @@ class AdminReservationPolicyController extends ModuleAdminController
 
             if ($response && $httpCode === 200) {
                 $evalData = json_decode($response, true);
+                $this->saveAuditLog($policyType, $facts, $evalData, $corrId);
             } else {
                 if ($httpCode === 400 && $response) {
                     $decodedErr = json_decode($response, true);
                     $detail = isset($decodedErr['detail']) ? $decodedErr['detail'] : '';
-                    $title  = isset($decodedErr['title']) ? $decodedErr['title'] : $this->l('Fatos Inválidos');
+                    $title  = isset($decodedErr['title']) ? $decodedErr['title'] : $this->l('Invalid Facts');
                     if (is_array($detail)) {
                         $errorMessage = $title . ': ' . json_encode($detail);
                     } elseif ($detail) {
                         $errorMessage = $title . ': ' . $detail;
                     } else {
-                        $errorMessage = $this->l('Requisição inválida (HTTP 400).');
+                        $errorMessage = $this->l('Invalid request (HTTP 400).');
                     }
                 } elseif ($httpCode === 422 && $response) {
                     $decodedErr = json_decode($response, true);
@@ -115,21 +156,49 @@ class AdminReservationPolicyController extends ModuleAdminController
                         }
                     }
                     $errorMessage = !empty($errorMsgs)
-                        ? $this->l('Erro de validação (HTTP 422): ') . implode('; ', $errorMsgs)
-                        : $this->l('Política ou parâmetro inválido (HTTP 422).');
+                        ? $this->l('Validation error (HTTP 422): ') . implode('; ', $errorMsgs)
+                        : $this->l('Invalid policy or parameter (HTTP 422).');
                 } else {
                     $errorMessage = sprintf(
-                        $this->l('Serviço de políticas local offline ou indisponível (HTTP %d). Verifique se o servidor Python está ativo na porta 8105.'),
+                        $this->l('Local policy service offline or unavailable (HTTP %d). Ensure the Python server is running on port 8105.'),
                         (int) $httpCode
                     );
                 }
             }
         }
 
+        $rawOverbookingRate = Tools::getValue('max_overbooking_rate');
+        if ($rawOverbookingRate !== false && $rawOverbookingRate !== '') {
+            $parsedRate = (float) $rawOverbookingRate;
+            $displayOverbookingRate = ($parsedRate <= 1.0 && $parsedRate > 0.0) ? ($parsedRate * 100.0) : $parsedRate;
+        } else {
+            $displayOverbookingRate = 5;
+        }
+
+        $logFile = _PS_MODULE_DIR_ . $this->module->name . '/data/audit_log.json';
+        $auditLogs = array();
+        if (file_exists($logFile)) {
+            $rawContent = file_get_contents($logFile);
+            $decoded = json_decode($rawContent, true);
+            if (is_array($decoded)) {
+                $auditLogs = $decoded;
+            }
+        }
+
+        $formattedRecentLogs = array();
+        $recentLogs = array_slice($auditLogs, 0, 5);
+        foreach ($recentLogs as $log) {
+            $logCopy = $log;
+            $logCopy['facts_json'] = json_encode(isset($log['facts']) ? $log['facts'] : array(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            $formattedRecentLogs[] = $logCopy;
+        }
+
         $this->context->smarty->assign(array(
             'policyEvaluation' => $evalData,
             'policyError'      => $errorMessage,
             'selectedPolicy'   => $selectedPolicy,
+            'auditLogs'        => $formattedRecentLogs,
+            'totalAuditLogs'   => count($auditLogs),
             'currentValues'    => array(
                 'requested_nights'        => (int) Tools::getValue('requested_nights', 1),
                 'required_minimum_nights' => (int) Tools::getValue('required_minimum_nights', 2),
@@ -139,7 +208,7 @@ class AdminReservationPolicyController extends ModuleAdminController
                 'total_capacity'          => (int) Tools::getValue('total_capacity', 50),
                 'current_occupied'        => (int) Tools::getValue('current_occupied', 0),
                 'requested_units'         => (int) Tools::getValue('requested_units', 1),
-                'max_overbooking_rate'    => (float) Tools::getValue('max_overbooking_rate', 0.05),
+                'max_overbooking_rate'    => $displayOverbookingRate,
             ),
         ));
 
@@ -151,5 +220,55 @@ class AdminReservationPolicyController extends ModuleAdminController
             $this->content = $this->createTemplate('policy_simulator.tpl')->fetch();
         }
         $this->context->smarty->assign('content', $this->content);
+    }
+
+    /**
+     * @brief Registra um evento de avaliação de política no arquivo audit_log.json.
+     * @param string $policyType Identificador da política avaliada
+     * @param array $facts Conjunto de fatos contextuais enviados ao motor
+     * @param array $evalData Resposta retornada pelo serviço de políticas
+     * @param string $corrId Identificador de correlação da requisição
+     * @return void
+     */
+    protected function saveAuditLog($policyType, array $facts, array $evalData, $corrId)
+    {
+        $dataDir = _PS_MODULE_DIR_ . $this->module->name . '/data';
+        if (!is_dir($dataDir)) {
+            @mkdir($dataDir, 0755, true);
+            @file_put_contents(
+                $dataDir . '/index.php',
+                "<?php\nheader('Expires: Mon, 26 Jul 1997 05:00:00 GMT');\nheader('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');\nheader('Cache-Control: no-store, no-cache, must-revalidate');\nheader('Location: ../');\nexit;\n"
+            );
+        }
+
+        $logFile = $dataDir . '/audit_log.json';
+        $auditLogs = array();
+
+        if (file_exists($logFile)) {
+            $raw = file_get_contents($logFile);
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $auditLogs = $decoded;
+            }
+        }
+
+        $entry = array(
+            'timestamp'      => date('Y-m-d H:i:s'),
+            'correlation_id' => isset($evalData['correlation_id']) ? $evalData['correlation_id'] : $corrId,
+            'policy'         => $policyType,
+            'facts'          => $facts,
+            'decision'       => isset($evalData['decision']) ? $evalData['decision'] : '',
+            'reason_code'    => isset($evalData['reason_code']) ? $evalData['reason_code'] : '',
+            'explanation'    => isset($evalData['explanation']) ? $evalData['explanation'] : '',
+        );
+
+        array_unshift($auditLogs, $entry);
+
+        // Limita o histórico persistido em arquivo aos últimos 100 registros
+        if (count($auditLogs) > 100) {
+            $auditLogs = array_slice($auditLogs, 0, 100);
+        }
+
+        file_put_contents($logFile, json_encode($auditLogs, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 }

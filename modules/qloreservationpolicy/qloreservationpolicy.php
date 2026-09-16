@@ -29,8 +29,8 @@ class QloReservationPolicy extends Module
 
         parent::__construct();
 
-        $this->displayName = $this->l('Motor de Políticas de Reserva');
-        $this->description = $this->l('Validador determinístico de regras de estadia mínima, antecedência e overbooking.');
+        $this->displayName = $this->l('Reservation Policy Engine');
+        $this->description = $this->l('Deterministic validator for minimum stay, advance booking, and overbooking rules.');
     }
 
     /**
@@ -62,7 +62,7 @@ class QloReservationPolicy extends Module
         $tab->class_name = 'AdminReservationPolicy';
         $tab->name = array();
         foreach (Language::getLanguages(true) as $lang) {
-            $tab->name[$lang['id_lang']] = $this->l('Políticas de Reserva');
+            $tab->name[$lang['id_lang']] = $this->l('Reservation Policies');
         }
         $tab->id_parent = (int) Tab::getIdFromClassName('AdminHotelReservationSystemManagement');
         $tab->module = $this->name;

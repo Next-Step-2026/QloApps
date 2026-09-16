@@ -35,15 +35,15 @@ def evaluate_minimum_stay(
         decision = PolicyDecision.ALLOW
         reason_code = "MINIMUM_STAY_MET"
         explanation = (
-            f"Estadia de {requested_nights} noite(s) atende ao mínimo obrigatório "
-            f"de {required_min_nights} noites para a categoria {room_type}."
+            f"Stay of {requested_nights} night(s) meets the mandatory minimum "
+            f"of {required_min_nights} night(s) for room type {room_type}."
         )
     else:
         decision = PolicyDecision.DENY
         reason_code = "NIGHTS_BELOW_MINIMUM"
         explanation = (
-            f"Estadia de {requested_nights} noite(s) solicitada é inferior ao mínimo "
-            f"obrigatório de {required_min_nights} noites para a categoria {room_type}."
+            f"Requested stay of {requested_nights} night(s) is below the mandatory "
+            f"minimum of {required_min_nights} night(s) for room type {room_type}."
         )
 
     return decision, reason_code, explanation
@@ -67,14 +67,12 @@ def evaluate_advance_booking(
         decision = PolicyDecision.ALLOW
         reason_code = "ADVANCE_WINDOW_MET"
         explanation = (
-            f"Antecedência de {days_in_advance} dia(s) atende ao requisito mínimo de {min_advance_days} dia(s)."
+            f"Advance booking of {days_in_advance} day(s) meets the minimum requirement of {min_advance_days} day(s)."
         )
     else:
         decision = PolicyDecision.DENY
         reason_code = "ADVANCE_WINDOW_VIOLATED"
-        explanation = (
-            f"Antecedência de {days_in_advance} dia(s) é insuficiente frente ao requisito de {min_advance_days} dia(s)."
-        )
+        explanation = f"Advance booking of {days_in_advance} day(s) is insufficient against the requirement of {min_advance_days} day(s)."
 
     return decision, reason_code, explanation
 
@@ -107,15 +105,15 @@ def evaluate_overbooking_limit(
         decision = PolicyDecision.ALLOW
         reason_code = "WITHIN_OVERBOOKING_BUFFER"
         explanation = (
-            f"Ocupação resultante ({resulting_occupied}/{total_capacity} = {resulting_pct}%) "
-            f"dentro do limite máximo permitido de {max_pct}% ({max_allowed_units} vagas)."
+            f"Resulting occupancy ({resulting_occupied}/{total_capacity} = {resulting_pct}%) "
+            f"is within the maximum allowed limit of {max_pct}% ({max_allowed_units} units)."
         )
     else:
         decision = PolicyDecision.DENY
         reason_code = "OVERBOOKING_CAPACITY_EXCEEDED"
         explanation = (
-            f"Ocupação resultante ({resulting_occupied}/{total_capacity} = {resulting_pct}%) "
-            f"excede o teto máximo permitido de {max_pct}% ({max_allowed_units} vagas)."
+            f"Resulting occupancy ({resulting_occupied}/{total_capacity} = {resulting_pct}%) "
+            f"exceeds the maximum allowed limit of {max_pct}% ({max_allowed_units} units)."
         )
 
     return decision, reason_code, explanation
@@ -137,4 +135,4 @@ def evaluate_policy(policy: PolicyType, facts: dict[str, Any]) -> tuple[PolicyDe
         return evaluate_overbooking_limit(facts)
     else:
         # Código defensivo: garante erro explícito caso novos membros sejam adicionados ao PolicyType
-        raise ValueError(f"Política desconhecida: {policy}")
+        raise ValueError(f"Unknown policy: {policy}")
