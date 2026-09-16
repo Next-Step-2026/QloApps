@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'gabrielsampaio@google.com';
-const ADMIN_PASSWD = process.env.ADMIN_PASSWD || 'G0rg0nz0l@';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
+const ADMIN_PASSWD = process.env.ADMIN_PASSWD || '';
+
 
 async function loginToAdmin(page: any) {
   await page.goto('/admin');

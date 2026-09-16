@@ -355,7 +355,13 @@ RFC-006-conversor-solicitacao-reserva.md
 **/.gradle/
 **/build/
 
+# Environment & Credentials
+.env
+.env.*
+!.env.example
+
 # Composer & Static Analysis
 /vendor/
 .php-cs-fixer.cache
 /.htaccess
+
