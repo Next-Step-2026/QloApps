@@ -120,7 +120,16 @@ class AdminContactHealthController extends ModuleAdminController
             )));
         }
 
-        // 1. Log audit event in QloApps Logger
+        // 1. Update persistent verification date in DB
+        $saved = QloContactHealthCustomer::recordVerification($customerId);
+        if (!$saved) {
+            die(json_encode(array(
+                'success' => false,
+                'message' => $this->l('Falha ao registrar a data de verificação no banco de dados.'),
+            )));
+        }
+
+        // 2. Log audit event in QloApps Logger
         Logger::addLog(
             sprintf('[qlocontacthealth] Simulação de desafio de reconfirmação de contato gerada para o cliente ID: %d', $customerId),
             1,
@@ -129,9 +138,6 @@ class AdminContactHealthController extends ModuleAdminController
             $customerId,
             true
         );
-
-        // 2. Update persistent verification date in DB
-        QloContactHealthCustomer::recordVerification($customerId);
 
         // 3. Return JSON response
         die(json_encode(array(
