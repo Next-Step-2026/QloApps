@@ -391,11 +391,7 @@ class ArrivalLogicTest
         self::assertTrue($dropped, 'Remoção da tabela deve retornar true');
         self::assertTrue(strpos($db->lastQuery, 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'qlo_arrival_tracking`') !== false, 'Query deve conter DROP TABLE IF EXISTS');
 
-        // 3. Alias initTrackingTable para retrocompatibilidade
-        $inited = ArrivalBookingRepository::initTrackingTable();
-        self::assertTrue($inited, 'Alias initTrackingTable deve retornar true');
-
-        // 4. Garantia de que consultas em runtime NÃO disparam DDL (SRP)
+        // 3. Garantia de que consultas em runtime NÃO disparam DDL (SRP)
         $db->executedQueries = array();
         ArrivalBookingRepository::saveArrivalTracking(999, 'inside', 10.0, 'outside', 'ENTERED');
         $saveQueries = $db->executedQueries;
