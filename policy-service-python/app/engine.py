@@ -72,9 +72,7 @@ def evaluate_advance_booking(
     else:
         decision = PolicyDecision.DENY
         reason_code = "ADVANCE_WINDOW_VIOLATED"
-        explanation = (
-            f"Advance booking of {days_in_advance} day(s) is insufficient against the requirement of {min_advance_days} day(s)."
-        )
+        explanation = f"Advance booking of {days_in_advance} day(s) is insufficient against the requirement of {min_advance_days} day(s)."
 
     return decision, reason_code, explanation
 
