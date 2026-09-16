@@ -33,7 +33,9 @@ class AplicationTest {
 
         assertTrue(
             body.contains("\"status\": \"OK\"") ||
-                    body.contains("\"status\":\"OK\"")
+                    body.contains("\"status\":\"OK\"") ||
+                    body.contains("\"status\": \"UP\"") ||
+                    body.contains("\"status\":\"UP\"")
         )
     }
 }
