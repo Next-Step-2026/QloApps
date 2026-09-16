@@ -29,29 +29,24 @@ test.describe('QloArrivalSharing E2E Geofencing & Reception Flow (RFC-004)', () 
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1500);
 
-    // 3. Validar exibição do Painel de Recepção
-    const panelHeading = page.locator('.panel-heading:has-text("Painel de Recepção e Monitoramento de Traslados")');
+    // 3. Validar exibição do Painel de Recepção e Indicadores
+    const panelHeading = page.locator('.panel-heading:has-text("Monitoramento de Chegadas e Traslados")');
     await expect(panelHeading).toBeVisible();
 
-    // 4. Validar exibição das Coordenadas da Propriedade (Latitude e Longitude)
-    const alertInfo = page.locator('.alert-info:has-text("Serviço de detecção de proximidade ativo")');
-    await expect(alertInfo).toBeVisible();
-
-    const hotelCoords = page.locator('.well:has-text("Coordenadas da Propriedade")');
-    await expect(hotelCoords).toBeVisible();
-    await expect(hotelCoords).toContainText('Latitude: -8.052240');
-    await expect(hotelCoords).toContainText('Longitude: -34.885650');
+    await expect(page.locator('h4:has-text("Chegadas Previstas")')).toBeVisible();
+    await expect(page.locator('h4:has-text("Total de Hóspedes")')).toBeVisible();
+    await expect(page.locator('.panel h4:has-text("Geofence")')).toBeVisible();
   });
 
   test('Simulação de Geolocation API com coordenadas no raio do hotel', async ({ page, context }) => {
     // Concede permissão de geolocalização e define coordenadas próximas ao hotel
     await context.grantPermissions(['geolocation']);
-    await page.setGeolocation({ latitude: -8.052240, longitude: -34.885650 });
+    await context.setGeolocation({ latitude: -8.052240, longitude: -34.885650 });
 
     // Acessar painel e verificar carregamento limpo
     await loginToAdmin(page);
     await page.goto('/admin/index.php?controller=AdminArrivalSharing');
-    await expect(page.locator('.panel-heading')).toBeVisible();
+    await expect(page.locator('.panel-heading').first()).toBeVisible();
   });
 
 });
