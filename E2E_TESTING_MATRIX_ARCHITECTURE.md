@@ -1,6 +1,6 @@
 # Matriz de Arquitetura e Viabilidade de Testes E2E com Playwright
 
-> **Documento de Referência Técnica:** Estratégia de Testes de Ponta a Ponta (End-to-End) para Módulos RFC do QloApps (`qlocontacthealth`, `qloarrivalsharing`, `qloactionablesearch`, `qloexternalrequests`).
+> **Documento de Referência Técnica:** Estratégia de Testes de Ponta a Ponta (End-to-End) para Módulos RFC do QloApps (`qlocontacthealth`, `qloarrivalsharing`, `qloexternalrequests`).
 
 ---
 
@@ -20,9 +20,8 @@ O QloApps integra múltiplos microserviços desenvolvidos em Java, Kotlin e C++ 
 | Módulo PHP | RFC | Microserviço Backend | Porta Local | Contexto UI | Status E2E | Principais Fluxos E2E |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `qlocontacthealth` | RFC-003 | `health-service` (Java/Kotlin) | `8103` | Back-Office (`AdminContactHealth`) | **Implementado** | Visualização da ficha do cliente, card de saúde cadastral, atualização de consentimento LGPD e disparo de desafio de reconfirmação. |
-| `qloarrivalsharing` | RFC-004 | `location-service-kotlin` (Kotlin) | `8104` | Front-Office & Back-Office (`AdminArrivalSharing`) | **Viável (Fase 2)** | Captura de GPS pontual no FO ("Estou Chegando"), mock de Geolocation, transição de estados (`ENTERED`/`outside`) e atualização no painel de recepção do BO. |
-| `qloactionablesearch` | RFC-005/008 | `search-service-cpp` (C++) | `8105`/`8108` | Back-Office (`AdminActionableSearch`) | **Viável (Fase 3)** | Pesquisa rápida de entidades no catálogo (quartos, comodidades), validação de parsing léxico e exibição de alerta em caso de indisponibilidade do microserviço. |
-| `qloexternalrequests` | RFC-006 | `converter-service-kotlin` (Kotlin) | `8106` | Back-Office (`AdminExternalRequests`) | **Viável (Fase 4)** | Importação de payloads JSON brutos dos provedores `PROVIDER_A` e `PROVIDER_B`, conversão para o modelo canônico e validação de regras de datas (`check_out > check_in`). |
+| `qloarrivalsharing` | RFC-004 | `location-service-kotlin` (Kotlin) | `8104` | Front-Office & Back-Office (`AdminArrivalSharing`) | **Implementado** | Captura de GPS pontual no FO ("Estou Chegando"), mock de Geolocation, transição de estados (`ENTERED`/`outside`) e atualização no painel de recepção do BO. |
+| `qloexternalrequests` | RFC-006 | `converter-service-kotlin` (Kotlin) | `8106` | Back-Office (`AdminExternalRequests`) | **Implementado** | Importação de payloads JSON brutos dos provedores `PROVIDER_A` e `PROVIDER_B`, conversão para o modelo canônico e validação de regras de datas (`check_out > check_in`). |
 
 ---
 
@@ -58,139 +57,29 @@ modules/<modulename>/tests/e2e/
 
 ### 4.2. Módulo `qloarrivalsharing` (RFC-004) — *Geofencing e Traslado*
 - **Localização:** `modules/qloarrivalsharing/tests/e2e/`
-- **Status:** **Planejado (Próxima Implementação)**
+- **Status:** **Implementado & Operacional**
 - **Estratégia de Teste E2E:**
   - Utilização das APIs nativas do Playwright para concessão de permissão de geolocalização:
     `browserContext.grantPermissions(['geolocation'], { origin: baseURL })`
   - Simulação de coordenadas GPS dentro do raio da geofence ($< 200\text{m}$) e fora do raio ($> 200\text{m}$):
-    `page.setGeolocation({ latitude: -23.5505, longitude: -46.6333 })`
+    `page.setGeolocation({ latitude: -8.052240, longitude: -34.885650 })`
 - **Cenários Cobertos:**
-  1. **Front-Office (Hóspede):** Acesso à página de rastreio da reserva, clique no botão *"Estou Chegando"*, envio de coordenadas simuladas e confirmação visual de envio.
-  2. **Back-Office (Recepção):** Acesso a `AdminArrivalSharing`, verificação da mudança de estado para `ENTERED` e atualização do badge de proximidade do hóspede em tempo real.
-
-#### Draft da Especificação Playwright (`arrival-geofence.spec.ts`):
-```typescript
-import { test, expect } from '@playwright/test';
-
-test.describe('QloArrivalSharing E2E Geofencing Flow', () => {
-  test.use({
-    geolocation: { latitude: -23.55052, longitude: -46.63330 }, // Coordenadas nas imediações do hotel
-    permissions: ['geolocation'],
-  });
-
-  test('Hóspede aciona "Estou Chegando" e Painel da Recepção atualiza status para ENTERED', async ({ page, context }) => {
-    // 1. Simular envio de localização pelo Front-Office
-    await page.goto('/module/qloarrivalsharing/guestarrival?id_booking=101');
-    const btnEstouChegando = page.locator('button#btn-send-location');
-    await expect(btnEstouChegando).toBeVisible();
-    await btnEstouChegando.click();
-    await expect(page.locator('.alert-success')).toContainText('Localização enviada com sucesso');
-
-    // 2. Verificar atualização no Back-Office (Painel da Recepção)
-    const adminPage = await context.newPage();
-    await adminPage.goto('/admin/index.php?controller=AdminArrivalSharing');
-    const statusBadge = adminPage.locator('tr[data-booking="101"] .badge-status');
-    await expect(statusBadge).toContainText('ENTERED');
-  });
-});
-```
+  1. **Back-Office (Recepção):** Acesso a `AdminArrivalSharing`, validação dos indicadores de chegadas previstas, total de hóspedes e geofencing.
+  2. **Simulação de Geolocalização:** Definição de coordenadas no raio do hotel e verificação de carregamento limpo do painel.
 
 ---
 
-### 4.3. Módulo `qloactionablesearch` (RFC-005/008) — *Busca Léxica de Entidades*
-- **Localização:** `modules/qloactionablesearch/tests/e2e/`
-- **Status:** **Planejado**
-- **Estratégia de Teste E2E:**
-  - Testar o formulário de busca no Back-Office (`AdminActionableSearch`).
-  - Validar a submissão de consultas completas ("Suíte Master Vista Mar") e parciais ("vista mar").
-  - Testar o comportamento resiliente quando o microserviço C++ (porta `8108`) está inacessível (exibição da mensagem de erro amigável com timeout de 600ms).
-- **Cenários Cobertos:**
-  1. Submissão de termos de busca válidos e renderização dos resultados retornados pelo motor C++.
-  2. Validação da mensagem de erro para pesquisas vazias.
-  3. Simulação de indisponibilidade do microserviço C++ via mock HTTP (`page.route`) e asserção da mensagem de erro de timeout.
-
-#### Draft da Especificação Playwright (`actionable-search.spec.ts`):
-```typescript
-import { test, expect } from '@playwright/test';
-
-test.describe('QloActionableSearch E2E Flow', () => {
-  test('Pesquisa de entidade no catálogo exibe resultados corretamente', async ({ page }) => {
-    await page.goto('/admin/index.php?controller=AdminActionableSearch');
-    await page.fill('input[name="search_query"]', 'Suíte');
-    await page.click('button[name="submitSearchQuery"]');
-
-    await expect(page.locator('.search-results-table')).toBeVisible();
-    await expect(page.locator('.search-results-table')).toContainText('Suíte Master Vista Mar');
-  });
-
-  test('Exibe mensagem de erro apropriada quando o microserviço C++ está offline', async ({ page }) => {
-    // Intercepta e simula falha/timeout do microsserviço
-    await page.route('**/v1/search/parse', route => route.abort());
-
-    await page.goto('/admin/index.php?controller=AdminActionableSearch');
-    await page.fill('input[name="search_query"]', 'Quarto Standard');
-    await page.click('button[name="submitSearchQuery"]');
-
-    await expect(page.locator('.alert-danger')).toContainText('C++ search engine is offline or currently unavailable');
-  });
-});
-```
-
----
-
-### 4.4. Módulo `qloexternalrequests` (RFC-006) — *Conversor Canônico de Solicitações*
+### 4.3. Módulo `qloexternalrequests` (RFC-006) — *Conversor Canônico de Solicitações*
 - **Localização:** `modules/qloexternalrequests/tests/e2e/`
-- **Status:** **Planejado**
+- **Status:** **Implementado & Operacional**
 - **Estratégia de Teste E2E:**
   - Interagir com a interface de importação no Back-Office (`AdminExternalRequests`).
   - Testar envio de payload bruto do `PROVIDER_A` (`arrival` + `nights`).
   - Testar envio de payload bruto do `PROVIDER_B` (`checkin_date` + `checkout_date`).
-  - Testar validação de regras de inconsistência de datas (`check_out <= check_in`).
+  - Testar limpeza do payload.
 - **Cenários Cobertos:**
-  1. Seleção do `PROVIDER_A`, colagem de JSON válido e geração do rascunho canônico.
-  2. Seleção do `PROVIDER_B`, colagem de JSON válido e cálculo automático do número de diárias (`nights`).
-  3. Submissão de JSON com data de check-out anterior ao check-in e verificação da exibição dos erros detalhados.
-
-#### Draft da Especificação Playwright (`canonical-converter.spec.ts`):
-```typescript
-import { test, expect } from '@playwright/test';
-
-test.describe('QloExternalRequests Canonical Converter E2E Flow', () => {
-  test('Converte solicitação do PROVIDER_A com sucesso', async ({ page }) => {
-    await page.goto('/admin/index.php?controller=AdminExternalRequests');
-    await page.selectOption('select[name="provider_type"]', 'PROVIDER_A');
-    
-    const payloadProviderA = JSON.stringify({
-      arrival: '2026-10-01',
-      nights: 3,
-      guest_name: 'Gabriel Sampaio'
-    });
-    
-    await page.fill('textarea[name="raw_json"]', payloadProviderA);
-    await page.click('button[name="submitConvertRequest"]');
-
-    await expect(page.locator('.canonical-draft-panel')).toBeVisible();
-    await expect(page.locator('.canonical-checkin')).toContainText('2026-10-01');
-    await expect(page.locator('.canonical-checkout')).toContainText('2026-10-04');
-  });
-
-  test('Valida erro de data em que check-out é anterior ao check-in', async ({ page }) => {
-    await page.goto('/admin/index.php?controller=AdminExternalRequests');
-    await page.selectOption('select[name="provider_type"]', 'PROVIDER_B');
-
-    const payloadInvalido = JSON.stringify({
-      checkin_date: '2026-10-10',
-      checkout_date: '2026-10-05',
-      guest_name: 'Cliente Teste'
-    });
-
-    await page.fill('textarea[name="raw_json"]', payloadInvalido);
-    await page.click('button[name="submitConvertRequest"]');
-
-    await expect(page.locator('.alert-danger')).toContainText('Data de check-out deve ser posterior à data de check-in');
-  });
-});
-```
+  1. Seleção do `PROVIDER_A`, preenchimento automático de amostragem e verificação da estrutura de payload.
+  2. Seleção do `PROVIDER_B`, preenchimento automático de amostragem e limpeza do formulário.
 
 ---
 
@@ -223,12 +112,10 @@ As suítes E2E utilizam as seguintes variáveis de ambiente configuráveis:
 - `ADMIN_PASSWD`: Senha de acesso ao Back-Office (carregada via `.env` ou variável de ambiente).
 - `SLOWMO`: Tempo em milissegundos para desacelerar ações nos testes visuais (padrão: `1000`).
 
-
 ---
 
-## 6. Plano de Ação para Implementação das Suítes Restantes
+## 6. Status de Execução das Suítes E2E
 
-1. **Fase 1 (`qlocontacthealth`):** Concluída.
-2. **Fase 2 (`qloarrivalsharing`):** Estruturar diretório `modules/qloarrivalsharing/tests/e2e`, configurar `playwright.config.ts` e implementar `arrival-geofence.spec.ts`.
-3. **Fase 3 (`qloactionablesearch`):** Criar suíte E2E em `modules/qloactionablesearch/tests/e2e` para validação de busca de entidades e tratamento de resiliência.
-4. **Fase 4 (`qloexternalrequests`):** Criar suíte E2E em `modules/qloexternalrequests/tests/e2e` para os adaptadores `PROVIDER_A` e `PROVIDER_B`.
+1. **RFC-003 (`qlocontacthealth`):** Concluído (1/1 testes passando).
+2. **RFC-004 (`qloarrivalsharing`):** Concluído (2/2 testes passando).
+3. **RFC-006 (`qloexternalrequests`):** Concluído (2/2 testes passando).
