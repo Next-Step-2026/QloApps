@@ -269,11 +269,17 @@ class QloContactHealth extends Module
             $this->context->smarty->assign('healthWarning', $evaluation['error']);
         }
 
+        $healthRecord = QloContactHealthCustomer::getByCustomerId($customerId);
+        $rawConsentDate = (!empty($healthRecord['consent_expires_at']) && $healthRecord['consent_expires_at'] !== '0000-00-00 00:00:00')
+            ? date('Y-m-d', strtotime($healthRecord['consent_expires_at']))
+            : '';
+
         $adminLink = $this->context->link->getAdminLink('AdminContactHealth');
         $this->context->smarty->assign(array(
             'customerId' => (int) $customerId,
             'ajaxUrl' => $adminLink,
             'ajaxToken' => Tools::getAdminTokenLite('AdminContactHealth'),
+            'consentExpiresAtDate' => $rawConsentDate,
         ));
 
         return $this->display(__FILE__, 'views/templates/admin/contact_health_card.tpl');

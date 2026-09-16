@@ -148,4 +148,59 @@ class AdminContactHealthController extends ModuleAdminController
             ),
         )));
     }
+
+    /**
+     * AJAX action to update or revoke customer LGPD consent expiration date.
+     */
+    public function ajaxProcessUpdateConsent()
+    {
+        $customerId = (int) Tools::getValue('id_customer');
+        if (!$customerId) {
+            die(json_encode(array(
+                'success' => false,
+                'message' => $this->l('ID do cliente não informado.'),
+            )));
+        }
+
+        $customer = new Customer($customerId);
+        if (!Validate::isLoadedObject($customer)) {
+            die(json_encode(array(
+                'success' => false,
+                'message' => $this->l('Cliente não encontrado.'),
+            )));
+        }
+
+        $consentDate = Tools::getValue('consent_expires_at');
+        $dateStr = null;
+
+        if (!empty($consentDate)) {
+            if (!Validate::isDate($consentDate)) {
+                die(json_encode(array(
+                    'success' => false,
+                    'message' => $this->l('Data de expiração do consentimento inválida (formato esperado: AAAA-MM-DD).'),
+                )));
+            }
+            $dateStr = date('Y-m-d 23:59:59', strtotime($consentDate));
+        }
+
+        // 1. Update persistent consent expiration in DB
+        QloContactHealthCustomer::updateConsentExpiration($customerId, $dateStr);
+
+        // 2. Audit event generation via QloApps Logger
+        $auditMsg = $dateStr
+            ? sprintf('[qlocontacthealth] Consentimento LGPD atualizado para o cliente ID #%d (expiração: %s)', $customerId, $dateStr)
+            : sprintf('[qlocontacthealth] Consentimento LGPD revogado/zerado para o cliente ID #%d', $customerId);
+
+        Logger::addLog($auditMsg, 1, null, 'Customer', $customerId, true);
+
+        // 3. Return JSON response
+        $responseMsg = $dateStr
+            ? sprintf($this->l('Consentimento LGPD atualizado com sucesso para o cliente ID #%d (expiração: %s).'), $customerId, date('d/m/Y', strtotime($dateStr)))
+            : sprintf($this->l('Consentimento LGPD revogado com sucesso para o cliente ID #%d.'), $customerId);
+
+        die(json_encode(array(
+            'success' => true,
+            'message' => $responseMsg,
+        )));
+    }
 }
