@@ -1,0 +1,7 @@
+.auth/
+test-results/
+screenshots/
+videos/
+.pytest_cache/
+__pycache__/
+*.pyc
