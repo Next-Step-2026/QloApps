@@ -94,8 +94,6 @@ class QloContactHealthCustomer extends ObjectModel
             return false;
         }
 
-        self::createTable();
-
         $sql = 'SELECT * FROM `' . _DB_PREFIX_ . 'qlocontacthealth_customer` WHERE `id_customer` = ' . $idCustomer;
         return Db::getInstance()->getRow($sql);
     }
@@ -112,8 +110,6 @@ class QloContactHealthCustomer extends ObjectModel
         if (!$idCustomer) {
             return false;
         }
-
-        self::createTable();
 
         $now = date('Y-m-d H:i:s');
         $sql = 'INSERT INTO `' . _DB_PREFIX_ . 'qlocontacthealth_customer` (`id_customer`, `last_verified_at`, `date_add`, `date_upd`)
@@ -137,7 +133,6 @@ class QloContactHealthCustomer extends ObjectModel
             return false;
         }
 
-        self::createTable();
         $now = date('Y-m-d H:i:s');
         $val = (!empty($dateStr) && $dateStr !== '0000-00-00 00:00:00') ? '\'' . pSQL($dateStr) . '\'' : 'NULL';
 
