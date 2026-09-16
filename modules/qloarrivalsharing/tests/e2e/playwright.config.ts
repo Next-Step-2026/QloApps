@@ -8,7 +8,6 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const slowMoMs = process.env.SLOWMO ? parseInt(process.env.SLOWMO, 10) : 1000;
 
-
 export default defineConfig({
   testDir: './specs',
   fullyParallel: false,
