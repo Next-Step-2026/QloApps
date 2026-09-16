@@ -23,7 +23,16 @@ class AdminReservationAssistantController extends ModuleAdminController
     {
         $this->bootstrap = true;
         parent::__construct();
+        $this->override_folder = '';
         $this->meta_title = $this->l('Copiloto de Consulta de Reservas');
+    }
+
+    public function createTemplate($tpl_name)
+    {
+        if (file_exists($this->getTemplatePath() . $tpl_name)) {
+            return $this->context->smarty->createTemplate($this->getTemplatePath() . $tpl_name, $this->context->smarty);
+        }
+        return parent::createTemplate($tpl_name);
     }
 
     public function initContent()
