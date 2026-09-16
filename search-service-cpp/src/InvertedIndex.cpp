@@ -66,20 +66,16 @@ std::vector<std::string> InvertedIndex::searchConjunctive(
       candidateIds.insert(id);
     }
   } else {
-    // Para cada token da busca conhecido, deve haver correspondencia (AND search).
-    // Tokens desconhecidos ou com erros ortograficos (ex: "vita" em vez de "vista")
-    // sao ignorados para retornar o resultado mais proximo pelos termos validos.
+    // Para cada token da busca, deve haver correspondencia (AND search)
     bool firstToken = true;
-    size_t knownTokensCount = 0;
 
     for (const auto& tok : queryTokens) {
       auto it = index_.find(tok);
       if (it == index_.end()) {
-        // Palavra ausente no catalogo / erro ortografico: ignora o termo
-        continue;
+        // Token nao existe no catalogo: intersecao sera vazia
+        return {};
       }
 
-      knownTokensCount++;
       if (firstToken) {
         candidateIds = it->second;
         firstToken = false;
@@ -95,11 +91,6 @@ std::vector<std::string> InvertedIndex::searchConjunctive(
           return {};
         }
       }
-    }
-
-    // Se nenhum dos termos pesquisados foi reconhecido no catalogo, retorna vazio
-    if (knownTokensCount == 0) {
-      return {};
     }
   }
 
