@@ -3,3 +3,6 @@ package-lock.json
 screenshots/
 test-results/
 playwright-report/
+.env
+.env.*
+local_config.json

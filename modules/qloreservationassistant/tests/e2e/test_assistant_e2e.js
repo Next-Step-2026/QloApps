@@ -12,9 +12,18 @@ const path = require('path');
 const fs = require('fs');
 const { execSync, spawn } = require('child_process');
 
-const BASE_URL = process.env.QLO_BASE_URL || 'http://localhost:8080/admin338bwc0sf';
-const ADMIN_EMAIL = process.env.QLO_ADMIN_EMAIL || 'gabrielrs@gxmail.com';
-const ADMIN_PASS = process.env.QLO_ADMIN_PASSWORD || '1a2b3c4d5e';
+// Suporte a configuracao local (local_config.json ignorado no git) ou variaveis de ambiente
+let localConfig = {};
+const localConfigFile = path.join(__dirname, 'local_config.json');
+if (fs.existsSync(localConfigFile)) {
+  try {
+    localConfig = JSON.parse(fs.readFileSync(localConfigFile, 'utf8'));
+  } catch (e) {}
+}
+
+const BASE_URL = process.env.QLO_BASE_URL || localConfig.baseUrl || 'http://localhost:8080/admin-dev';
+const ADMIN_EMAIL = process.env.QLO_ADMIN_EMAIL || localConfig.adminEmail || 'admin@qloapps.local';
+const ADMIN_PASS = process.env.QLO_ADMIN_PASSWORD || localConfig.adminPassword || 'admin123';
 const SCREENSHOTS_DIR = path.join(__dirname, 'screenshots');
 
 if (!fs.existsSync(SCREENSHOTS_DIR)) {
