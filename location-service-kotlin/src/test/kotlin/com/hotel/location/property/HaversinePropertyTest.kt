@@ -105,20 +105,35 @@ class HaversinePropertyTest {
                 )
                 val result = HaversineEngine.evaluate(event, "test-correlation-id")
 
-                // Regra 1: alertTriggered só pode ser true se a transição for ENTERED
-                val alertConsistentWithTransition = (result.alertTriggered == (result.transition == GeofenceTransition.ENTERED))
+                // Resolução determinística e bidirecional esperada da máquina de estados
+                val expectedTransition = when {
+                    prevState == GeofenceState.OUTSIDE && result.currentState == GeofenceState.INSIDE -> GeofenceTransition.ENTERED
+                    prevState == GeofenceState.INSIDE && result.currentState == GeofenceState.OUTSIDE -> GeofenceTransition.EXITED
+                    else -> GeofenceTransition.NO_CHANGE
+                }
 
-                // Regra 2: ENTERED só ocorre quando previousState era OUTSIDE e currentState é INSIDE
-                val enteredConsistentWithStates = if (result.transition == GeofenceTransition.ENTERED) {
-                    prevState == GeofenceState.OUTSIDE && result.currentState == GeofenceState.INSIDE
-                } else true
+                val transitionExact = (result.transition == expectedTransition)
+                val alertExact = (result.alertTriggered == (expectedTransition == GeofenceTransition.ENTERED))
 
-                // Regra 3: EXITED só ocorre quando previousState era INSIDE e currentState é OUTSIDE
-                val exitedConsistentWithStates = if (result.transition == GeofenceTransition.EXITED) {
-                    prevState == GeofenceState.INSIDE && result.currentState == GeofenceState.OUTSIDE
-                } else true
+                transitionExact && alertExact
+            }
+        }
+    }
 
-                alertConsistentWithTransition && enteredConsistentWithStates && exitedConsistentWithStates
+    @Test
+    fun `Propriedade de Pontos Antipodais e Extremos - calculo geodesico nao gera NaN e respeita simetria e limite terrestre`() {
+        runBlocking {
+            forAll(arbCoordinates) { coord ->
+                val antipodalLng = if (coord.longitude <= 0.0) coord.longitude + 180.0 else coord.longitude - 180.0
+                val antipode = Coordinates(-coord.latitude, antipodalLng)
+
+                val distForward = HaversineEngine.calculateDistanceMeters(coord, antipode)
+                val distBackward = HaversineEngine.calculateDistanceMeters(antipode, coord)
+
+                distForward.isFinite() && !distForward.isNaN() &&
+                    distBackward.isFinite() && !distBackward.isNaN() &&
+                    abs(distForward - distBackward) < 0.01 &&
+                    distForward >= 20000000.0 && distForward <= 20037500.0
             }
         }
     }
