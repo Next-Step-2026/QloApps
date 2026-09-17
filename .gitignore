@@ -425,5 +425,15 @@ playwright-report/
 /vendor/
 .php-cs-fixer.cache
 /.htaccess
-
-
+# Local Development & Orchestration Artifacts
+.logs/
+.jdk21/
+*.bak
+assistant-service-cpp/assistant_service
+assistant-service-cpp/test_classifier
+overlap-service-cpp/overlap_service
+overlap-service-cpp/test_overlaps
+overlap-service-cpp/build/
+overlap-service-cpp/include/httplib.h
+overlap-service-cpp/include/json.hpp
+overlap-service-cpp/include/doctest.h

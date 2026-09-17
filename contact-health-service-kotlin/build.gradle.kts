@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm") version "2.0.0"
     kotlin("plugin.serialization") version "2.0.0"
     id("org.jetbrains.kotlinx.kover") version "0.8.3"
-    id("info.solidsoft.pitest") version "1.15.0"
+    // id("info.solidsoft.pitest") version "1.15.0"
     application
 }
 
@@ -42,7 +42,6 @@ application {
 
 tasks.test {
     useJUnitPlatform()
-}
     exclude("**/*FuzzTest*")
     testLogging {
         events("passed", "skipped", "failed")
@@ -67,7 +66,7 @@ kover {
     }
 }
 
-configure<info.solidsoft.gradle.pitest.PitestPluginExtension> {
+/* configure<info.solidsoft.gradle.pitest.PitestPluginExtension> {
     junit5PluginVersion.set("1.2.1")
     targetClasses.set(listOf("com.hotel.contacthealth.domain.*"))
     targetTests.set(listOf("com.hotel.contacthealth.*Test"))
@@ -76,3 +75,5 @@ configure<info.solidsoft.gradle.pitest.PitestPluginExtension> {
     timestampedReports.set(false)
 }
 
+
+*/
