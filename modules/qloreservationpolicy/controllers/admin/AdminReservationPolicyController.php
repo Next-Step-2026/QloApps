@@ -73,19 +73,19 @@ class AdminReservationPolicyController extends ModuleAdminController
         $errorMessage = null;
         $selectedPolicy = Tools::getValue('policy_type', 'MINIMUM_STAY');
 
+        $rawOverbookingRate = Tools::getValue('max_overbooking_rate');
+        if ($rawOverbookingRate !== false && $rawOverbookingRate !== '') {
+            $parsedRate = max(0.0, (float) $rawOverbookingRate);
+            $normalizedOverbookingRate = $parsedRate / 100.0;
+            $displayOverbookingRate = $parsedRate;
+        } else {
+            $normalizedOverbookingRate = 0.05;
+            $displayOverbookingRate = 5;
+        }
+
         if (Tools::isSubmit('submitPolicySimulation')) {
             $policyType = Tools::getValue('policy_type');
             $corrId     = Tools::passwdGen(16, 'ALPHANUMERIC');
-
-            $rawOverbookingRate = Tools::getValue('max_overbooking_rate');
-            if ($rawOverbookingRate !== false && $rawOverbookingRate !== '') {
-                $parsedRate = (float) $rawOverbookingRate;
-                $normalizedOverbookingRate = ($parsedRate > 1.0) ? ($parsedRate / 100.0) : $parsedRate;
-                $displayOverbookingRate = ($parsedRate <= 1.0 && $parsedRate > 0.0) ? ($parsedRate * 100.0) : $parsedRate;
-            } else {
-                $normalizedOverbookingRate = 0.05;
-                $displayOverbookingRate = 5;
-            }
 
             $facts = array();
             if ($policyType === 'MINIMUM_STAY') {
@@ -165,14 +165,6 @@ class AdminReservationPolicyController extends ModuleAdminController
                     );
                 }
             }
-        }
-
-        $rawOverbookingRate = Tools::getValue('max_overbooking_rate');
-        if ($rawOverbookingRate !== false && $rawOverbookingRate !== '') {
-            $parsedRate = (float) $rawOverbookingRate;
-            $displayOverbookingRate = ($parsedRate <= 1.0 && $parsedRate > 0.0) ? ($parsedRate * 100.0) : $parsedRate;
-        } else {
-            $displayOverbookingRate = 5;
         }
 
         $logFile = _PS_MODULE_DIR_ . $this->module->name . '/data/audit_log.json';

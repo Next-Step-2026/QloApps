@@ -302,3 +302,6 @@ coverage.xml
 htmlcov/
 .schemathesis/
 mutants/
+
+# Reservation policy audit logs
+/modules/qloreservationpolicy/data/*.json

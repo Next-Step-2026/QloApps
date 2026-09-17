@@ -97,6 +97,23 @@ def test_overbooking_denied():
     assert "exceeds the maximum allowed limit" in explanation
 
 
+def test_overbooking_fractional_precision_and_decimal_display():
+    """Valida formatação decimal e desempate visual em capacidades fracionárias (ex: 14 quartos a 7%)"""
+    decision, reason_code, explanation = evaluate_policy(
+        PolicyType.OVERBOOKING_LIMIT,
+        {
+            "total_capacity": 14,
+            "current_occupied": 14,
+            "requested_units": 1,
+            "max_overbooking_rate": 0.07,
+        },
+    )
+    assert decision == PolicyDecision.DENY
+    assert "107.1%" in explanation
+    assert "107.0%" in explanation
+    assert "exceeds the maximum allowed limit" in explanation
+
+
 # --- Testes de Integração via API FastAPI (POST /v1/policy-evaluations) ---
 
 
