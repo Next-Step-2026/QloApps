@@ -214,6 +214,24 @@ public:
             };
         }
 
+        // 5. Validate 'locale' type if present
+        if (parsed.contains("locale") && !parsed["locale"].is_string()) {
+            return {
+                false,
+                400,
+                ProblemDetails::create(
+                    "https://hotel.local/errors/invalid-payload",
+                    "Invalid Request Payload",
+                    400,
+                    "Field 'locale' must be a valid string.",
+                    "INVALID_LOCALE_TYPE",
+                    "locale"
+                ),
+                "",
+                ""
+            };
+        }
+
         return {true, 200, json::object(), rawQuery, refDate};
     }
 };
