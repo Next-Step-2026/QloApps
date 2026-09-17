@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HealthResponseSchema",
+  "type": "object",
+  "required": ["status", "service", "port"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["UP", "DOWN"]
+    },
+    "service": {
+      "type": "string",
+      "const": "location-service-kotlin"
+    },
+    "port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    }
+  },
+  "additionalProperties": false
+}

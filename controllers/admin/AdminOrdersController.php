@@ -82,7 +82,16 @@ class AdminOrdersControllerCore extends AdminController
         LEFT JOIN `'._DB_PREFIX_.'order_state_lang` osl ON (os.`id_order_state` = osl.`id_order_state` AND osl.`id_lang` = '.(int) $this->context->language->id.')
         LEFT JOIN `'._DB_PREFIX_.'htl_booking_detail` hbd ON (hbd.`id_order` = a.`id_order`)
         LEFT JOIN `'._DB_PREFIX_.'service_product_order_detail` spod ON (spod.`id_order` = a.`id_order`)
-        LEFT JOIN `'._DB_PREFIX_.'htl_branch_info_lang` hbil ON (IF(hbd.`id_hotel`, (hbil.`id` = hbd.`id_hotel`), (hbil.`id` = spod.`id_hotel`)))';
+        LEFT JOIN `'._DB_PREFIX_.'htl_branch_info_lang` hbil ON (IF(hbd.`id_hotel`, (hbil.`id` = hbd.`id_hotel`), (hbil.`id` = spod.`id_hotel`)))
+        LEFT JOIN (
+            SELECT id_order, GROUP_CONCAT(CONCAT(period, \'~\', cnt) ORDER BY period SEPARATOR \'::\') AS stay_periods
+            FROM (
+                SELECT id_order, CONCAT(date_from, \'|\', date_to) AS period, COUNT(*) AS cnt
+                FROM `'._DB_PREFIX_.'htl_booking_detail`
+                GROUP BY id_order, date_from, date_to
+            ) AS ps
+            GROUP BY id_order
+        ) AS order_stays ON (order_stays.id_order = a.id_order)';
 
         $this->_orderBy = 'id_order';
         $this->_orderWay = 'DESC';

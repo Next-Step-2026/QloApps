@@ -1,0 +1,108 @@
+[project]
+name = "reservation-policy-engine"
+version = "1.0.0"
+description = "Motor determinístico de validação de políticas de estadia mínima, antecedência e overbooking"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.22.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "httpx>=0.24.0",
+    "ruff>=0.4.0",
+    "pyright>=1.1.350",
+    "hypothesis>=6.90.0",
+    "z3-solver>=4.12.0",
+    "schemathesis>=3.20.0",
+    "mutmut>=2.4.4",
+    "deptry>=0.16.0",
+    "import-linter>=2.0",
+    "testcontainers>=4.0.0",
+    "playwright>=1.40.0",
+    "pact-python>=2.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-v --strict-markers"
+markers = [
+    "unit: Testes unitários das regras de negócio",
+    "integration: Testes dos endpoints HTTP e containers",
+    "e2e: Testes ponta a ponta com Playwright",
+    "contract: Testes de contrato orientados ao consumidor (Pact/Schemathesis)",
+    "property: Testes baseados em propriedades com Hypothesis",
+    "formal: Verificação formal matemática com Z3",
+]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 90
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "S",   # flake8-bandit (SAST)
+    "C90", # mccabe complexity
+]
+ignore = [
+    "S101",  # permitir 'assert' nos testes
+    "B008",  # permitir Depends do FastAPI em assinaturas de funções
+    "UP042", # compatibilidade com str, Enum
+    "E501",  # comprimento de linha (gerenciado pelo formatter)
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106"]
+
+[tool.pyright]
+include = ["app"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+reportMissingImports = true
+reportMissingTypeStubs = false
+
+[tool.importlinter]
+root_package = "app"
+
+[[tool.importlinter.contracts]]
+name = "Arquitetura em Camadas (Strict Layering)"
+type = "layers"
+layers = [
+    "app.main",
+    "app.engine",
+    "app.schemas",
+]
+
+[tool.mutmut]
+debug = false
+source_paths = ["app/"]
+pytest_add_cli_args_test_selection = ["tests/test_engine.py", "tests/test_unittest_engine.py"]
