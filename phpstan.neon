@@ -1,0 +1,10 @@
+parameters:
+    level: 6
+    paths:
+        - modules/qloexternalrequests
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        - '#Property ModuleCore::\$version \(float\) does not accept string#'
+        - '#Property TabCore::\$name \(string\) does not accept array#'
