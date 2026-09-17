@@ -2,6 +2,7 @@ package com.hotel.location
 
 import com.hotel.location.exception.InvalidCoordinatesException
 import com.hotel.location.exception.InvalidGeofenceRadiusException
+import com.hotel.location.exception.InvalidGeofenceStateException
 import com.hotel.location.exception.MissingFieldException
 import com.hotel.location.dto.toLog
 import com.hotel.location.model.Coordinates
@@ -167,6 +168,31 @@ class HaversineEngineTest {
                 Coordinates(0.0, 185.0)
             }
             assertEquals("longitude", exLng.field)
+        }
+    }
+
+    @Nested
+    @DisplayName("GeofenceState Enum and Parser Tests")
+    inner class GeofenceStateTests {
+
+        @Test
+        fun `should parse valid geofence states case-insensitively and trimmed`() {
+            assertEquals(GeofenceState.INSIDE, GeofenceState.fromString("inside"))
+            assertEquals(GeofenceState.INSIDE, GeofenceState.fromString("INSIDE"))
+            assertEquals(GeofenceState.INSIDE, GeofenceState.fromString("  InSiDe  "))
+            assertEquals(GeofenceState.OUTSIDE, GeofenceState.fromString("outside"))
+            assertEquals(GeofenceState.OUTSIDE, GeofenceState.fromString("OUTSIDE"))
+            assertEquals(GeofenceState.OUTSIDE, GeofenceState.fromString("  OuTsIdE  "))
+        }
+
+        @Test
+        fun `should throw InvalidGeofenceStateException when state string is invalid`() {
+            val ex = assertThrows(InvalidGeofenceStateException::class.java) {
+                GeofenceState.fromString("invalido")
+            }
+            assertEquals("previous_state", ex.field)
+            assertTrue(ex.message.contains("invalido"))
+            assertEquals(com.hotel.location.exception.DomainErrorCode.INVALID_STATE, ex.errorCode)
         }
     }
 
