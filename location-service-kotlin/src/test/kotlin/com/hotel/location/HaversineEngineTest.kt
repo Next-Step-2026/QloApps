@@ -4,6 +4,8 @@ import com.hotel.location.exception.InvalidCoordinatesException
 import com.hotel.location.exception.InvalidGeofenceRadiusException
 import com.hotel.location.exception.InvalidGeofenceStateException
 import com.hotel.location.exception.MissingFieldException
+import com.hotel.location.dto.LocationEventRequestDto
+import com.hotel.location.dto.toDto
 import com.hotel.location.dto.toLog
 import com.hotel.location.model.Coordinates
 import com.hotel.location.model.GeofenceState
@@ -168,6 +170,112 @@ class HaversineEngineTest {
                 Coordinates(0.0, 185.0)
             }
             assertEquals("longitude", exLng.field)
+        }
+
+        @Test
+        fun `should throw exception when coordinates are infinite`() {
+            assertThrows(InvalidCoordinatesException::class.java) {
+                Coordinates(Double.POSITIVE_INFINITY, 0.0)
+            }
+            assertThrows(InvalidCoordinatesException::class.java) {
+                Coordinates(0.0, Double.NEGATIVE_INFINITY)
+            }
+        }
+
+        @Test
+        fun `should throw exception when geofence radius is infinite or NaN`() {
+            assertThrows(InvalidGeofenceRadiusException::class.java) {
+                LocationEvent(
+                    hotelId = "htl-01",
+                    hotelLocation = Coordinates(-8.052240, -34.885650),
+                    guestLocation = Coordinates(-8.053100, -34.886100),
+                    geofenceRadiusMeters = Double.POSITIVE_INFINITY,
+                    previousState = GeofenceState.OUTSIDE
+                )
+            }
+            assertThrows(InvalidGeofenceRadiusException::class.java) {
+                LocationEvent(
+                    hotelId = "htl-01",
+                    hotelLocation = Coordinates(-8.052240, -34.885650),
+                    guestLocation = Coordinates(-8.053100, -34.886100),
+                    geofenceRadiusMeters = Double.NaN,
+                    previousState = GeofenceState.OUTSIDE
+                )
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("DTO Mapping and Validation Tests")
+    inner class DtoMappingAndValidationTests {
+
+        @Test
+        fun `should map valid LocationEventRequestDto to LocationEvent and trim hotelId`() {
+            val dto = LocationEventRequestDto(
+                hotel_id = "  htl-recife-01  ",
+                hotel_lat = -8.052240,
+                hotel_lng = -34.885650,
+                guest_lat = -8.053100,
+                guest_lng = -34.886100,
+                geofence_radius_m = 200.0,
+                previous_state = "  outside  "
+            )
+
+            val event = dto.toDomain()
+
+            assertEquals("htl-recife-01", event.hotelId)
+            assertEquals(-8.052240, event.hotelLocation.latitude)
+            assertEquals(-34.885650, event.hotelLocation.longitude)
+            assertEquals(-8.053100, event.guestLocation.latitude)
+            assertEquals(-34.886100, event.guestLocation.longitude)
+            assertEquals(200.0, event.geofenceRadiusMeters)
+            assertEquals(GeofenceState.OUTSIDE, event.previousState)
+        }
+
+        @Test
+        fun `should throw MissingFieldException for all null or blank fields in toDomain`() {
+            val valid = LocationEventRequestDto(
+                hotel_id = "htl-01",
+                hotel_lat = -8.0,
+                hotel_lng = -34.0,
+                guest_lat = -8.1,
+                guest_lng = -34.1,
+                geofence_radius_m = 100.0,
+                previous_state = "inside"
+            )
+
+            assertThrows(MissingFieldException::class.java) { valid.copy(hotel_id = null).toDomain() }
+            assertThrows(MissingFieldException::class.java) { valid.copy(hotel_id = "").toDomain() }
+            assertThrows(MissingFieldException::class.java) { valid.copy(hotel_id = "   ").toDomain() }
+            assertThrows(MissingFieldException::class.java) { valid.copy(hotel_lat = null).toDomain() }
+            assertThrows(MissingFieldException::class.java) { valid.copy(hotel_lng = null).toDomain() }
+            assertThrows(MissingFieldException::class.java) { valid.copy(guest_lat = null).toDomain() }
+            assertThrows(MissingFieldException::class.java) { valid.copy(guest_lng = null).toDomain() }
+            assertThrows(MissingFieldException::class.java) { valid.copy(geofence_radius_m = null).toDomain() }
+            assertThrows(MissingFieldException::class.java) { valid.copy(previous_state = null).toDomain() }
+            assertThrows(MissingFieldException::class.java) { valid.copy(previous_state = "").toDomain() }
+            assertThrows(MissingFieldException::class.java) { valid.copy(previous_state = "   ").toDomain() }
+        }
+
+        @Test
+        fun `should convert GeofenceEvaluationResult to DTO with lowercase state and correct fields`() {
+            val event = LocationEvent(
+                hotelId = "htl-01",
+                hotelLocation = Coordinates(-8.052240, -34.885650),
+                guestLocation = Coordinates(-8.053100, -34.886100),
+                geofenceRadiusMeters = 200.0,
+                previousState = GeofenceState.OUTSIDE
+            )
+            val result = HaversineEngine.evaluate(event, "corr-123")
+            val dto = result.toDto()
+
+            assertEquals("corr-123", dto.correlation_id)
+            assertEquals("htl-01", dto.hotel_id)
+            assertEquals(107.7, dto.distance_meters)
+            assertEquals("inside", dto.current_state)
+            assertEquals("ENTERED", dto.transition)
+            assertTrue(dto.alert_triggered)
+            assertEquals("Hóspede entrou no raio de 200m da propriedade.", dto.message)
         }
     }
 

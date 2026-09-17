@@ -88,7 +88,8 @@ kover {
 
 configure<info.solidsoft.gradle.pitest.PitestPluginExtension> {
     junit5PluginVersion.set("1.2.1")
-    targetClasses.set(listOf("com.hotel.location.service.*", "com.hotel.location.model.*"))
+    targetClasses.set(listOf("com.hotel.location.service.*", "com.hotel.location.model.*", "com.hotel.location.dto.*"))
+    excludedClasses.set(listOf("*$\$serializer*", "*\$serializer\$*"))
     targetTests.set(listOf("com.hotel.location.HaversineEngineTest", "com.hotel.location.property.*", "com.hotel.location.ApplicationIntegrationTest"))
     mutationThreshold.set(85)
     threads.set(4)
