@@ -134,6 +134,53 @@ class ApplicationIntegrationTest {
             assertFalse(body.alert_triggered)
             assertEquals("Posição atualizada sem alerta.", body.message)
         }
+
+        @Test
+        fun `should respond 200 OK with sanitized correlation_id when header has whitespace padding`() = testApplication {
+            application { module() }
+
+            val response = client.post("/v1/location-events") {
+                header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                header("X-Correlation-ID", "   $VALID_CORRELATION_ID   ")
+                setBody(createLocationPayloadJson())
+            }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            val body = json.decodeFromString<LocationEventResponseDto>(response.bodyAsText())
+            assertEquals(VALID_CORRELATION_ID, body.correlation_id)
+        }
+
+        @Test
+        fun `should respond 200 OK when Content-Type contains charset parameter`() = testApplication {
+            application { module() }
+
+            val response = client.post("/v1/location-events") {
+                header(HttpHeaders.ContentType, "application/json; charset=utf-8")
+                header("X-Correlation-ID", VALID_CORRELATION_ID)
+                setBody(createLocationPayloadJson())
+            }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            val body = json.decodeFromString<LocationEventResponseDto>(response.bodyAsText())
+            assertTrue(body.alert_triggered)
+        }
+
+        @Test
+        fun `should respond 200 OK when previous_state is uppercase and padded with spaces`() = testApplication {
+            application { module() }
+
+            val response = client.post("/v1/location-events") {
+                header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                header("X-Correlation-ID", VALID_CORRELATION_ID)
+                setBody(createLocationPayloadJson(previousState = "  INSIDE  "))
+            }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            val body = json.decodeFromString<LocationEventResponseDto>(response.bodyAsText())
+            assertEquals("inside", body.current_state)
+            assertEquals("NO_CHANGE", body.transition)
+            assertFalse(body.alert_triggered)
+        }
     }
 
     @Nested
@@ -284,6 +331,23 @@ class ApplicationIntegrationTest {
                 header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 header("X-Correlation-ID", VALID_CORRELATION_ID)
                 setBody(createLocationPayloadJson(omitField = "hotel_id"))
+            }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+            assertEquals("urn:problem-type:invalid-payload", error.type)
+            assertEquals("MISSING_FIELD", error.code)
+            assertEquals("O campo 'hotel_id' é obrigatório.", error.detail)
+        }
+
+        @Test
+        fun `should respond 400 Bad Request when hotel_id is blank`() = testApplication {
+            application { module() }
+
+            val response = client.post("/v1/location-events") {
+                header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                header("X-Correlation-ID", VALID_CORRELATION_ID)
+                setBody(createLocationPayloadJson(hotelId = "   "))
             }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
@@ -479,6 +543,60 @@ class ApplicationIntegrationTest {
             assertEquals("urn:problem-type:unsupported-media-type", error.type)
             assertEquals("Unsupported Media Type", error.title)
             assertEquals(415, error.status)
+        }
+
+        @Test
+        fun `should respond 400 Bad Request when payload contains invalid field type`() = testApplication {
+            application { module() }
+
+            val payload = """
+            {
+              "hotel_id": "htl-recife-01",
+              "hotel_lat": "INVALID_LATITUDE",
+              "hotel_lng": -34.885650,
+              "guest_lat": -8.053100,
+              "guest_lng": -34.886100,
+              "geofence_radius_m": 200.0,
+              "previous_state": "outside"
+            }
+            """.trimIndent()
+
+            val response = client.post("/v1/location-events") {
+                header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                header("X-Correlation-ID", VALID_CORRELATION_ID)
+                setBody(payload)
+            }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+            assertEquals("urn:problem-type:malformed-json", error.type)
+            assertEquals("MALFORMED_JSON", error.code)
+            assertEquals(400, error.status)
+            assertNotNull(error.detail)
+        }
+
+        @Test
+        fun `should respond 400 Bad Request on generic BadRequestException without serialization cause`() = testApplication {
+            application {
+                module()
+                routing {
+                    get("/v1/generic-bad-request") {
+                        throw io.ktor.server.plugins.BadRequestException("Requisição inválida simulada")
+                    }
+                }
+            }
+
+            val response = client.get("/v1/generic-bad-request") {
+                header("X-Correlation-ID", VALID_CORRELATION_ID)
+            }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            val error = json.decodeFromString<ProblemDetailsResponse>(response.bodyAsText())
+            assertEquals("urn:problem-type:bad-request", error.type)
+            assertEquals("Bad Request", error.title)
+            assertEquals(400, error.status)
+            assertEquals("BAD_REQUEST", error.code)
+            assertEquals("Requisição inválida.", error.detail)
         }
     }
 
@@ -774,6 +892,42 @@ class ApplicationIntegrationTest {
                 assertEquals("500", mdc["status_code"])
                 assertEquals("/v1/crash-log-simulation", mdc["path"])
                 assertNotNull(mdc["timestamp"])
+            } finally {
+                logbackLogger.detachAppender(listAppender)
+            }
+        }
+
+        @Test
+        fun `should log structured JSON with BAD_REQUEST_ERROR event on generic bad request`() = testApplication {
+            application {
+                module()
+                routing {
+                    get("/v1/generic-bad-request-log") {
+                        throw io.ktor.server.plugins.BadRequestException("Falha genérica")
+                    }
+                }
+            }
+
+            val logbackLogger = LoggerFactory.getLogger("com.hotel.location.Application") as Logger
+            val listAppender = ListAppender<ILoggingEvent>()
+            listAppender.start()
+            logbackLogger.addAppender(listAppender)
+
+            try {
+                val response = client.get("/v1/generic-bad-request-log") {
+                    header("X-Correlation-ID", VALID_CORRELATION_ID)
+                }
+
+                assertEquals(HttpStatusCode.BadRequest, response.status)
+                val logEvent = listAppender.list.firstOrNull { it.mdcPropertyMap["event"] == "BAD_REQUEST_ERROR" }
+                assertNotNull(logEvent, "Deveria ter registrado log estruturado com evento BAD_REQUEST_ERROR")
+                val mdc = logEvent!!.mdcPropertyMap
+                assertEquals("WARN", logEvent.level.toString())
+                assertEquals(VALID_CORRELATION_ID, mdc["correlation_id"])
+                assertEquals("BAD_REQUEST_ERROR", mdc["event"])
+                assertEquals("urn:problem-type:bad-request", mdc["error_type"])
+                assertEquals("BAD_REQUEST", mdc["code"])
+                assertEquals("400", mdc["status_code"])
             } finally {
                 logbackLogger.detachAppender(listAppender)
             }
