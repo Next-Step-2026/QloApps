@@ -81,7 +81,7 @@
                         <div class="col-xs-6">
                             <label class="control-label" style="text-align: left; padding-top: 0; margin-bottom: 5px; display: block;">
                                 {l s='Current Occupancy:' mod='qloreservationpolicy'}
-                                <span class="label-tooltip" data-toggle="tooltip" data-placement="top" data-html="true" data-original-title="{l s='Total confirmed room bookings, not physical guests. It may exceed physical capacity if the hotel is already operating in overbooking.' mod='qloreservationpolicy'}" style="cursor: pointer; color: #5bc0de; margin-left: 4px;">
+                                <span class="label-tooltip" data-toggle="tooltip" data-placement="top" data-original-title="{l s='Total confirmed room bookings, not physical guests. It may exceed physical capacity if the hotel is already operating in overbooking.' mod='qloreservationpolicy'|escape:'html':'UTF-8'}" style="cursor: pointer; color: #5bc0de; margin-left: 4px;">
                                     <i class="icon-question-sign"></i>
                                 </span>
                             </label>
@@ -152,7 +152,7 @@
                 <button type="submit" name="downloadAuditLog" class="btn btn-default btn-xs" {if $totalAuditLogs == 0}disabled="disabled"{/if}>
                     <i class="icon-download"></i> {l s='Download JSON' mod='qloreservationpolicy'}
                 </button>
-                <button type="submit" name="clearAuditLog" class="btn btn-default btn-xs" {if $totalAuditLogs == 0}disabled="disabled"{/if} onclick="return confirm('{l s='Are you sure you want to clear the audit log?' mod='qloreservationpolicy'}');">
+                <button type="submit" name="clearAuditLog" class="btn btn-default btn-xs" {if $totalAuditLogs == 0}disabled="disabled"{/if} onclick="return confirm('{l s='Are you sure you want to clear the audit log?' mod='qloreservationpolicy' js=1}');">
                     <i class="icon-trash"></i> {l s='Clear Log' mod='qloreservationpolicy'}
                 </button>
             </form>
