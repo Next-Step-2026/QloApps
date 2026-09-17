@@ -437,3 +437,11 @@ overlap-service-cpp/build/
 overlap-service-cpp/include/httplib.h
 overlap-service-cpp/include/json.hpp
 overlap-service-cpp/include/doctest.h
+
+# QloApps demo fixture images & installer templates
+modules/**/views/img/hotel_amenities/
+modules/**/views/img/hotel_interior/
+modules/**/views/img/hotels_features_img/
+modules/**/views/img/hotels_testimonials_img/
+modules/**/views/img/payment_img/
+modules/**/mails/fr/
