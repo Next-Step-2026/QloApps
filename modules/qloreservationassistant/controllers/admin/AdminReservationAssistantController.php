@@ -19,6 +19,9 @@ class AdminReservationAssistantController extends ModuleAdminController
     const SERVICE_URL = 'http://127.0.0.1:8101/v1/assist/interpret';
     const TIMEOUT_MS = 600;
 
+    /** @var string|null URL do serviço C++ (permite injeção de dependência/testes) */
+    public $serviceUrl = null;
+
     public function __construct()
     {
         $this->bootstrap = true;
@@ -71,7 +74,8 @@ class AdminReservationAssistantController extends ModuleAdminController
                     'locale' => 'pt-BR'
                 ));
 
-                $ch = curl_init(self::SERVICE_URL);
+                $targetUrl = !empty($this->serviceUrl) ? $this->serviceUrl : (Configuration::get('QLO_ASSISTANT_URL') ?: self::SERVICE_URL);
+                $ch = curl_init($targetUrl);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);

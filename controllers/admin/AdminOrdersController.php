@@ -72,7 +72,7 @@ class AdminOrdersControllerCore extends AdminController
         ) FROM `'._DB_PREFIX_.'htl_booking_detail` hbd WHERE hbd.`id_order` = a.`id_order`) as total_guests,
         (SELECT SUM(DATEDIFF(hbd.`date_to`, hbd.`date_from`)) FROM `'._DB_PREFIX_.'htl_booking_detail` hbd WHERE hbd.`id_order` = a.`id_order`) as los,
         hbd.`id_room` AS id_room_information,
-        order_stays.stay_periods AS stay_periods,
+        (SELECT GROUP_CONCAT(DISTINCT CONCAT(hbd2.`date_from`, \'|\', hbd2.`date_to`, \'~1\') SEPARATOR \'::\') FROM `'._DB_PREFIX_.'htl_booking_detail` hbd2 WHERE hbd2.`id_order` = a.`id_order`) AS stay_periods,
         (SELECT COUNT(spod.`id_service_product_order_detail`) FROM `'._DB_PREFIX_.'service_product_order_detail` spod WHERE spod.`id_order` = a.`id_order` AND spod.`id_htl_booking_detail`=0) as num_products';
 
         $this->_join = '

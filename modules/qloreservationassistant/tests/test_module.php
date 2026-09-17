@@ -52,6 +52,7 @@ $_POST['user_query'] = 'tem quarto deluxe para depois de amanha?';
 $_POST['reference_date'] = '2026-08-27';
 
 $ctrlOffline = new AdminReservationAssistantController();
+$ctrlOffline->serviceUrl = 'http://127.0.0.1:59999/v1/assist/interpret';
 $start = microtime(true);
 $ctrlOffline->initContent();
 $duration = (microtime(true) - $start) * 1000;
@@ -75,6 +76,20 @@ $_POST['user_query'] = str_repeat('a', 300);
 $ctrlLong = new AdminReservationAssistantController();
 $ctrlLong->initContent();
 assert_test("Query > 256 caracteres deve ser rejeitada", strpos($ctrlLong->content, 'excede o limite máximo de 256 caracteres') !== false);
+
+// 5. Validacao dos Cenários Online (com C++ ativo na porta 8101)
+echo "\n[GRUPO 5] BDD Cenarios Online (Inferencia C++ Ativa)\n";
+$_POST = array();
+$_POST['submitQueryAssistant'] = 1;
+$_POST['user_query'] = 'tem quarto deluxe para depois de amanha?';
+$_POST['reference_date'] = '2026-08-27';
+
+$ctrlOnline = new AdminReservationAssistantController();
+$ctrlOnline->initContent();
+assert_test("Intencao AVAILABILITY_QUERY renderizada com sucesso", strpos($ctrlOnline->content, 'AVAILABILITY_QUERY') !== false);
+assert_test("Data de check-in 2026-08-29 identificada", strpos($ctrlOnline->content, '2026-08-29') !== false);
+assert_test("Tipo de quarto deluxe identificado", strpos($ctrlOnline->content, 'deluxe') !== false);
+assert_test("Historico de auditoria contem Correlation ID", strpos($ctrlOnline->content, 'req-') !== false);
 
 echo "\n=== RESUMO DOS TESTES DO MODULO ===\n";
 echo "Total de Testes: " . ($passed + $failed) . " | Passaram: $passed | Falharam: $failed\n";
