@@ -1,0 +1,14 @@
+{
+  "name": "qloapps-visual-inspection-e2e",
+  "version": "1.0.0",
+  "description": "End-to-End Cypress Tests for QloApps Visual Inspection Feature (QLO-FEAT-002)",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run --browser chrome --headless",
+    "cypress:run:electron": "cypress run --browser electron --headless",
+    "cypress:clean": "bash ../../rafael-temp/clean_audit_trail.sh --with-images"
+  },
+  "devDependencies": {
+    "cypress": "^13.13.0"
+  }
+}
