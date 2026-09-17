@@ -289,15 +289,41 @@ No diretório `location-service-kotlin/`:
 ./gradlew run
 ```
 
-### 7.3. Execução da Suíte de Testes
-O projeto conta com testes unitários, testes de integração de API e baterias de verificação do SLA de latência:
+### 7.3. Execução da Suíte Completa de Testes
+
+O projeto segue padrões de engenharia de software de alto rigor (Clean Code, SOLID e RFC-004), contando com uma esteira multifacetada de validação:
+
+| Tipo de Teste | Ferramenta | Finalidade | Comando Gradle |
+| :--- | :--- | :--- | :--- |
+| **Padrão / Regressão** | JUnit 5 + Ktor Test | Executa testes unitários, integração e propriedades | `./gradlew test` |
+| **API e Contrato** | REST Assured + JSON Schema | Valida schemas canônicos e contratos RFC-004 e RFC 7807 | `./gradlew test --tests "*ContractTest*"` |
+| **Baseado em Propriedades** | Kotest Property | Prova formalmente invariantes matemáticas e de estado | `./gradlew test --tests "*PropertyTest*"` |
+| **Fuzz Testing** | Jazzer (libFuzzer JVM) | Gera entradas extremas, corrompidas e caóticas | `./gradlew fuzzTest` |
+| **Mutation Testing** | PITest (`info.solidsoft.pitest`) | Avalia a força dos testes aplicando mutações no bytecode | `./gradlew pitest` |
+| **Cobertura (Linhas/Ramos)** | Kover (`org.jetbrains.kotlinx.kover`) | Mede execução de código e valida barreira mínima de 80% | `./gradlew koverVerify koverHtmlReport` |
+
+#### Comandos de Execução Rápida:
 
 ```bash
-# Executar todos os testes automatizados com JUnit 5:
+# 1. Executar todos os testes automatizados (unitários, integração, contrato e propriedades):
 ./gradlew test
 
-# Visualizar relatório de testes HTML gerado:
-# build/reports/tests/test/index.html
+# 2. Executar testes de contrato HTTP e validação estrita de JSON Schema:
+./gradlew test --tests "com.hotel.location.contract.*"
+
+# 3. Executar testes baseados em propriedades com Kotest:
+./gradlew test --tests "com.hotel.location.property.*"
+
+# 4. Executar bateria de testes de Fuzzing com Jazzer:
+./gradlew fuzzTest
+
+# 5. Executar análise de mutação com PITest:
+./gradlew pitest
+# Relatório HTML gerado em: build/reports/pitest/index.html
+
+# 6. Validar portão de cobertura (mínimo 80%) e gerar relatório HTML:
+./gradlew koverVerify koverHtmlReport
+# Relatório HTML gerado em: build/reports/kover/html/index.html
 ```
 
 ### 7.4. Quickstart de Validação Rápida via cURL
