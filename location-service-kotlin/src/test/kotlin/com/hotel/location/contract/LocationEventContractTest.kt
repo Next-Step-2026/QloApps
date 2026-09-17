@@ -388,4 +388,118 @@ class LocationEventContractTest : BaseContractTest() {
             .body("code", equalTo("SERVICE_UNAVAILABLE"))
             .body("status", equalTo(503))
     }
+
+    @Test
+    fun `deve aceitar Content-Type application json com parametro de charset utf-8 no contrato`() {
+        val payload = """
+            {
+                "hotel_id": "htl-recife-01",
+                "hotel_lat": -8.052240,
+                "hotel_lng": -34.885650,
+                "guest_lat": -8.053100,
+                "guest_lng": -34.886100,
+                "geofence_radius_m": 200.0,
+                "previous_state": "outside"
+            }
+        """.trimIndent()
+
+        given()
+            .contentType("application/json; charset=utf-8")
+            .header("X-Correlation-ID", VALID_CORRELATION_ID)
+            .body(payload)
+            .`when`()
+            .post("/v1/location-events")
+            .then()
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body(matchesJsonSchemaInClasspath("schemas/location-event-response.schema.json"))
+            .body("alert_triggered", equalTo(true))
+    }
+
+    @Test
+    fun `deve validar contrato e schema quando X-Correlation-ID contiver espacos laterais sendo sanitizado`() {
+        val payload = """
+            {
+                "hotel_id": "htl-recife-01",
+                "hotel_lat": -8.052240,
+                "hotel_lng": -34.885650,
+                "guest_lat": -8.053100,
+                "guest_lng": -34.886100,
+                "geofence_radius_m": 200.0,
+                "previous_state": "outside"
+            }
+        """.trimIndent()
+
+        val paddedCorrelationId = "   $VALID_CORRELATION_ID   "
+
+        given()
+            .contentType(ContentType.JSON)
+            .header("X-Correlation-ID", paddedCorrelationId)
+            .body(payload)
+            .`when`()
+            .post("/v1/location-events")
+            .then()
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body(matchesJsonSchemaInClasspath("schemas/location-event-response.schema.json"))
+            .body("correlation_id", equalTo(VALID_CORRELATION_ID))
+    }
+
+    @Test
+    fun `deve validar contrato RFC 7807 Problem Details quando tipo de dado no payload for incompativel`() {
+        val payload = """
+            {
+                "hotel_id": "htl-recife-01",
+                "hotel_lat": "not_a_valid_float",
+                "hotel_lng": -34.885650,
+                "guest_lat": -8.053100,
+                "guest_lng": -34.886100,
+                "geofence_radius_m": 200.0,
+                "previous_state": "outside"
+            }
+        """.trimIndent()
+
+        given()
+            .contentType(ContentType.JSON)
+            .header("X-Correlation-ID", VALID_CORRELATION_ID)
+            .body(payload)
+            .`when`()
+            .post("/v1/location-events")
+            .then()
+            .statusCode(400)
+            .contentType("application/problem+json; charset=UTF-8")
+            .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
+            .body("type", equalTo("urn:problem-type:malformed-json"))
+            .body("code", equalTo("MALFORMED_JSON"))
+            .body("status", equalTo(400))
+    }
+
+    @Test
+    fun `deve validar contrato JSON Schema quando previous_state for enviado em caixa alta`() {
+        val payload = """
+            {
+                "hotel_id": "htl-recife-01",
+                "hotel_lat": -8.052240,
+                "hotel_lng": -34.885650,
+                "guest_lat": -8.053100,
+                "guest_lng": -34.886100,
+                "geofence_radius_m": 200.0,
+                "previous_state": "INSIDE"
+            }
+        """.trimIndent()
+
+        given()
+            .contentType(ContentType.JSON)
+            .header("X-Correlation-ID", VALID_CORRELATION_ID)
+            .body(payload)
+            .`when`()
+            .post("/v1/location-events")
+            .then()
+            .statusCode(200)
+            .contentType(ContentType.JSON)
+            .body(matchesJsonSchemaInClasspath("schemas/location-event-response.schema.json"))
+            .body("current_state", equalTo("inside"))
+            .body("transition", equalTo("NO_CHANGE"))
+            .body("alert_triggered", equalTo(false))
+    }
 }

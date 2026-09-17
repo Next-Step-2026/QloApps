@@ -342,12 +342,13 @@ fun Application.module() {
                 throw InvalidContentTypeException(rawContentType)
             }
 
-            val correlationId = call.request.headers["X-Correlation-ID"]
-            if (correlationId.isNullOrBlank()) {
+            val rawCorrelationId = call.request.headers["X-Correlation-ID"]
+            if (rawCorrelationId.isNullOrBlank()) {
                 throw MissingHeaderException("X-Correlation-ID")
             }
+            val correlationId = rawCorrelationId.trim()
             if (!isValidUuid(correlationId)) {
-                throw InvalidHeaderException("X-Correlation-ID", "O valor '$correlationId' não é um UUID v4 válido.")
+                throw InvalidHeaderException("X-Correlation-ID", "O valor '$rawCorrelationId' não é um UUID v4 válido.")
             }
 
             val requestDto = call.receive<LocationEventRequestDto>()
