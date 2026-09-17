@@ -94,26 +94,26 @@ def evaluate_overbooking_limit(
     requested_units = data.requested_units
     max_overbooking_rate = data.max_overbooking_rate
 
-    # Arredondamento para baixo da capacidade máxima autorizada
-    max_allowed_units = int(total_capacity * (1.0 + max_overbooking_rate))
+    # Arredondamento para baixo da capacidade máxima autorizada com proteção contra imprecisão float IEEE 754
+    max_allowed_units = int(round(total_capacity * (1.0 + max_overbooking_rate), 6))
     resulting_occupied = current_occupied + requested_units
 
-    resulting_pct = round((resulting_occupied / total_capacity) * 100) if total_capacity > 0 else 0
-    max_pct = round((1.0 + max_overbooking_rate) * 100)
+    resulting_pct = round((resulting_occupied / total_capacity) * 100, 1) if total_capacity > 0 else 0.0
+    max_pct = round((1.0 + max_overbooking_rate) * 100, 1)
 
     if resulting_occupied <= max_allowed_units:
         decision = PolicyDecision.ALLOW
         reason_code = "WITHIN_OVERBOOKING_BUFFER"
         explanation = (
-            f"Resulting occupancy ({resulting_occupied}/{total_capacity} = {resulting_pct}%) "
-            f"is within the maximum allowed limit of {max_pct}% ({max_allowed_units} units)."
+            f"Resulting occupancy ({resulting_occupied}/{total_capacity} = {resulting_pct:.1f}%) "
+            f"is within the maximum allowed limit of {max_pct:.1f}% ({max_allowed_units} units)."
         )
     else:
         decision = PolicyDecision.DENY
         reason_code = "OVERBOOKING_CAPACITY_EXCEEDED"
         explanation = (
-            f"Resulting occupancy ({resulting_occupied}/{total_capacity} = {resulting_pct}%) "
-            f"exceeds the maximum allowed limit of {max_pct}% ({max_allowed_units} units)."
+            f"Resulting occupancy ({resulting_occupied}/{total_capacity} = {resulting_pct:.1f}%) "
+            f"exceeds the maximum allowed limit of {max_pct:.1f}% ({max_allowed_units} units)."
         )
 
     return decision, reason_code, explanation
