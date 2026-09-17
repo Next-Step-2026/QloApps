@@ -69,6 +69,9 @@ class HaversineEngineFuzzTest {
             check(!result.distanceMeters.isNaN()) { "Distância calculada foi NaN" }
             check(result.distanceMeters.isFinite()) { "Distância calculada foi infinita" }
             check(result.distanceMeters >= 0.0) { "Distância calculada foi negativa" }
+            check(result.alertTriggered == (result.transition == com.hotel.location.model.GeofenceTransition.ENTERED)) {
+                "Invariante RFC-004 violada: alertTriggered=${result.alertTriggered} com transição=${result.transition}"
+            }
         } catch (e: DomainException) {
             // Rejeições de domínio esperadas pela RFC-004
         }
@@ -84,12 +87,25 @@ class HaversineEngineFuzzTest {
             val result = HaversineEngine.evaluate(domainEvent, "fuzz-correlation-id")
             check(!result.distanceMeters.isNaN()) { "Resultado de distância foi NaN" }
             check(result.distanceMeters.isFinite()) { "Resultado de distância foi infinito" }
+            check(result.alertTriggered == (result.transition == com.hotel.location.model.GeofenceTransition.ENTERED)) {
+                "Invariante RFC-004 violada no fluxo JSON"
+            }
         } catch (e: SerializationException) {
             // Falha esperada de desserialização JSON em entradas malformadas
         } catch (e: DomainException) {
             // Rejeição controlada de domínio por validações de regras de negócio da RFC-004
-        } catch (e: IllegalArgumentException) {
-            // Rejeição de tipos ou argumentos inválidos
+        }
+    }
+
+    @FuzzTest(maxDuration = "5s")
+    fun fuzzHeaderValidationAndNormalization(data: FuzzedDataProvider) {
+        val rawHeader = data.consumeRemainingAsString()
+        val isValid = com.hotel.location.isValidUuid(rawHeader)
+        if (isValid) {
+            val trimmed = rawHeader.trim()
+            check(trimmed.length == 36) { "UUID v4 válido deve ter exatamente 36 caracteres (obtido: $trimmed)" }
+            check(trimmed[14] == '4') { "UUID v4 deve possuir versão 4 no caractere 14 (obtido: $trimmed)" }
+            check(trimmed[19] in "89abAB") { "UUID v4 deve possuir variante válida [89abAB] no caractere 19 (obtido: $trimmed)" }
         }
     }
 }
