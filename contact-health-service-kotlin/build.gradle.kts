@@ -42,6 +42,7 @@ application {
 
 tasks.test {
     useJUnitPlatform()
+}
     exclude("**/*FuzzTest*")
     testLogging {
         events("passed", "skipped", "failed")
