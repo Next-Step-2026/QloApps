@@ -40,8 +40,14 @@ function assert(condition, message) {
 async function runE2ETests() {
   console.log('=== [E2E] Iniciando Testes End-to-End no Back-Office com Playwright ===\n');
 
+  const isHeaded = process.argv.includes('--headed') || process.env.HEADED === '1';
+  if (isHeaded) {
+    console.log('  -> [MODO VISUAL ATIVO] Abrindo janela do navegador com visualizacao em tempo real (slowMo: 800ms)...\n');
+  }
+
   const browser = await chromium.launch({
-    headless: true,
+    headless: !isHeaded,
+    slowMo: isHeaded ? 800 : 0,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
