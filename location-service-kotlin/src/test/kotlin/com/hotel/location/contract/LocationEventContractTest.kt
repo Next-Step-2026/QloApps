@@ -157,6 +157,7 @@ class LocationEventContractTest : BaseContractTest() {
             .post("/v1/location-events")
             .then()
             .statusCode(400)
+            .contentType("application/problem+json; charset=UTF-8")
             .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
             .body("code", equalTo("INVALID_COORDINATES"))
             .body("status", equalTo(400))
@@ -185,6 +186,7 @@ class LocationEventContractTest : BaseContractTest() {
             .post("/v1/location-events")
             .then()
             .statusCode(400)
+            .contentType("application/problem+json; charset=UTF-8")
             .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
             .body("code", equalTo("INVALID_RADIUS"))
             .body("status", equalTo(400))
@@ -212,6 +214,7 @@ class LocationEventContractTest : BaseContractTest() {
             .post("/v1/location-events")
             .then()
             .statusCode(400)
+            .contentType("application/problem+json; charset=UTF-8")
             .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
             .body("code", equalTo("INVALID_STATE"))
             .body("status", equalTo(400))
@@ -238,8 +241,37 @@ class LocationEventContractTest : BaseContractTest() {
             .post("/v1/location-events")
             .then()
             .statusCode(400)
+            .contentType("application/problem+json; charset=UTF-8")
             .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
             .body("code", equalTo("MISSING_FIELD"))
+            .body("detail", equalTo("O campo 'hotel_id' é obrigatório."))
+    }
+
+    @Test
+    fun `deve validar contrato RFC 7807 Problem Details quando geofence_radius_m estiver ausente`() {
+        val payload = """
+            {
+                "hotel_id": "htl-recife-01",
+                "hotel_lat": -8.052240,
+                "hotel_lng": -34.885650,
+                "guest_lat": -8.053100,
+                "guest_lng": -34.886100,
+                "previous_state": "outside"
+            }
+        """.trimIndent()
+
+        given()
+            .contentType(ContentType.JSON)
+            .header("X-Correlation-ID", VALID_CORRELATION_ID)
+            .body(payload)
+            .`when`()
+            .post("/v1/location-events")
+            .then()
+            .statusCode(400)
+            .contentType("application/problem+json; charset=UTF-8")
+            .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
+            .body("code", equalTo("MISSING_FIELD"))
+            .body("detail", equalTo("O campo 'geofence_radius_m' é obrigatório."))
     }
 
     @Test
@@ -263,6 +295,7 @@ class LocationEventContractTest : BaseContractTest() {
             .post("/v1/location-events")
             .then()
             .statusCode(400)
+            .contentType("application/problem+json; charset=UTF-8")
             .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
             .body("code", equalTo("MISSING_HEADER"))
     }
@@ -289,6 +322,7 @@ class LocationEventContractTest : BaseContractTest() {
             .post("/v1/location-events")
             .then()
             .statusCode(400)
+            .contentType("application/problem+json; charset=UTF-8")
             .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
             .body("code", equalTo("INVALID_HEADER"))
     }
@@ -303,7 +337,55 @@ class LocationEventContractTest : BaseContractTest() {
             .post("/v1/location-events")
             .then()
             .statusCode(415)
+            .contentType("application/problem+json; charset=UTF-8")
             .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
             .body("code", equalTo("UNSUPPORTED_MEDIA_TYPE"))
+    }
+
+    @Test
+    fun `deve validar contrato RFC 7807 Problem Details quando o payload for um JSON malformado`() {
+        given()
+            .contentType(ContentType.JSON)
+            .header("X-Correlation-ID", VALID_CORRELATION_ID)
+            .body("{ malformed: json, syntax-error }")
+            .`when`()
+            .post("/v1/location-events")
+            .then()
+            .statusCode(400)
+            .contentType("application/problem+json; charset=UTF-8")
+            .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
+            .body("type", equalTo("urn:problem-type:malformed-json"))
+            .body("code", equalTo("MALFORMED_JSON"))
+            .body("status", equalTo(400))
+    }
+
+    @Test
+    fun `deve validar contrato RFC 7807 Problem Details quando servico estiver simulado indisponivel via header`() {
+        val payload = """
+            {
+                "hotel_id": "htl-recife-01",
+                "hotel_lat": -8.052240,
+                "hotel_lng": -34.885650,
+                "guest_lat": -8.053100,
+                "guest_lng": -34.886100,
+                "geofence_radius_m": 200.0,
+                "previous_state": "outside"
+            }
+        """.trimIndent()
+
+        given()
+            .contentType(ContentType.JSON)
+            .header("X-Correlation-ID", VALID_CORRELATION_ID)
+            .header("X-Mock-Service-Unavailable", "true")
+            .body(payload)
+            .`when`()
+            .post("/v1/location-events")
+            .then()
+            .statusCode(503)
+            .contentType("application/problem+json; charset=UTF-8")
+            .body(matchesJsonSchemaInClasspath("schemas/problem-details.schema.json"))
+            .body("type", equalTo("urn:problem-type:service-unavailable"))
+            .body("code", equalTo("SERVICE_UNAVAILABLE"))
+            .body("status", equalTo(503))
     }
 }
