@@ -64,6 +64,10 @@ val fuzzTest by tasks.registering(Test::class) {
     }
 }
 
+tasks.check {
+    dependsOn(fuzzTest)
+}
+
 kover {
     reports {
         total {
@@ -75,7 +79,7 @@ kover {
             }
             verify {
                 rule {
-                    minBound(80)
+                    minBound(85)
                 }
             }
         }
@@ -85,7 +89,8 @@ kover {
 configure<info.solidsoft.gradle.pitest.PitestPluginExtension> {
     junit5PluginVersion.set("1.2.1")
     targetClasses.set(listOf("com.hotel.location.service.*", "com.hotel.location.model.*"))
-    targetTests.set(listOf("com.hotel.location.HaversineEngineTest", "com.hotel.location.property.*"))
+    targetTests.set(listOf("com.hotel.location.HaversineEngineTest", "com.hotel.location.property.*", "com.hotel.location.ApplicationIntegrationTest"))
+    mutationThreshold.set(85)
     threads.set(4)
     outputFormats.set(listOf("XML", "HTML"))
     timestampedReports.set(false)
