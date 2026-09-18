@@ -1,10 +1,25 @@
-<div class="panel">
+<div class="panel qlo-contact-health-card">
+    <style type="text/css">
+    .qlo-contact-health-card .alert.qlo-alert-inline:before {
+        display: none !important;
+    }
+    .qlo-contact-health-card .alert.qlo-alert-inline {
+        min-height: auto !important;
+        line-height: 1.4;
+    }
+    .qlo-contact-health-card .alert.qlo-alert-inline i {
+        font-size: 14px !important;
+        margin-right: 5px;
+        vertical-align: middle;
+    }
+    </style>
+
     <div class="panel-heading">
         <i class="icon-user-md"></i> {l s='Indicador de Saúde e Higiene Cadastral' mod='qlocontacthealth'}
     </div>
 
     {if isset($healthWarning) && $healthWarning}
-        <div class="alert alert-warning">
+        <div class="alert alert-warning qlo-alert-inline">
             <i class="icon-warning-sign"></i> {$healthWarning|escape:'html':'UTF-8'}
         </div>
     {/if}
@@ -140,20 +155,20 @@ function sendConsentAjax(customerId, dateVal) {
         success: function(response) {
             var containerId = '#consent-alert-container-' + customerId;
             if (response && response.success) {
-                var html = '<div class="alert alert-success" style="margin-top:5px; padding:5px;"><i class="icon-ok-sign"></i> ' + response.message + '</div>';
+                var html = '<div class="alert alert-success qlo-alert-inline" style="margin-top:5px; padding:6px 10px; font-size:12px;"><i class="icon-ok-sign"></i> ' + response.message + '</div>';
                 $(containerId).html(html);
                 setTimeout(function() {
                     location.reload();
                 }, 1200);
             } else {
                 var msg = (response && response.message) ? response.message : '{l s='Erro ao atualizar consentimento.' mod='qlocontacthealth' js=1}';
-                var html = '<div class="alert alert-danger" style="margin-top:5px; padding:5px;"><i class="icon-exclamation-sign"></i> ' + msg + '</div>';
+                var html = '<div class="alert alert-danger qlo-alert-inline" style="margin-top:5px; padding:6px 10px; font-size:12px;"><i class="icon-exclamation-sign"></i> ' + msg + '</div>';
                 $(containerId).html(html);
             }
         },
         error: function() {
             var containerId = '#consent-alert-container-' + customerId;
-            var html = '<div class="alert alert-danger" style="margin-top:5px; padding:5px;"><i class="icon-exclamation-sign"></i> {l s='Erro de comunicação ao atualizar consentimento.' mod='qlocontacthealth' js=1}</div>';
+            var html = '<div class="alert alert-danger qlo-alert-inline" style="margin-top:5px; padding:6px 10px; font-size:12px;"><i class="icon-exclamation-sign"></i> {l s='Erro de comunicação ao atualizar consentimento.' mod='qlocontacthealth' js=1}</div>';
             $(containerId).html(html);
         }
     });
@@ -179,20 +194,20 @@ function simulateContactReconfirmation(customerId) {
         success: function(response) {
             $btn.prop('disabled', false);
             if (response && response.success) {
-                var html = '<div class="alert alert-success"><i class="icon-ok-sign"></i> ' + response.message + '</div>';
+                var html = '<div class="alert alert-success qlo-alert-inline" style="margin-top:10px; padding:8px 12px; font-size:13px;"><i class="icon-ok-sign"></i> ' + response.message + '</div>';
                 $('#reconfirmation-alert-container').html(html);
                 setTimeout(function() {
                     location.reload();
                 }, 1500);
             } else {
                 var msg = (response && response.message) ? response.message : '{l s='Erro ao processar a simulação.' mod='qlocontacthealth' js=1}';
-                var html = '<div class="alert alert-danger"><i class="icon-exclamation-sign"></i> ' + msg + '</div>';
+                var html = '<div class="alert alert-danger qlo-alert-inline" style="margin-top:10px; padding:8px 12px; font-size:13px;"><i class="icon-exclamation-sign"></i> ' + msg + '</div>';
                 $('#reconfirmation-alert-container').html(html);
             }
         },
         error: function() {
             $btn.prop('disabled', false);
-            var html = '<div class="alert alert-danger"><i class="icon-exclamation-sign"></i> {l s='Erro de comunicação ao simular a validação.' mod='qlocontacthealth' js=1}</div>';
+            var html = '<div class="alert alert-danger qlo-alert-inline" style="margin-top:10px; padding:8px 12px; font-size:13px;"><i class="icon-exclamation-sign"></i> {l s='Erro de comunicação ao simular a validação.' mod='qlocontacthealth' js=1}</div>';
             $('#reconfirmation-alert-container').html(html);
         }
     });
