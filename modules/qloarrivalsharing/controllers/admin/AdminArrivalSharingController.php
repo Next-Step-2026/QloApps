@@ -145,6 +145,7 @@ class AdminArrivalSharingController extends ModuleAdminController
             'simRadius'             => Tools::getValue('radius', $geofenceRadius),
             'orderAdminLink'        => $this->context->link->getAdminLink('AdminOrders', true),
             'ajaxArrivalStatusUrl'  => $this->context->link->getAdminLink('AdminArrivalSharing', true) . '&ajax=1&action=refresh_arrival_status',
+            'currentUrl'            => self::$currentIndex . '&token=' . $this->token,
         ));
 
         $this->setTemplate('reception_dashboard.tpl');
