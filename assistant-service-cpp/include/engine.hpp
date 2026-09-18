@@ -83,7 +83,7 @@ public:
             case domain::Intent::UNKNOWN:
             default: {
                 response["slots"] = json::object();
-                response["explanation"] = "Consulta fora de dominio hoteleiro.";
+                response["explanation"] = "Consulta fora de dominio hoteleiro ou com baixa confianca.";
                 return {200, response};
             }
         }

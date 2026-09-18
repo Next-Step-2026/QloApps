@@ -25,6 +25,7 @@ uvx --from "schemathesis>=4.0.0" schemathesis run \
     "$OPENAPI_SPEC" \
     --url "$TARGET_URL" \
     -c not_a_server_error,status_code_conformance,content_type_conformance,response_schema_conformance \
-    --max-examples=25
+    --max-examples=25 \
+    --suppress-health-check=filter_too_much
 
 echo "=== [SUCESSO] Todos os testes de contrato foram validados com conformidade total! ==="

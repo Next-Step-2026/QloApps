@@ -36,8 +36,18 @@ public:
     static json extractRoomType(const std::string& normQuery) {
         if (normQuery.find("deluxe") != std::string::npos) {
             return "deluxe";
+        } else if (normQuery.find("presidencial") != std::string::npos) {
+            return "presidencial";
+        } else if (normQuery.find("executiva") != std::string::npos) {
+            return "executiva";
         } else if (normQuery.find("suite") != std::string::npos) {
             return "suite";
+        } else if (normQuery.find("chale") != std::string::npos) {
+            return "chale";
+        } else if (normQuery.find("bangalo") != std::string::npos) {
+            return "bangalo";
+        } else if (normQuery.find("apartamento") != std::string::npos) {
+            return "apartamento";
         } else if (normQuery.find("standard") != std::string::npos) {
             return "standard";
         }
@@ -54,6 +64,12 @@ public:
                     return count;
                 }
             } catch (...) {}
+        }
+        if (normQuery.find("casal") != std::string::npos) {
+            return 2;
+        }
+        if (normQuery.find("solteiro") != std::string::npos) {
+            return 1;
         }
         return nullptr;
     }
