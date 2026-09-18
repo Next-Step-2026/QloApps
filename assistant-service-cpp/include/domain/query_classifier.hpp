@@ -149,12 +149,9 @@ public:
                         normQuery.find("existe ") != std::string::npos);
 
         if (hasExplicitBooking) {
-            score += 0.50;
-            if (normQuery.find("disponivel") != std::string::npos || normQuery.find("vaga") != std::string::npos) {
-                score += 0.05; // "disponivel" ou "vaga" reforça a intenção
-            }
+            score = 0.85; // RN-002: termos como 'vaga', 'tem quarto', 'disponivel' classificam como AVAILABILITY_QUERY com score >= 0.85
         } else if (hasLead) {
-            score += 0.20;
+            score = 0.20;
         }
 
         // 4.2 Tipo de acomodação:
@@ -172,12 +169,18 @@ public:
                             normQuery.find("acomodacao") != std::string::npos);
 
         if (hasRoomType) {
-            score += 0.25;
+            if (hasExplicitBooking) {
+                score += 0.05; // Reforço de acomodação explícita
+            } else {
+                score += 0.35; // Apenas citação de acomodação sem intenção de reserva (ex: "alguma suíte com vista pra praia")
+            }
             if (normQuery.find("deluxe") != std::string::npos ||
                 normQuery.find("suite") != std::string::npos ||
                 normQuery.find("executiva") != std::string::npos ||
                 normQuery.find("standard") != std::string::npos) {
-                score += 0.10; // Categoria específica
+                if (hasExplicitBooking) {
+                    score += 0.03; // Categoria específica
+                }
             }
         }
 

@@ -72,6 +72,15 @@ int main() {
         std::cout << "  [PASS] Availability query with amenity and booking intent has high confidence (>= 0.90)" << std::endl;
     }
 
+    // 8. Test RN-002: Availability query without specific room type ("Tem vaga para amanhã?")
+    {
+        std::string q = assistant::normalizeText("Tem vaga para amanhã?");
+        auto res = QueryClassifier::classify(q);
+        assert(res.intent == Intent::AVAILABILITY_QUERY);
+        assert(res.confidence >= 0.85);
+        std::cout << "  [PASS] RN-002: Availability query without room type classified as AVAILABILITY_QUERY (>= 0.85)" << std::endl;
+    }
+
     std::cout << "=== All Classifier Unit Tests Passed Successfully! ===" << std::endl;
     return 0;
 }
