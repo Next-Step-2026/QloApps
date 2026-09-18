@@ -46,6 +46,32 @@ int main() {
         std::cout << "  [PASS] UNKNOWN fallback classification" << std::endl;
     }
 
+    // 5. Test Issue 'Confiante != Confiável': Housekeeping service query must be UNKNOWN (< 0.60)
+    {
+        std::string q = assistant::normalizeText("quantas camareiras estão disponíveis no quarto suite deluxe premium");
+        auto res = QueryClassifier::classify(q);
+        assert(res.intent == Intent::UNKNOWN);
+        assert(res.confidence < 0.60);
+        std::cout << "  [PASS] Issue Regression: Housekeeping staff query classified as UNKNOWN (< 0.60)" << std::endl;
+    }
+
+    // 6. Test Issue 'Confiante != Confiável': Underspecified amenity query must not have high confidence
+    {
+        std::string q = assistant::normalizeText("alguma suíte com vista pra praia");
+        auto res = QueryClassifier::classify(q);
+        assert(res.confidence < 0.60);
+        std::cout << "  [PASS] Issue Regression: Underspecified amenity query has calibrated low confidence (< 0.60)" << std::endl;
+    }
+
+    // 7. Test Availability with Amenity: Room with TV and view but with explicit booking intent
+    {
+        std::string q = assistant::normalizeText("Tem suíte com televisão e vista pro mar disponível para amanhã?");
+        auto res = QueryClassifier::classify(q);
+        assert(res.intent == Intent::AVAILABILITY_QUERY);
+        assert(res.confidence >= 0.90);
+        std::cout << "  [PASS] Availability query with amenity and booking intent has high confidence (>= 0.90)" << std::endl;
+    }
+
     std::cout << "=== All Classifier Unit Tests Passed Successfully! ===" << std::endl;
     return 0;
 }
