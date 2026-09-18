@@ -166,7 +166,7 @@
                 </div>
             </div>
 
-            <form method="post" action="" id="formSimulationCoordinates">
+            <form method="post" action="{$currentUrl|escape:'html':'UTF-8'}" id="formSimulationCoordinates">
                 <input type="hidden" name="hotel_lat" value="{$hotelLat|escape:'html':'UTF-8'}" />
                 <input type="hidden" name="hotel_lng" value="{$hotelLng|escape:'html':'UTF-8'}" />
                 <input type="hidden" name="hotel_id" value="htl-prime-01" />
@@ -352,7 +352,7 @@ $(document).ready(function() {
 
 <div class="modal fade" id="modalGeofenceConfig" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
-        <form method="post" action="">
+        <form method="post" action="{$currentUrl|escape:'html':'UTF-8'}">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
